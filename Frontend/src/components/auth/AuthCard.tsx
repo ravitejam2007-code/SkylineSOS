@@ -292,7 +292,6 @@ export default function AuthCard() {
         {(selectedRole === 'admin' || email.toLowerCase().includes('admin')) && (
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
-              <span>🔒</span>
               <span>Admin Secret Security Code Required *</span>
             </div>
             <input

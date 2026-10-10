@@ -367,7 +367,6 @@ export default function AnnouncementsScene() {
                     className="px-2.5 py-1 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs cursor-pointer transition-colors flex items-center gap-1 shadow-2xs"
                     title="Delete Notice (Admin Only)"
                   >
-                    <span>🗑️</span>
                     <span>Delete Notice</span>
                   </button>
                 )}

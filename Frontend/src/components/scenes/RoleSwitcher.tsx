@@ -132,7 +132,7 @@ export default function RoleSwitcher() {
 
             {adminSecretError && (
               <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
-                <span>⚠️</span> {adminSecretError}
+                <span>{adminSecretError}</span>
               </div>
             )}
 

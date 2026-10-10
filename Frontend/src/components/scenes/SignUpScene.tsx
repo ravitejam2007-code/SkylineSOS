@@ -95,7 +95,10 @@ export default function SignUpScene() {
 
         {errorMsg && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-[14px] flex items-center gap-2">
-            <span className="font-bold">⚠</span> {errorMsg}
+            <svg className="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>{errorMsg}</span>
           </div>
         )}
 
@@ -114,7 +117,7 @@ export default function SignUpScene() {
                     : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
                 }`}
               >
-                🎓 Student Member
+                Student Member
               </button>
               <button
                 type="button"
@@ -125,7 +128,7 @@ export default function SignUpScene() {
                     : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
                 }`}
               >
-                🛡️ Executive Admin
+                Executive Admin
               </button>
             </div>
           </div>
@@ -133,7 +136,6 @@ export default function SignUpScene() {
           {accountType === 'admin' && (
             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
               <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
-                <span>🔒</span>
                 <span>Admin Secret Security Code Required *</span>
               </div>
               <input

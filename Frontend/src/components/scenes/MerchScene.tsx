@@ -270,7 +270,7 @@ export default function MerchScene() {
                 <strong className="text-[var(--color-ink)]">Real-Time Stock:</strong> Inventory is verified to prevent overselling.
               </div>
               <div>
-                💳 <strong>Razorpay Test Mode:</strong> Key <code className="px-1.5 py-0.5 rounded bg-slate-200 text-black font-mono text-[10px]">rzp_test_T8GBnZ6P23gRoO</code>
+                <strong>Razorpay Test Mode:</strong> Key <code className="px-1.5 py-0.5 rounded bg-slate-200 text-black font-mono text-[10px]">rzp_test_T8GBnZ6P23gRoO</code>
               </div>
             </div>
 

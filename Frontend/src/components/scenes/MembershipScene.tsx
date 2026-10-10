@@ -682,8 +682,10 @@ export default function MembershipScene() {
 
             {!session ? (
               <div className="text-center py-6 space-y-4">
-                <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 text-black border border-slate-200 flex items-center justify-center text-2xl font-bold">
-                  🔒
+                <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
                 </div>
                 <div className="space-y-1.5">
                   <h4 className="text-lg font-bold text-[var(--color-ink-deep)]">Authentication Required</h4>
@@ -756,7 +758,7 @@ export default function MembershipScene() {
 
                 <div className="text-[11px] text-[#64748b] bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
                   <div>
-                    💳 <strong>Razorpay Test Gateway:</strong> API Key <code className="px-1.5 py-0.5 rounded bg-slate-200 text-black font-mono text-[10px]">rzp_test_T8GBnZ6P23gRoO</code>
+                    <strong>Razorpay Test Gateway:</strong> API Key <code className="px-1.5 py-0.5 rounded bg-slate-200 text-black font-mono text-[10px]">rzp_test_T8GBnZ6P23gRoO</code>
                   </div>
                   <div>
                     Membership dues ({formatPaise(applyTier.fee_paise)}) settle securely via Razorpay in test mode before application submission.

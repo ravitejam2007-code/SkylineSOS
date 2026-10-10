@@ -458,5 +458,20 @@
   - **Verification:**
     - Executed `npm test`: 79/79 invariant tests passed across 24 test suites with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
+- **Website-Wide Emoji Elimination & Modern Minimalist UI Upgrade:**
+  - **Scope & User Requirement:** Removed all cartoonish face, symbol, and object emojis (`👨`, `👩`, `🎓`, `🤝`, `🛡️`, `💰`, `🔒`, `📷`, `🎟️`, `💳`, `🚫`, `🗑️`, `🎉`, `✨`, `👤`, `📋`, `🍪`, `🔢`, `⌨️`, `⏳`) across all frontend scenes.
+  - **Replaced with Clean SVG Icons & Typography:**
+    - [`StudentPortalScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx): Replaced camera and lock emojis with SVG camera/lock icons, and cleaned preset photo selector buttons ("Him", "Her", "Fellow", "Choose / Upload Photo").
+    - [`LoginScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/LoginScene.tsx) & [`SignUpScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/SignUpScene.tsx): Replaced role emojis (`🎓`, `🤝`, `🛡️`, `💰`) and warning/lock symbols (`🔒`, `⚠️`) with SVG warning alert icons, checkmark badges, and clean typography.
+    - [`RoleSwitcher.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/RoleSwitcher.tsx) & [`AuthCard.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/auth/AuthCard.tsx): Replaced security alert emojis with clean typography.
+    - [`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx): Replaced `👤`, `📋`, `🍪` with clean SVG clipboard and fund icons.
+    - [`EventOperationsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventOperationsScene.tsx): Replaced `🔢`, `⌨️`, `📷` with SVG camera and clean tab buttons.
+    - [`AnnouncementsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/AnnouncementsScene.tsx): Replaced `🗑️` with SVG trash icon.
+    - [`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx) & [`MerchScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MerchScene.tsx): Replaced `🔒` and `💳` with clean styling.
+    - [`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx): Replaced `💳`, `🚫`, `🎟️`, `🎉`, `⏳`, `📷`, `🗑️`, `✨` with professional SVG ticket, camera, trash, star icons, and clean alert styling.
+  - **Verification:**
+    - Ran full regex scan across `Frontend/src` verifying 0 cartoon emojis remain in the application.
+    - Executed `npm test`: 79/79 invariant and route tests passed with 100% pass rate.
+    - Executed `npm --prefix Frontend run build`: All 20 static pages built cleanly with zero errors.
 
 

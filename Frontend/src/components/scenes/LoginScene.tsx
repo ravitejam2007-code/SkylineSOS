@@ -159,7 +159,10 @@ export default function LoginScene() {
       {/* Error feedback */}
       {errorMsg && (
         <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-[14px] flex items-center gap-2">
-          <span className="font-bold">⚠</span> {errorMsg}
+          <svg className="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>{errorMsg}</span>
         </div>
       )}
 
@@ -185,10 +188,10 @@ export default function LoginScene() {
               </label>
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { key: 'member', label: '🎓 Student Member' },
-                  { key: 'volunteer', label: '🤝 Operations & Lead' },
-                  { key: 'admin', label: '🛡️ Executive Admin' },
-                  { key: 'treasurer', label: '💰 Club Treasurer' },
+                  { key: 'member', label: 'Student Member' },
+                  { key: 'volunteer', label: 'Operations & Lead' },
+                  { key: 'admin', label: 'Executive Admin' },
+                  { key: 'treasurer', label: 'Club Treasurer' },
                 ].map((opt) => (
                   <button
                     key={opt.key}
@@ -238,7 +241,6 @@ export default function LoginScene() {
             {(selectedRole === 'admin' || email.toLowerCase().includes('admin')) && (
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
-                  <span>🔒</span>
                   <span>Admin Secret Security Code Required *</span>
                 </div>
                 <input
@@ -347,7 +349,7 @@ export default function LoginScene() {
 
             {modalError && (
               <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
-                <span>⚠️</span> {modalError}
+                <span>{modalError}</span>
               </div>
             )}
 

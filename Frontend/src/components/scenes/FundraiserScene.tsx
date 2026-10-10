@@ -755,7 +755,7 @@ export default function FundraiserScene() {
                           </td>
                           <td className="py-3.5 px-4 text-[#334155] font-medium whitespace-nowrap">
                             <span className="bg-slate-100 px-2.5 py-1 rounded-full text-slate-700 font-semibold border border-slate-200/80">
-                              👤 {task.assignee_name || 'Unassigned'}
+                              {task.assignee_name || 'Unassigned'}
                             </span>
                           </td>
                           <td className="py-3.5 px-4">
@@ -898,7 +898,11 @@ export default function FundraiserScene() {
                 if (displayedTasks.length === 0) {
                   return (
                     <div className="py-10 text-center space-y-2">
-                      <div className="text-3xl">📋</div>
+                      <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
                       <p className="text-sm font-semibold text-slate-800">
                         {taskViewFilter === 'mine'
                           ? 'No operations tasks assigned to your account yet'
@@ -1081,8 +1085,10 @@ export default function FundraiserScene() {
 
           {/* Campaign Support Information & Online Razorpay Donation */}
           <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-6 shadow-2xs">
-            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
-              🍪
+            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Support the Spring Semester Bake Sale</h3>
