@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { formatPaise, formatDateTime } from '../../lib/formatters';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
+import { openRazorpayCheckout } from '../../lib/razorpay';
 import type {
   MembershipTier,
   MembershipApplication,
@@ -268,12 +269,33 @@ export default function MembershipScene() {
     }
   }, [applyTier, reapplyApp, rejectModalApp]);
 
-  // Handle Application Submit
+  // Handle Application Submit with Razorpay Payment Gateway
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!applyTier) return;
     setIsApplying(true);
     try {
+      const duesPaise = applyTier.fee_paise || 30000;
+      const isNominalTest = duesPaise === 0;
+      const chargeAmountPaise = duesPaise > 0 ? duesPaise : 100; // Razorpay requires >= 100 paise (₹1.00)
+
+      // Step 1: Open Razorpay Payment Gateway Modal (Test Mode)
+      const paymentResult = await openRazorpayCheckout({
+        amountPaise: chargeAmountPaise,
+        name: 'Skyline Student Association',
+        description: `${applyTier.name} Membership — Annual Dues${isNominalTest ? ' (Test Gateway Verification)' : ''}`,
+        prefill: {
+          name: applicantName || session?.fullName || 'Student Applicant',
+          email: applicantEmail || session?.email || 'student@skyline.edu',
+        },
+        notes: {
+          membership_tier_id: applyTier.id,
+          tier_name: applyTier.name,
+          student_id: applicantIdNum || '',
+        },
+      });
+
+      // Step 2: Only upon successful payment settlement, submit application with payment record
       const newApp: RichMembershipApplication = {
         id: `app-req-${Date.now()}`,
         organization_id: 'a0000000-0000-0000-0000-000000000001',
@@ -282,13 +304,16 @@ export default function MembershipScene() {
         applicant_email: applicantEmail || 'student@skyline.edu',
         student_id: applicantIdNum || 'SKY-2026-9901',
         requested_tier_id: applyTier.id,
-        statement,
+        statement: `${statement} [Payment Settled via Razorpay: ${paymentResult.paymentId}]`,
         status: 'submitted',
         revision: 1,
         rejection_reason: null,
         submitted_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
       };
+
+      (newApp as any).payment_id = paymentResult.paymentId;
+      (newApp as any).amount_paid_paise = paymentResult.amountPaise;
 
       const updated = [newApp, ...applications.filter((a) => a.id !== newApp.id)];
       setApplications(updated);
@@ -299,14 +324,16 @@ export default function MembershipScene() {
           email: applicantEmail,
           student_id: applicantIdNum,
           requested_tier_id: applyTier.id,
-          statement,
+          statement: newApp.statement || statement,
         }).catch(() => {});
       } catch {}
 
-      setApplySuccess(`Application for ${applyTier.name} submitted successfully! In review by executive team.`);
+      setApplySuccess(
+        `Payment of ${formatPaise(paymentResult.amountPaise)} successful via Razorpay (ID: ${paymentResult.paymentId})! Application for ${applyTier.name} submitted for executive review.`
+      );
       setApplyTier(null);
     } catch (err: any) {
-      alert(err.message || 'Application submission failed');
+      alert(err.message || 'Payment was not completed. Membership application not submitted.');
     } finally {
       setIsApplying(false);
     }
@@ -722,9 +749,18 @@ export default function MembershipScene() {
                     required
                     value={statement}
                     onChange={(e) => setStatement(e.target.value)}
-                    className="w-full p-4 rounded-2xl border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                    className="w-full p-4 rounded-2xl border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-black"
                     placeholder="Share your background and club interest..."
                   />
+                </div>
+
+                <div className="text-[11px] text-[#64748b] bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+                  <div>
+                    💳 <strong>Razorpay Test Gateway:</strong> API Key <code className="px-1.5 py-0.5 rounded bg-slate-200 text-black font-mono text-[10px]">rzp_test_T8GBnZ6P23gRoO</code>
+                  </div>
+                  <div>
+                    Membership dues ({formatPaise(applyTier.fee_paise)}) settle securely via Razorpay in test mode before application submission.
+                  </div>
                 </div>
 
                 <div className="pt-2 flex gap-3">
@@ -738,9 +774,16 @@ export default function MembershipScene() {
                   <button
                     type="submit"
                     disabled={isApplying}
-                    className="flex-1 py-3 rounded-full bg-[var(--color-primary)] text-white text-[14px] font-bold hover:bg-[var(--color-primary-deep)] cursor-pointer t-button-action flex items-center justify-center gap-2"
+                    className="flex-1 py-3 rounded-full bg-black text-white text-[14px] font-bold hover:bg-slate-900 cursor-pointer t-button-action flex items-center justify-center gap-2"
                   >
-                    {isApplying ? <ButtonSpinner size={16} /> : 'Submit Application'}
+                    {isApplying ? (
+                      <>
+                        <ButtonSpinner size={16} />
+                        <span>Opening Razorpay Gateway...</span>
+                      </>
+                    ) : (
+                      `Pay ${formatPaise(applyTier.fee_paise)} via Razorpay & Apply`
+                    )}
                   </button>
                 </div>
               </form>

@@ -4,6 +4,7 @@ import { formatPaise } from '../../lib/formatters';
 import { generateQrDataUrl } from '../../lib/qr';
 import { ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
+import { openRazorpayCheckout } from '../../lib/razorpay';
 import type {
   Event,
   TicketType,
@@ -458,7 +459,32 @@ export default function EventsScene() {
       const attendeeName = session.fullName || 'Sarah Student';
       const attendeeEmail = session.email || 'student@studentorg.edu';
 
-      // Generate distinct random Seat # and Ticket code
+      // Calculate price: member discounted vs standard rate
+      const pricePaise = isMember
+        ? selectedTicketCategory.memberPricePaise
+        : selectedTicketCategory.nonMemberPricePaise;
+      const isNominalTest = pricePaise === 0;
+      const chargeAmountPaise = pricePaise > 0 ? pricePaise : 100; // Razorpay requires >= 100 paise (₹1.00)
+
+      // Step 1: Open Razorpay Payment Gateway Modal (Test Mode)
+      const paymentResult = await openRazorpayCheckout({
+        amountPaise: chargeAmountPaise,
+        name: 'Skyline Student Association',
+        description: `${selectedEvent.title} — ${selectedTicketCategory.name}${isNominalTest ? ' (Test Gateway Verification)' : ''}`,
+        prefill: {
+          name: attendeeName,
+          email: attendeeEmail,
+        },
+        notes: {
+          event_id: selectedEvent.id,
+          event_title: selectedEvent.title,
+          category_id: selectedTicketCategory.id,
+          category_name: selectedTicketCategory.name,
+          user_email: attendeeEmail,
+        },
+      });
+
+      // Step 2: Only upon successful payment settlement, generate distinct ticket
       const hexSuffix = Math.floor(0x1000 + Math.random() * 0xefff).toString(16).toUpperCase();
       const assignedSeat = `Seat #${hexSuffix}`;
       const ticketCode = `TKT-${selectedEvent.id.toUpperCase()}-${hexSuffix}`;
@@ -479,6 +505,9 @@ export default function EventsScene() {
         created_at: new Date().toISOString(),
       };
 
+      (newPass as any).payment_id = paymentResult.paymentId;
+      (newPass as any).amount_paid_paise = paymentResult.amountPaise;
+
       // Add to user ticket passes array scoped strictly to attendee email
       const updatedPasses = [newPass, ...myTicketPasses.filter((p) => p.id !== newPass.id)];
       setMyTicketPasses(updatedPasses);
@@ -498,10 +527,12 @@ export default function EventsScene() {
         localStorage.setItem('skylinesos:ticket_applications', JSON.stringify(updatedApplications));
       } catch {}
 
-      setPurchaseSuccess(`Pass reserved for ${selectedEvent.title}! Your ticket is ${newPass.code}. Door OTP is securely encoded in QR.`);
+      setPurchaseSuccess(
+        `Payment successful via Razorpay (ID: ${paymentResult.paymentId})! Pass reserved for ${selectedEvent.title}. Your ticket is ${newPass.code}. Door OTP is securely encoded in QR.`
+      );
       setSelectedEvent(null);
     } catch (err: any) {
-      alert(err.message || 'Pass reservation failed');
+      alert(err.message || 'Payment was not completed. Ticket was not generated.');
     } finally {
       setIsBuying(false);
     }
@@ -1161,12 +1192,22 @@ export default function EventsScene() {
                 </div>
               </div>
 
-              <div className="text-[11px] text-[#64748b] bg-slate-50 p-3 rounded-xl border border-slate-200">
-                ℹ <strong>Single Reservation Rule:</strong> Each student account is limited to 1 pass reservation per event. Your digital entrance pass with door OTP will be generated upon confirmation.
+              <div className="text-[11px] text-[#64748b] bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+                <div>
+                  💳 <strong>Razorpay Test Gateway:</strong> API Key <code className="px-1.5 py-0.5 rounded bg-slate-200 text-black font-mono text-[10px]">rzp_test_T8GBnZ6P23gRoO</code>
+                </div>
+                <div>
+                  Pass reservation is finalized only after successful payment settlement. Your digital entrance pass with door OTP will generate immediately upon payment completion.
+                </div>
               </div>
 
               {/* Confirm Checkout Button */}
               {(() => {
+                const isMember = Boolean(session && session.role !== 'guest');
+                const pricePaise = isMember
+                  ? selectedTicketCategory.memberPricePaise
+                  : selectedTicketCategory.nonMemberPricePaise;
+                const displayPrice = pricePaise > 0 ? pricePaise / 100 : 1;
                 const isSelectedCatFull = getCategoryRemaining(selectedEvent.id, selectedTicketCategory) <= 0;
                 const isEventFull = getEventRemainingSeats(selectedEvent) <= 0;
                 const isDisabled = isBuying || isSelectedCatFull || isEventFull;
@@ -1183,11 +1224,14 @@ export default function EventsScene() {
                     }`}
                   >
                     {isBuying ? (
-                      <ButtonSpinner size={16} />
+                      <>
+                        <ButtonSpinner size={16} />
+                        <span>Opening Razorpay Gateway...</span>
+                      </>
                     ) : isEventFull || isSelectedCatFull ? (
                       '🚫 Seats Full · Pass Unavailable'
                     ) : (
-                      'Confirm & Reserve Pass →'
+                      `Pay ₹${displayPrice} with Razorpay & Reserve Ticket →`
                     )}
                   </button>
                 );

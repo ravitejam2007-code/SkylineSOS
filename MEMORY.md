@@ -389,7 +389,28 @@
     - Synced remote commits from `origin/main` (commits `4129e34`, `d4d6b72`, `0cc93c0`) into local working branch `feature/sos-foundation`.
     - Integrated real merchandise transparent-background RGBA PNG and JPG assets into `Frontend/public/merch/` (`cap.png`, `hoodie.png`, `stickers.png`, `tshirt.png`).
     - Merged updated [`MerchScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MerchScene.tsx) featuring dynamic product switcher pills, visual PDP split, responsive image loader, and edge-function inventory stock verification.
-    - Standardized toggle styles in `MerchScene.tsx` to adhere to the strict black theme (`peer-checked:bg-black`).
   - **Verification:**
     - Executed `npm test`: 79/79 invariant tests passed across 24 suites with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
+- **Razorpay Test Payment Gateway Integration across All Commerce Flows:**
+  - **API Key & SDK Setup:**
+    - Integrated user's Razorpay Test API Key: `rzp_test_T8GBnZ6P23gRoO` into `Frontend/.env`, `Frontend/.env.example`, and as client default in [`Frontend/src/lib/razorpay.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/razorpay.ts).
+    - Preloaded `<script is:inline src="https://checkout.razorpay.com/v1/checkout.js"></script>` in `<head>` via [`BaseLayout.astro`](file:///E:/projects/SkylineSOS/Frontend/src/layouts/BaseLayout.astro).
+    - Built [`razorpay.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/razorpay.ts) client utility providing dynamic SDK loader and `openRazorpayCheckout` with strict black modal theme (`#000000`).
+  - **Events Scene Pass Reservation Gate ([`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Clicking "Pay & Reserve Ticket" now triggers Razorpay standard checkout popup.
+    - The digital ticket pass and door OTP QR code are ONLY generated after Razorpay returns a successful `payment_id` (`response.razorpay_payment_id`).
+    - If user closes, cancels, or encounters a failed transaction, ticket creation is aborted and reserved seats are preserved.
+  - **Membership Dues Gate ([`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx)):**
+    - Submitting a membership application triggers the Razorpay payment modal with tier dues (e.g. ₹300, ₹500, or nominal test amount).
+    - Application is recorded with `payment_id` and submitted for executive review only upon successful payment settlement.
+    - Reapplying also validates dues through Razorpay.
+  - **Merchandise Store Checkout Gate ([`MerchScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MerchScene.tsx)):**
+    - "Order Now" triggers Razorpay checkout with active member/non-member variant prices.
+    - Fulfills order and decrements live inventory only upon confirmed payment.
+  - **Fundraiser & Bake Sale Online Contributions ([`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx)):**
+    - Added online donation widget with presets (₹50, ₹100, ₹250, ₹500) and custom input.
+    - Direct Razorpay contribution posts audited entries to club ledger.
+  - **Verification:**
+    - Executed `npm test`: 79/79 invariant tests passed across 24 suites with 100% pass rate.
+    - Executed `npm --prefix Frontend run build`: 20/20 static routes compiled cleanly with zero errors.

@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { formatPaise } from '../../lib/formatters';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
+import { openRazorpayCheckout } from '../../lib/razorpay';
 import type { Fundraiser, FundraiserTask, TaskStatus, TaskPriority } from '@campusone/contracts';
 
 export interface OperationsTaskMessage {
@@ -130,6 +131,10 @@ export default function FundraiserScene() {
   const [cashDesc, setCashDesc] = useState('Quad table afternoon cookie sales');
   const [cashSuccess, setCashSuccess] = useState<string | null>(null);
 
+  // Online contribution state (Razorpay test mode)
+  const [onlineAmount, setOnlineAmount] = useState('250');
+  const [isPostingOnline, setIsPostingOnline] = useState(false);
+
   // New task modal state (Select registered personnel - User Request)
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -221,6 +226,45 @@ export default function FundraiserScene() {
       alert(err.message);
     } finally {
       setIsPostingCash(false);
+    }
+  };
+
+  // Handle Online Contribution via Razorpay Gateway (Test Mode)
+  const handleOnlineDonation = async (amountInRupees: number) => {
+    if (!amountInRupees || amountInRupees <= 0 || !fundraiser) return;
+    setIsPostingOnline(true);
+    try {
+      const paise = Math.round(amountInRupees * 100);
+      const paymentResult = await openRazorpayCheckout({
+        amountPaise: paise,
+        name: 'Skyline Student Association',
+        description: `Bake Sale Fundraiser Donation — ₹${amountInRupees}`,
+        prefill: {
+          name: session?.fullName || 'Student Contributor',
+          email: session?.email || 'student@skyline.edu',
+        },
+        notes: {
+          fundraiser_id: fundraiser.id,
+          purpose: 'Bake Sale Fundraiser Donation',
+        },
+      });
+
+      // Record contribution with Razorpay payment ID
+      const res = await api.recordCashContribution({
+        p_fundraiser_id: fundraiser.id,
+        p_amount_paise: paise,
+        p_method: 'online' as any,
+        p_notes: `Online donation settled via Razorpay (${paymentResult.paymentId})`,
+      });
+
+      setCashSuccess(
+        `Thank you! Contribution of ₹${amountInRupees} settled via Razorpay (ID: ${paymentResult.paymentId})! Ledger entry posted.`
+      );
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Payment was not completed. Contribution was not recorded.');
+    } finally {
+      setIsPostingOnline(false);
     }
   };
 
@@ -596,7 +640,7 @@ export default function FundraiserScene() {
                       value={cashAmount}
                       onChange={(e) => setCashAmount(e.target.value)}
                       placeholder="e.g. 1200"
-                      className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                      className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-black"
                     />
                   </div>
 
@@ -1035,19 +1079,81 @@ export default function FundraiserScene() {
             </div>
           )}
 
-          {/* Campaign Support Information */}
-          <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-4 shadow-2xs">
+          {/* Campaign Support Information & Online Razorpay Donation */}
+          <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-6 shadow-2xs">
             <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
               🍪
             </div>
-            <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Support the Spring Semester Bake Sale</h3>
-            <p className="text-sm text-[var(--color-steel)] max-w-lg mx-auto leading-relaxed">
-              Student contributions directly fund engineering supplies, club workshops, and subsidized gala tickets. Visit our quad table during lunch hours to grab freshly baked snacks or join our volunteer committee!
-            </p>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Support the Spring Semester Bake Sale</h3>
+              <p className="text-sm text-[var(--color-steel)] max-w-lg mx-auto leading-relaxed">
+                Student contributions directly fund engineering supplies, club workshops, and subsidized gala tickets.
+              </p>
+            </div>
+
+            {/* Online Donation via Razorpay (Test Mode) */}
+            <div className="max-w-md mx-auto p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 text-left">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-black">
+                  Contribute Online (Test Gateway)
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 text-black font-semibold">
+                  rzp_test_T8GBnZ6P23gRoO
+                </span>
+              </div>
+
+              {/* Amount Presets */}
+              <div className="grid grid-cols-4 gap-2">
+                {['50', '100', '250', '500'].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setOnlineAmount(preset)}
+                    className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      onlineAmount === preset
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-black'
+                    }`}
+                  >
+                    ₹{preset}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={onlineAmount}
+                    onChange={(e) => setOnlineAmount(e.target.value)}
+                    placeholder="Custom amount"
+                    className="w-full pl-8 pr-4 py-2.5 rounded-full border border-slate-200 bg-white text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={isPostingOnline || !onlineAmount || Number(onlineAmount) <= 0}
+                  onClick={() => handleOnlineDonation(Number(onlineAmount))}
+                  className="px-6 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {isPostingOnline ? (
+                    <>
+                      <ButtonSpinner size={14} />
+                      <span>Opening...</span>
+                    </>
+                  ) : (
+                    `Donate ₹${onlineAmount || 0} via Razorpay`
+                  )}
+                </button>
+              </div>
+            </div>
+
             <div className="pt-2">
               <a
                 href="/memberships"
-                className="inline-block px-6 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+                className="inline-block px-6 py-2.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
               >
                 Explore Membership Benefits →
               </a>

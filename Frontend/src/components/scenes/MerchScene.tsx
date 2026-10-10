@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { formatPaise } from '../../lib/formatters';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
+import { getActiveSession } from '../../lib/auth';
+import { openRazorpayCheckout } from '../../lib/razorpay';
 import type { Product, ProductVariant } from '@campusone/contracts';
 
 export default function MerchScene() {
@@ -44,23 +46,42 @@ export default function MerchScene() {
     }
   };
 
-  // Handle Merch Checkout
+  // Handle Merch Checkout with Razorpay Payment Gateway
   const handleBuy = async () => {
     if (!selectedVariant) return;
     setIsOrdering(true);
     try {
       const primaryProduct = products[selectedProductIndex] || products[0];
+      const session = getActiveSession();
+
+      // Step 1: Open Razorpay Payment Gateway Modal (Test Mode)
+      const paymentResult = await openRazorpayCheckout({
+        amountPaise: discountedPricePaise,
+        name: 'Skyline Merch Store',
+        description: `${primaryProduct.name} (${selectedVariant.size || selectedVariant.label})`,
+        prefill: {
+          name: session?.fullName || 'Student Shopper',
+          email: session?.email || 'student@skyline.edu',
+        },
+        notes: {
+          product_id: primaryProduct.id,
+          variant_id: selectedVariant.id,
+          sku: selectedVariant.sku,
+        },
+      });
+
+      // Step 2: Only upon successful payment settlement, fulfill order and decrement stock
       const res = await api.orderMerchVariant({
         variant_id: selectedVariant.id,
         quantity: 1,
         is_member: isMember,
       });
       setOrderSuccess(
-        `Order confirmed for ${primaryProduct.name} (${selectedVariant.size || selectedVariant.label})! Decremented stock in live database.`
+        `Payment successful via Razorpay (ID: ${paymentResult.paymentId})! Order confirmed for ${primaryProduct.name} (${selectedVariant.size || selectedVariant.label}). Stock decremented.`
       );
       await loadData();
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || 'Payment was not completed. Order was not placed.');
     } finally {
       setIsOrdering(false);
     }
@@ -243,9 +264,14 @@ export default function MerchScene() {
               </div>
             </div>
 
-            {/* Live Stock Note */}
-            <div className="p-3 rounded-xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] text-[12px] text-[var(--color-steel)]">
-              <strong className="text-[var(--color-ink)]">Real-Time Stock:</strong> Inventory is verified through the Edge Function API to prevent overselling.
+            {/* Live Stock & Payment Note */}
+            <div className="p-3 rounded-xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] text-[12px] text-[var(--color-steel)] space-y-1">
+              <div>
+                <strong className="text-[var(--color-ink)]">Real-Time Stock:</strong> Inventory is verified to prevent overselling.
+              </div>
+              <div>
+                💳 <strong>Razorpay Test Mode:</strong> Key <code className="px-1.5 py-0.5 rounded bg-slate-200 text-black font-mono text-[10px]">rzp_test_T8GBnZ6P23gRoO</code>
+              </div>
             </div>
 
             {/* Buy Action */}
@@ -254,12 +280,15 @@ export default function MerchScene() {
                 type="button"
                 disabled={!selectedVariant || (selectedVariant.stock_on_hand ?? (selectedVariant as any).available ?? 0) === 0 || isOrdering}
                 onClick={handleBuy}
-                className="w-full py-4 px-6 rounded-full font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-deep)] transition-all text-[16px] shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed t-button-action flex items-center justify-center gap-2"
+                className="w-full py-4 px-6 rounded-full font-bold text-white bg-black hover:bg-slate-900 transition-all text-[16px] shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed t-button-action flex items-center justify-center gap-2"
               >
                 {isOrdering ? (
-                  <ButtonSpinner size={18} />
+                  <>
+                    <ButtonSpinner size={18} />
+                    <span>Opening Razorpay Gateway...</span>
+                  </>
                 ) : (
-                  `Order Now · ${formatPaise(discountedPricePaise)}`
+                  `Pay ${formatPaise(discountedPricePaise)} via Razorpay`
                 )}
               </button>
             </div>
