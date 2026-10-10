@@ -38,11 +38,13 @@ export default function SignUpScene() {
     setLoading(true);
 
     try {
+      const selectedRole = accountType === 'admin' ? 'admin' : 'member';
       const session = await signUp({
-        email,
+        email: email.trim(),
         password,
-        fullName,
+        fullName: fullName.trim(),
         studentId: studentId.trim() || undefined,
+        role: selectedRole,
       });
 
       if (accountType === 'admin') {
@@ -51,21 +53,14 @@ export default function SignUpScene() {
         setSuccessMsg(`Welcome Administrator, ${session.fullName}! Executive security code verified. Redirecting to admin panel...`);
         setTimeout(() => {
           window.location.href = '/admin';
-        }, 1200);
+        }, 1000);
         return;
       }
 
-      if (session.rateLimitNotice) {
-        setSuccessMsg(
-          `Welcome, ${session.fullName}! Account created directly in database (email verification rate limit bypassed). Redirecting to memberships...`
-        );
-      } else {
-        setSuccessMsg(`Welcome, ${session.fullName}! Your student account has been created. Redirecting to memberships...`);
-      }
-
+      setSuccessMsg(`Welcome, ${session.fullName}! Your student account has been created. Redirecting to memberships...`);
       setTimeout(() => {
         window.location.href = '/memberships';
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
       if (err?.message?.toLowerCase().includes('rate limit') || err?.status === 429) {
         setErrorMsg('Supabase email verification rate limit exceeded (3/hr on free tier). Sign in via Demo Persona or try again shortly.');

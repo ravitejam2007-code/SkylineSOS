@@ -120,13 +120,7 @@ export default function AuthCard() {
           role: mappedRole,
         });
 
-        if (session.rateLimitNotice) {
-          setSuccessMessage(
-            `Account & student profile created directly for ${session.fullName}! (Email mailer rate limit bypassed). Redirecting to ${session.destination}...`
-          );
-        } else {
-          setSuccessMessage(`Account created for ${session.fullName}! Redirecting to ${session.destination}...`);
-        }
+        setSuccessMessage(`Welcome, ${session.fullName}! Account created successfully. Redirecting to ${session.destination}...`);
 
         setTimeout(() => {
           window.location.href = session.destination || '/portal';

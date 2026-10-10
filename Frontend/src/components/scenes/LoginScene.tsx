@@ -60,8 +60,8 @@ export default function LoginScene() {
       localStorage.setItem('campusone_demo_role', session.roles[0] || 'member');
       window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: session.roles[0] || 'member' }));
       setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
+        window.location.href = session.destination || '/';
+      }, 900);
     } catch (err: any) {
       if (err?.message?.toLowerCase().includes('rate limit') || err?.status === 429) {
         setErrorMsg('Email verification rate limited (3/hr on free tier). Try signing in with 1-Click Demo accounts or retry in a few moments.');
