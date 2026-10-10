@@ -58,7 +58,7 @@ const navItems = [
 
     <!-- Right Controls: Search & Interactive User Navigation Island -->
     <div class="flex items-center gap-3 shrink-0">
-      <div class="hidden xl:block">
+      <div class="hidden sm:block">
         <SearchPill id="search-pill-desktop" />
       </div>
 
@@ -83,7 +83,7 @@ const navItems = [
   <!-- Mobile Drawer with Glassmorphism -->
   <div id="mobile-menu" class="hidden md:hidden border-t border-[var(--color-hairline-soft)] glass-dropdown px-4 pt-3 pb-6 space-y-3">
     <div class="mb-2">
-      <SearchPill id="search-pill-mobile" class="max-w-full w-full" />
+      <SearchPill id="search-pill-mobile" isExpandable={false} class="max-w-full w-full" />
     </div>
     <div class="flex flex-col gap-1" id="mobile-nav-links">
       {

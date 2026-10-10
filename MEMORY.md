@@ -298,6 +298,33 @@
   - **Verification:**
     - Ran `npm test` at workspace root: 79 tests passed across 24 suites with 100% pass rate.
     - Ran `npm --prefix Frontend run build`: 20 static pages compiled cleanly with zero errors.
+- **User Account Privacy Isolation, Ticket Deletion, Fresh Account Handling & Animated Search Bar:**
+  - **Account-Scoped Event Ticket Isolation ([`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Enforced strict privacy boundary: Tickets are partitioned by the authenticated user's email (`skylinesos:tickets_<email>`).
+    - Fixed data leakage where tickets generated on one account were previously visible across all accounts.
+    - When a user logs out, all personal ticket data is hidden immediately.
+    - When a fresh user registers or logs in, their wallet starts completely empty (`🎟️ No event passes reserved yet`) with zero pre-existing tickets.
+    - Reserving passes stores tickets strictly to the attendee's personal storage while synchronizing with the gate approvals console.
+  - **Ticket Cancellation & Deletion ([`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Added `🗑️ Cancel & Delete Ticket` action to each ticket card in "My Event Ticket & Door Passes".
+    - Clicking the button confirms with the attendee, removes the ticket from their account wallet, revokes the gate registration, and frees up their event reservation.
+  - **Fresh Account Membership Handling ([`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx), [`StudentPortalScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx)):**
+    - Fixed premature "Active Member" badge on unjoined accounts.
+    - Newly registered students now accurately display `NEW ACCOUNT · NOT JOINED` / `Not a Member · Not Active` until they submit an application and get approved by an administrator.
+    - `MY MEMBERSHIP STATUS` card dynamically adapts:
+      - Unauthenticated: Prompts user to sign in with direct link.
+      - Fresh Account: Prompts student to explore the 3 plans and join Skyline Student Association.
+      - Submitted: Displays `APPLICATION IN REVIEW ⏳` amber badge.
+      - Approved: Displays `DONE (APPROVED) ✓` emerald badge and unlocks full chapter perks.
+    - Student Portal locks and hides all personal details when unauthenticated, and gates the dynamic 6-digit door code behind verified active membership.
+  - **Animated Expandable Search Bar ([`SearchPill.astro`](file:///E:/projects/SkylineSOS/Frontend/src/components/ui/SearchPill.astro), [`Navbar.astro`](file:///E:/projects/SkylineSOS/Frontend/src/components/layout/Navbar.astro)):**
+    - Redesigned search bar to display only the compact "q"-type magnifying glass symbol (`w-[38px] h-[38px] rounded-full`) when idle.
+    - Smoothly expands in width on cursor hover (`hover:w-[220px] sm:hover:w-[260px]`) and focus (`focus-within:w-[220px] sm:focus-within:w-[260px]`) with CSS transition animations (`transition-all duration-300 ease-in-out`).
+    - Reveals the text input and placeholder smoothly while keeping the navbar clean and uncluttered.
+  - **Verification:**
+    - Ran `npm test` at workspace root: 79 tests passed across 24 suites with 100% pass rate.
+    - Ran `npm --prefix Frontend run build`: 20 static pages compiled cleanly via `@astrojs/vercel` with zero errors.
+
 
 
 

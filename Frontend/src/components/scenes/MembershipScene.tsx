@@ -382,105 +382,174 @@ export default function MembershipScene() {
       )}
 
       {/* ─── MY MEMBERSHIP STATUS CARD (MATCHING SCREENSHOT 004842) ─── */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <h3 className="text-xs sm:text-sm font-bold text-[#0f172a] tracking-wider uppercase">
-            MY MEMBERSHIP STATUS
-          </h3>
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              session
-                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                : 'bg-slate-100 text-slate-600 border border-slate-200/60'
-            }`}
-          >
-            {session ? 'Active Member' : 'Unauthenticated'}
-          </span>
-        </div>
+      {(() => {
+        const userApp = session
+          ? applications.find(
+              (a) =>
+                (a.applicant_email && session.email && a.applicant_email.toLowerCase() === session.email.toLowerCase()) ||
+                (a.applicant_id && session.userId && a.applicant_id === session.userId)
+            )
+          : null;
 
-        {!session ? (
-          <div className="pt-4 space-y-3">
-            <p className="text-xs sm:text-sm text-[#64748b]">
-              Please sign in to check your active membership status or submit an application.
-            </p>
-            <div>
-              <a
-                href="/login"
-                className="inline-block px-5 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+        const isStaff = Boolean(session && ['admin', 'treasurer', 'volunteer', 'door_staff'].includes(session.role));
+        const isDemoMember = Boolean(session?.email?.toLowerCase() === 'member@skylinesos.demo');
+        const isApprovedMember = Boolean(userApp?.status === 'approved' || isStaff || isDemoMember);
+        const isPendingMember = Boolean(userApp?.status === 'submitted');
+        const isRejectedMember = Boolean(userApp?.status === 'rejected');
+
+        return (
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-xs sm:text-sm font-bold text-[#0f172a] tracking-wider uppercase">
+                MY MEMBERSHIP STATUS
+              </h3>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  !session
+                    ? 'bg-slate-100 text-slate-600 border border-slate-200/60'
+                    : isApprovedMember
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : isPendingMember
+                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                    : isRejectedMember
+                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
               >
-                Sign In to View
-              </a>
+                {!session
+                  ? 'Unauthenticated'
+                  : isApprovedMember
+                  ? isStaff
+                    ? session.role === 'admin'
+                      ? 'Executive Admin'
+                      : 'Staff Officer'
+                    : 'Active Member'
+                  : isPendingMember
+                  ? 'Pending Review ⏳'
+                  : isRejectedMember
+                  ? 'Application Rejected ✕'
+                  : 'Not a Member · Not Active'}
+              </span>
             </div>
-          </div>
-        ) : (
-          <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-bold text-[#0f172a]">
-                  {session.fullName} ({session.email})
+
+            {!session ? (
+              <div className="pt-4 space-y-3">
+                <p className="text-xs sm:text-sm text-[#64748b]">
+                  Please sign in to check your active membership status or submit an application.
                 </p>
-                {applications.find(
-                  (a) =>
-                    a.applicant_email?.toLowerCase() === session?.email?.toLowerCase() ||
-                    a.applicant_id === session?.userId
-                ) && (
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${
-                      applications.find(
-                        (a) =>
-                          a.applicant_email?.toLowerCase() === session?.email?.toLowerCase() ||
-                          a.applicant_id === session?.userId
-                      )?.status === 'approved'
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                        : applications.find(
-                            (a) =>
-                              a.applicant_email?.toLowerCase() === session?.email?.toLowerCase() ||
-                              a.applicant_id === session?.userId
-                          )?.status === 'rejected'
-                        ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                        : 'bg-amber-100 text-amber-800 border border-amber-200'
-                    }`}
+                <div>
+                  <a
+                    href="/login"
+                    className="inline-block px-5 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
                   >
-                    Application Status:{' '}
-                    {applications.find(
-                      (a) =>
-                        a.applicant_email?.toLowerCase() === session?.email?.toLowerCase() ||
-                        a.applicant_id === session?.userId
-                    )?.status === 'approved'
-                      ? 'DONE (APPROVED) ✓'
-                      : applications.find(
-                          (a) =>
-                            a.applicant_email?.toLowerCase() === session?.email?.toLowerCase() ||
-                            a.applicant_id === session?.userId
-                        )?.status === 'rejected'
-                      ? 'REJECTED ✕'
-                      : 'IN REVIEW ⏳'}
-                  </span>
-                )}
+                    Sign In to View
+                  </a>
+                </div>
               </div>
-              <p className="text-xs text-[#64748b]">
-                Student ID:{' '}
-                <span className="font-mono font-semibold text-[#0f172a]">
-                  {session.studentId || 'SKY-2026-1042'}
-                </span>{' '}
-                · Role: <span className="capitalize">{session.role || 'Member'}</span>
-              </p>
-              <p className="text-xs text-emerald-700 font-semibold pt-0.5">
-                ✓ Verified Chapter Member · Member ticket discounts & club perks active
-              </p>
-            </div>
-            <a
-              href="/portal"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-800 bg-white hover:bg-slate-50 transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
-            >
-              View Digital Pass in Portal →
-            </a>
+            ) : isApprovedMember ? (
+              <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-[#0f172a]">
+                      {session.fullName} ({session.email})
+                    </p>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      DONE (APPROVED) ✓
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#64748b]">
+                    Student ID:{' '}
+                    <span className="font-mono font-semibold text-[#0f172a]">
+                      {session.studentId || 'SKY-2026-1042'}
+                    </span>{' '}
+                    · Role: <span className="capitalize">{session.role || 'Member'}</span>
+                  </p>
+                  <p className="text-xs text-emerald-700 font-semibold pt-0.5">
+                    ✓ Verified Chapter Member · Member ticket discounts & club perks active
+                  </p>
+                </div>
+                <a
+                  href="/portal"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-800 bg-white hover:bg-slate-50 transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
+                >
+                  View Digital Pass in Portal →
+                </a>
+              </div>
+            ) : isPendingMember ? (
+              <div className="pt-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-[#0f172a]">
+                    {session.fullName} ({session.email})
+                  </p>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-amber-100 text-amber-800 border border-amber-200">
+                    APPLICATION IN REVIEW ⏳
+                  </span>
+                </div>
+                <p className="text-xs text-[#64748b]">
+                  Your application for membership tier is currently in review by the executive administration.
+                </p>
+                <p className="text-xs text-amber-700 font-semibold">
+                  Once an administrator approves your application in the Review Board, your membership perks and digital pass will be unlocked.
+                </p>
+              </div>
+            ) : isRejectedMember ? (
+              <div className="pt-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-[#0f172a]">
+                    {session.fullName} ({session.email})
+                  </p>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-rose-100 text-rose-800 border border-rose-200">
+                    REJECTED ✕
+                  </span>
+                </div>
+                <p className="text-xs text-rose-700 font-medium">
+                  Reason: {userApp?.rejection_reason || 'Incomplete student verification.'}
+                </p>
+                <div>
+                  <a
+                    href="#plans-section"
+                    className="inline-block px-4 py-1.5 rounded-full bg-slate-800 text-white text-xs font-bold hover:bg-black transition-colors"
+                  >
+                    Select Plan to Re-Apply ↓
+                  </a>
+                </div>
+              </div>
+            ) : (
+              /* Fresh Registered Account - Not a member yet */
+              <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-[#0f172a]">
+                      {session.fullName} ({session.email})
+                    </p>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">
+                      NEW ACCOUNT · NOT JOINED
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#64748b]">
+                    Student ID:{' '}
+                    <span className="font-mono font-semibold text-[#0f172a]">
+                      {session.studentId || 'SKY-2026-NEW'}
+                    </span>
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    You do not have an active membership yet. Select one of the 3 plans below to apply and join the Skyline Student Association.
+                  </p>
+                </div>
+                <a
+                  href="#plans-section"
+                  className="inline-block px-5 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+                >
+                  Choose a Plan Below ↓
+                </a>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* ─── 1. TIER SELECTION & 3 ROW-WISE PLANS (MATCHING SCREENSHOT 004724) ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+      <div id="plans-section" className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         {tiers.map((t, idx) => {
           const isRecommended = Boolean(t.isRecommended || idx === 1);
           return (

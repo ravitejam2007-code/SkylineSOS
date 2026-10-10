@@ -128,25 +128,86 @@ export default function StudentPortalScene() {
     );
   }
 
+  // Privacy Protection: Hide all personal data when user is logged out (User request)
+  if (!session) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6">
+        <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-50 border border-blue-200 flex items-center justify-center text-3xl">
+          🔒
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a]">
+            Personal Student Portal Locked
+          </h2>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Please sign in to access your personal digital membership pass, rotating door verification code, and organization records.
+          </p>
+        </div>
+        <div>
+          <a
+            href="/login"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white font-bold text-sm shadow-sm transition-all"
+          >
+            <span>Sign In to Student Portal</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   const membership = pass?.payload.membership;
   const upcomingEvents = pass?.payload.upcoming_events || [];
 
-  // Authoritatively use the authenticated user's real credentials, falling back to pass payload
-  const displayName = session?.fullName || pass?.payload.student?.full_name || 'Rahul Sharma';
-  const displayEmail = session?.email || pass?.payload.student?.email || 'member@skyline.edu';
-  const displayStudentId = session?.studentId || pass?.payload.student?.student_id || 'SKY-2026-1042';
+  // Scoped strictly to authenticated user session
+  const displayName = session.fullName || 'Student Member';
+  const displayEmail = session.email;
+  const displayStudentId = session.studentId || `SKY-2026-${session.userId?.slice(0, 4) || 'NEW'}`;
+
+  // Check if user has an approved membership or is staff
+  const isStaff = Boolean(session.role && ['admin', 'treasurer', 'volunteer', 'door_staff'].includes(session.role));
+  const isDemoMember = Boolean(session.email?.toLowerCase() === 'member@skylinesos.demo');
+  let isApprovedMember = isStaff || isDemoMember;
+  if (!isApprovedMember && typeof window !== 'undefined') {
+    try {
+      const rawApps = localStorage.getItem('skylinesos:membership_applications');
+      if (rawApps) {
+        const apps = JSON.parse(rawApps);
+        const userApp = apps.find(
+          (a: any) =>
+            (a.applicant_email && session.email && a.applicant_email.toLowerCase() === session.email.toLowerCase()) ||
+            (a.applicant_id && session.userId && a.applicant_id === session.userId)
+        );
+        if (userApp?.status === 'approved') {
+          isApprovedMember = true;
+        }
+      }
+    } catch {}
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
       {/* Top Banner / Welcome Card */}
       <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Active Member · Skyline Student Association
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-bold ${
+              isApprovedMember
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                : 'bg-amber-50 border border-amber-200 text-amber-800'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isApprovedMember ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            />
+            {isApprovedMember
+              ? 'Active Member · Skyline Student Association'
+              : 'Membership Inactive · Not Enrolled'}
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[var(--color-ink-deep)]">
-            Welcome back, {displayName.split(' ')[0]}!
+            Welcome, {displayName.split(' ')[0]}!
           </h1>
           <p className="text-[14px] text-[var(--color-steel)]">
             Student ID: <span className="font-mono font-bold text-[var(--color-ink)]">{displayStudentId}</span> · {displayEmail}
@@ -154,20 +215,31 @@ export default function StudentPortalScene() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleRenew}
-            disabled={isRenewing}
-            className="px-6 py-3 rounded-full bg-[var(--color-ink-deep)] text-white text-[13px] font-bold hover:bg-black transition-all cursor-pointer t-button-action flex items-center gap-2 disabled:opacity-50"
-          >
-            {isRenewing ? <ButtonSpinner size={14} /> : 'Renew for 2027'}
-          </button>
-          <a
-            href="/events"
-            className="px-6 py-3 rounded-full bg-[var(--color-primary)] text-white text-[13px] font-bold hover:bg-[var(--color-primary-deep)] transition-all cursor-pointer t-button-action"
-          >
-            Buy Gala Tickets (15% Off)
-          </a>
+          {isApprovedMember ? (
+            <>
+              <button
+                type="button"
+                onClick={handleRenew}
+                disabled={isRenewing}
+                className="px-6 py-3 rounded-full bg-[var(--color-ink-deep)] text-white text-[13px] font-bold hover:bg-black transition-all cursor-pointer t-button-action flex items-center gap-2 disabled:opacity-50"
+              >
+                {isRenewing ? <ButtonSpinner size={14} /> : 'Renew for 2027'}
+              </button>
+              <a
+                href="/events"
+                className="px-6 py-3 rounded-full bg-[var(--color-primary)] text-white text-[13px] font-bold hover:bg-[var(--color-primary-deep)] transition-all cursor-pointer t-button-action"
+              >
+                Reserve Event Passes
+              </a>
+            </>
+          ) : (
+            <a
+              href="/memberships"
+              className="px-6 py-3 rounded-full bg-[var(--color-primary)] text-white text-[13px] font-bold hover:bg-[var(--color-primary-deep)] transition-all cursor-pointer t-button-action"
+            >
+              Join Membership Tier →
+            </a>
+          )}
         </div>
       </div>
 
@@ -191,68 +263,97 @@ export default function StudentPortalScene() {
               High-speed rotating 6-digit pass consolidating annual membership, gala admissions, and campus privileges.
             </p>
           </div>
-          <span className="self-start sm:self-center px-3.5 py-1.5 rounded-full text-[12px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            {membership?.tier_name || 'Active Member'}
+          <span
+            className={`self-start sm:self-center px-3.5 py-1.5 rounded-full text-[12px] font-bold ${
+              isApprovedMember
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-slate-100 text-slate-600 border border-slate-200'
+            }`}
+          >
+            {isApprovedMember ? membership?.tier_name || 'Active Member' : 'Membership Not Joined'}
           </span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
           {/* 6-Digit Rotating Identity Pass Column */}
           <div className="flex flex-col items-center justify-between p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-zinc-950 text-white border border-slate-800 shadow-xl space-y-5 text-center">
-            <div className="w-full flex items-center justify-between pb-3 border-b border-slate-800/80">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Live Identity Pass
-              </span>
-              <span className="text-[11px] font-mono text-slate-400">
-                TTL: <span className="font-bold text-white">{countdown}s</span>
-              </span>
-            </div>
+            {isApprovedMember ? (
+              <>
+                <div className="w-full flex items-center justify-between pb-3 border-b border-slate-800/80">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Live Identity Pass
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    TTL: <span className="font-bold text-white">{countdown}s</span>
+                  </span>
+                </div>
 
-            <div className="space-y-2 py-2">
-              <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                6-Digit Door Verification Code
-              </div>
-              <div className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-emerald-400 py-2 select-all drop-shadow-[0_0_16px_rgba(52,211,153,0.35)]">
-                {sixDigitCode.slice(0, 3)} {sixDigitCode.slice(3, 6)}
-              </div>
-              <p className="text-[11px] text-slate-400 max-w-[210px] mx-auto">
-                Read or present this 6-digit code at event gates & club desks.
-              </p>
-            </div>
+                <div className="space-y-2 py-2">
+                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                    6-Digit Door Verification Code
+                  </div>
+                  <div className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-emerald-400 py-2 select-all drop-shadow-[0_0_16px_rgba(52,211,153,0.35)]">
+                    {sixDigitCode.slice(0, 3)} {sixDigitCode.slice(3, 6)}
+                  </div>
+                  <p className="text-[11px] text-slate-400 max-w-[210px] mx-auto">
+                    Read or present this 6-digit code at event gates & club desks.
+                  </p>
+                </div>
 
-            {/* Countdown Progress Bar */}
-            <div className="w-full space-y-1.5">
-              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-linear"
-                  style={{ width: `${(countdown / 60) * 100}%` }}
-                />
-              </div>
-              <div className="flex justify-between items-center text-[10px] font-mono text-slate-500">
-                <span>Auto-rotates</span>
-                <span>{countdown}s remaining</span>
-              </div>
-            </div>
+                {/* Countdown Progress Bar */}
+                <div className="w-full space-y-1.5">
+                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-linear"
+                      style={{ width: `${(countdown / 60) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-mono text-slate-500">
+                    <span>Auto-rotates</span>
+                    <span>{countdown}s remaining</span>
+                  </div>
+                </div>
 
-            {/* Action buttons */}
-            <div className="w-full flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={handleCopyCode}
-                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                {copied ? '✓ Copied' : '📋 Copy Code'}
-              </button>
-              <button
-                type="button"
-                onClick={handleRefreshCode}
-                disabled={isRefreshingCode}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                {isRefreshingCode ? <ButtonSpinner size={12} /> : '↻ Refresh Code'}
-              </button>
-            </div>
+                {/* Action buttons */}
+                <div className="w-full flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {copied ? '✓ Copied' : '📋 Copy Code'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRefreshCode}
+                    disabled={isRefreshingCode}
+                    className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50"
+                    title="Refresh 6-digit code"
+                  >
+                    {isRefreshingCode ? '...' : '↻'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="py-6 space-y-4 text-center">
+                <div className="w-12 h-12 mx-auto rounded-full bg-slate-800 flex items-center justify-center text-2xl text-slate-400">
+                  🔒
+                </div>
+                <div className="space-y-1">
+                  <div className="text-sm font-bold text-white">Digital Pass Inactive</div>
+                  <p className="text-xs text-slate-400 max-w-[210px] mx-auto">
+                    Dynamic 6-digit door verification code is activated once you join an annual chapter membership.
+                  </p>
+                </div>
+                <a
+                  href="/memberships"
+                  className="inline-block px-4 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold transition-colors shadow-xs"
+                >
+                  Join Membership →
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Pass Details & Member Benefits */}

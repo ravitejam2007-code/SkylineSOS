@@ -160,18 +160,24 @@ export default function EventsScene() {
   ]);
   const [isPostingEvent, setIsPostingEvent] = useState(false);
 
-  // User Ticket Passes & QR (Screenshot 011914 - Support Multi-event individual tickets)
+  // User Ticket Passes & QR (Scoped strictly to authenticated user email for privacy)
+  const getUserTicketsKey = (email?: string | null): string | null => {
+    if (!email) return null;
+    return `skylinesos:tickets_${email.trim().toLowerCase()}`;
+  };
+
   const [myTicketPasses, setMyTicketPasses] = useState<EventTicketPass[]>(() => {
     if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('skylinesos:my_ticket_passes');
-        if (stored) return JSON.parse(stored);
-        // Fallback backward compatibility
-        const single = localStorage.getItem('skylinesos:my_ticket_pass');
-        if (single) return [JSON.parse(single)];
-      } catch {}
+      const active = getActiveSession();
+      if (active?.email) {
+        try {
+          const userKey = `skylinesos:tickets_${active.email.trim().toLowerCase()}`;
+          const stored = localStorage.getItem(userKey);
+          if (stored) return JSON.parse(stored);
+        } catch {}
+      }
     }
-    return []; // Empty by default! Stops automatic ticket generation until student clicks Reserve Passes.
+    return []; // Empty by default! Fresh account has zero tickets.
   });
   const [qrUrls, setQrUrls] = useState<Record<string, string>>({});
   const [revealedOtps, setRevealedOtps] = useState<Record<string, boolean>>({});
@@ -188,6 +194,24 @@ export default function EventsScene() {
   });
   const [otpInputs, setOtpInputs] = useState<Record<string, string>>({});
   const [approvalFeedback, setApprovalFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Helper to load tickets strictly for the authenticated session
+  const loadTicketsForSession = (currSession: UserSession | null) => {
+    if (!currSession?.email) {
+      setMyTicketPasses([]);
+      return;
+    }
+    try {
+      const userKey = `skylinesos:tickets_${currSession.email.trim().toLowerCase()}`;
+      const stored = localStorage.getItem(userKey);
+      if (stored) {
+        setMyTicketPasses(JSON.parse(stored));
+        return;
+      }
+    } catch {}
+    // Fresh account: starts completely fresh with zero tickets!
+    setMyTicketPasses([]);
+  };
 
   // Load real API data and merge where available
   useEffect(() => {
@@ -216,18 +240,20 @@ export default function EventsScene() {
     loadBackendEvents();
 
     getCurrentUserSession().then((s) => {
-      if (s) setSession(s);
+      setSession(s);
+      loadTicketsForSession(s);
     });
 
     const handleAuthChange = (e: CustomEvent) => {
-      const updated = e.detail;
+      const updated = e.detail as UserSession | null;
       setSession(updated);
+      loadTicketsForSession(updated);
     };
 
     const handleTicketsChanged = () => {
+      const curr = getActiveSession();
+      loadTicketsForSession(curr);
       try {
-        const storedMy = localStorage.getItem('skylinesos:my_ticket_passes');
-        if (storedMy) setMyTicketPasses(JSON.parse(storedMy));
         const storedApps = localStorage.getItem('skylinesos:ticket_applications');
         if (storedApps) setTicketApplications(JSON.parse(storedApps));
       } catch {}
@@ -406,14 +432,19 @@ export default function EventsScene() {
         created_at: new Date().toISOString(),
       };
 
-      // Add to user ticket passes array
+      // Add to user ticket passes array scoped strictly to attendee email
       const updatedPasses = [newPass, ...myTicketPasses.filter((p) => p.id !== newPass.id)];
       setMyTicketPasses(updatedPasses);
-      try {
-        localStorage.setItem('skylinesos:my_ticket_passes', JSON.stringify(updatedPasses));
-      } catch {}
+      if (attendeeEmail) {
+        const userKey = getUserTicketsKey(attendeeEmail);
+        if (userKey) {
+          try {
+            localStorage.setItem(userKey, JSON.stringify(updatedPasses));
+          } catch {}
+        }
+      }
 
-      // Add to admin ticket applications so admin can review and enter OTP
+      // Add to admin ticket applications so admin can review and enter OTP at door
       const updatedApplications = [newPass, ...ticketApplications.filter((a) => a.id !== newPass.id)];
       setTicketApplications(updatedApplications);
       try {
@@ -427,6 +458,33 @@ export default function EventsScene() {
     } finally {
       setIsBuying(false);
     }
+  };
+
+  // Student Delete/Cancel Ticket (User request)
+  const handleDeleteTicket = (ticketId: string, eventTitle: string) => {
+    if (!confirm(`Are you sure you want to cancel and delete your ticket for "${eventTitle}"? This will release your reserved seat.`)) {
+      return;
+    }
+    const updatedPasses = myTicketPasses.filter((p) => p.id !== ticketId);
+    setMyTicketPasses(updatedPasses);
+    if (session?.email) {
+      const userKey = getUserTicketsKey(session.email);
+      if (userKey) {
+        try {
+          localStorage.setItem(userKey, JSON.stringify(updatedPasses));
+        } catch {}
+      }
+    }
+    // Also remove from admin applications
+    const updatedApps = ticketApplications.filter((a) => a.id !== ticketId);
+    setTicketApplications(updatedApps);
+    try {
+      localStorage.setItem('skylinesos:ticket_applications', JSON.stringify(updatedApps));
+    } catch {}
+
+    setPurchaseSuccess(`Ticket for "${eventTitle}" has been cancelled and deleted.`);
+    setTimeout(() => setPurchaseSuccess(null), 4000);
+    window.dispatchEvent(new CustomEvent('campusone:tickets_updated'));
   };
 
   // Admin approves ticket via OTP (Screenshot 012208)
@@ -451,14 +509,27 @@ export default function EventsScene() {
         localStorage.setItem('skylinesos:ticket_applications', JSON.stringify(updatedApps));
       } catch {}
 
-      // Update student ticket pass in myTicketPasses
-      const updatedStudentPasses = myTicketPasses.map((p) =>
-        p.id === app.id || p.code === app.code ? { ...p, status: 'approved' as const } : p
-      );
-      setMyTicketPasses(updatedStudentPasses);
-      try {
-        localStorage.setItem('skylinesos:my_ticket_passes', JSON.stringify(updatedStudentPasses));
-      } catch {}
+      // Update attendee's private ticket storage
+      if (app.holder_email) {
+        const attendeeKey = getUserTicketsKey(app.holder_email);
+        if (attendeeKey) {
+          try {
+            const attendeePasses = JSON.parse(localStorage.getItem(attendeeKey) || '[]');
+            const updatedAttendeePasses = attendeePasses.map((p: EventTicketPass) =>
+              p.id === app.id || p.code === app.code ? { ...p, status: 'approved' as const } : p
+            );
+            localStorage.setItem(attendeeKey, JSON.stringify(updatedAttendeePasses));
+          } catch {}
+        }
+      }
+
+      // If current active session is the ticket holder, update state directly
+      if (session?.email?.toLowerCase() === app.holder_email?.toLowerCase()) {
+        const updatedStudentPasses = myTicketPasses.map((p) =>
+          p.id === app.id || p.code === app.code ? { ...p, status: 'approved' as const } : p
+        );
+        setMyTicketPasses(updatedStudentPasses);
+      }
 
       setApprovalFeedback({
         success: true,
@@ -1157,6 +1228,19 @@ export default function EventsScene() {
                     ) : (
                       <span>Pending Staff Approval • {pass.seat}</span>
                     )}
+                  </div>
+
+                  {/* Student Cancel & Delete Ticket Option */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTicket(pass.id, pass.event_title)}
+                      className="w-full py-1.5 px-3 rounded-full text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      title="Cancel and delete this ticket pass"
+                    >
+                      <span>🗑️</span>
+                      <span>Cancel & Delete Ticket</span>
+                    </button>
                   </div>
                 </div>
               );
