@@ -112,6 +112,7 @@
   - **Database Migrations:** Applied all 5 migrations (`0001_init.sql`, `0002_rls.sql`, `0003_functions.sql`, `0004_cron.sql`, `0005_fix_checkout_order.sql`). Fixed foreign-key constraint ordering in `fn_create_checkout` and variable declarations in `fn_check_in`.
   - **Remote Database Seeding (`scripts/seed.mjs`):** Successfully executed the full 297 seed records against the cloud database. Created 60 user profiles, 3 membership tiers, 5 events, 10 ticket types, 4 products, 9 variants, fulfilled 28 membership dues checkouts via RPC, 37 ticket purchases and check-ins, 30 merch checkouts, 12 fundraiser contributions (₹5,900), and 10 expenses. Verified ledger reconciliation (Total Income: ₹52,192, Total Outflow: ₹7,500, Net: ₹44,692).
   - **Supabase Edge Function Deployment (`api`):** Deployed Express Edge Function with `--no-verify-jwt` to `https://xwwkpwzartndbjlzpttc.supabase.co/functions/v1/api/v1`. Verified live health check endpoint returning `{"data":{"ok":true,"version":"v1"}}`.
-  - **Razorpay Integration:** Configured `RAZORPAY_KEY_ID=rzp_test_TXWbmmg3SRSwlV` and test mode fallback defaults in `supabase/functions/api/lib/env.ts`.
+  - **Pure Dynamic Environment Configuration:** Removed all hardcoded keys and secrets from TypeScript code in `supabase/functions/api/lib/env.ts`. Implemented dynamic multi-path `.env` parser reading from `.env` and `supabase/.env.local`, overlaid with runtime environment variables.
+
 
 
