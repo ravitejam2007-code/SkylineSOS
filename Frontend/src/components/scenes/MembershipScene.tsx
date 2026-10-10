@@ -392,6 +392,14 @@ export default function MembershipScene() {
           : null;
 
         const isAdmin = Boolean(session && session.role === 'admin');
+        const isStaff = Boolean(
+          session &&
+            (session.role === 'admin' ||
+              session.role === 'volunteer' ||
+              session.role === 'treasurer' ||
+              session.role === 'door_staff' ||
+              (session.roles && session.roles.some((r: any) => r !== 'member')))
+        );
         const isApprovedMember = Boolean(userApp?.status === 'approved' || isAdmin);
         const isPendingMember = Boolean(userApp?.status === 'submitted');
         const isRejectedMember = Boolean(userApp?.status === 'rejected');

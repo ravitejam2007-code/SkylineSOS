@@ -356,4 +356,12 @@
   - **Verification:**
     - Ran `npm test` at workspace root: 79 tests passed across 24 suites with 100% pass rate.
     - Ran `npm --prefix Frontend run build`: 20 static pages compiled cleanly via `@astrojs/vercel` with zero errors.
+- **MembershipScene `isStaff` ReferenceError Resolution ([`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx)):**
+  - **Issue:** `MembershipScene.tsx:421 Uncaught ReferenceError: isStaff is not defined`. In the JSX for the "MY MEMBERSHIP STATUS" card, `isStaff` was evaluated in the nested ternary expression without being declared in the component scope, which crashed the component runtime and prevented the plans and review tables from rendering.
+  - **Fix:** Declared `const isStaff = Boolean(session && (session.role === 'admin' || session.role === 'volunteer' || session.role === 'treasurer' || session.role === 'door_staff' || (session.roles && session.roles.some((r: any) => r !== 'member'))))` in scope.
+  - **Result:** Restored full interactive rendering of the Membership page, including the 3 row-wise plans and the administrative review table.
+  - **Verification:**
+    - Ran `npm test`: 79/79 invariant tests passed with 100% pass rate.
+    - Ran `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly.
+
 
