@@ -1,0 +1,18 @@
+{
+  "name": "skylinesos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Student Organization System for the Skyline Student Association",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run --workspaces --if-present build",
+    "typecheck": "npm run --workspaces --if-present typecheck",
+    "lint": "npm run --workspaces --if-present lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
