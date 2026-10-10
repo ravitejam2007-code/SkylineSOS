@@ -21,7 +21,7 @@ const {
 <form
   action="/events"
   method="get"
-  class={`search-pill-container group relative flex items-center h-[38px] rounded-full bg-slate-100/90 hover:bg-white focus-within:bg-white border border-slate-200/90 hover:border-slate-300 focus-within:border-[#0064e0] shadow-2xs focus-within:shadow-md transition-all duration-300 ease-in-out overflow-hidden ${
+  class={`search-pill-container group relative flex items-center h-[38px] rounded-full bg-slate-100/90 hover:bg-white focus-within:bg-white border border-slate-200/90 hover:border-slate-300 focus-within:border-black shadow-2xs focus-within:shadow-md transition-all duration-300 ease-in-out overflow-hidden ${
     isExpandable
       ? 'w-[38px] hover:w-[220px] sm:hover:w-[260px] focus-within:w-[220px] sm:focus-within:w-[260px]'
       : 'w-full max-w-[280px]'
@@ -32,7 +32,7 @@ const {
   <button
     type="submit"
     aria-label="Search site"
-    class="w-[38px] h-[38px] shrink-0 flex items-center justify-center text-slate-500 group-hover:text-[#0064e0] focus-within:text-[#0064e0] transition-colors cursor-pointer"
+    class="w-[38px] h-[38px] shrink-0 flex items-center justify-center text-slate-500 group-hover:text-black focus-within:text-black transition-colors cursor-pointer"
   >
     <svg
       class="w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-110"

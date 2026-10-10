@@ -132,7 +132,7 @@ export default function StudentPortalScene() {
   if (!session) {
     return (
       <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6">
-        <div className="w-16 h-16 mx-auto rounded-3xl bg-blue-50 border border-blue-200 flex items-center justify-center text-3xl">
+        <div className="w-16 h-16 mx-auto rounded-3xl bg-slate-100 border border-slate-200 flex items-center justify-center text-3xl">
           🔒
         </div>
         <div className="space-y-2">
@@ -146,7 +146,7 @@ export default function StudentPortalScene() {
         <div>
           <a
             href="/login"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white font-bold text-sm shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-slate-900 text-white font-bold text-sm shadow-sm transition-all"
           >
             <span>Sign In to Student Portal</span>
             <span>→</span>
@@ -347,7 +347,7 @@ export default function StudentPortalScene() {
                 </div>
                 <a
                   href="/memberships"
-                  className="inline-block px-4 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold transition-colors shadow-xs"
+                  className="inline-block px-4 py-2 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold transition-colors shadow-xs"
                 >
                   Join Membership →
                 </a>
@@ -412,7 +412,7 @@ export default function StudentPortalScene() {
                         <p className="text-[11px] text-[var(--color-steel)]">{ev.venue} · {ev.ticket_type_name}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-black border border-slate-200">
                           Seat Confirmed
                         </span>
                         <span className="text-[11px] font-mono text-[var(--color-steel)]">{ev.ticket_id.slice(0, 8)}...</span>
@@ -465,7 +465,7 @@ export default function StudentPortalScene() {
         <div className="p-6 rounded-3xl bg-white/85 backdrop-blur-md border border-[var(--color-hairline-soft)] shadow-xs space-y-4 t-card-interactive">
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-mono font-bold text-[var(--color-steel)]">02 · EVENT ACCESS</span>
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold">
+            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-black border border-slate-200 text-[11px] font-bold">
               {upcomingEvents.length} Ticket Issued
             </span>
           </div>

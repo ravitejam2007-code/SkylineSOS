@@ -133,8 +133,8 @@ export default function AdminDashboardScene() {
       {/* Top Banner */}
       <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[12px] font-bold">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-900 text-white text-[12px] font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             Executive Administration · President Portal
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[var(--color-ink-deep)]">

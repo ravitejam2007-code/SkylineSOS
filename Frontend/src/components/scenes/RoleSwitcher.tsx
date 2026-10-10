@@ -148,7 +148,7 @@ export default function RoleSwitcher() {
                   value={adminSecretInput}
                   onChange={(e) => setAdminSecretInput(e.target.value)}
                   placeholder="Enter secret code (e.g. SKYLINE_ADMIN_2026)"
-                  className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-xs text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0064e0] font-mono"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-xs text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:border-black font-mono"
                 />
                 <span className="block text-[10px] text-slate-400 mt-1">
                   Default Demo Key: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono">SKYLINE_ADMIN_2026</code>

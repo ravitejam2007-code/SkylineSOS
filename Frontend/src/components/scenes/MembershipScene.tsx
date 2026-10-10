@@ -447,7 +447,7 @@ export default function MembershipScene() {
                 <div>
                   <a
                     href="/login"
-                    className="inline-block px-5 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+                    className="inline-block px-5 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
                   >
                     Sign In to View
                   </a>
@@ -545,7 +545,7 @@ export default function MembershipScene() {
                 </div>
                 <a
                   href="#plans-section"
-                  className="inline-block px-5 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+                  className="inline-block px-5 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
                 >
                   Choose a Plan Below ↓
                 </a>
@@ -564,7 +564,7 @@ export default function MembershipScene() {
               key={t.id}
               className={`p-7 sm:p-8 rounded-3xl bg-white border flex flex-col justify-between relative transition-all shadow-2xs hover:shadow-md ${
                 isRecommended
-                  ? 'border-2 border-[#0064e0] ring-1 ring-[#0064e0]/20'
+                  ? 'border-2 border-black ring-1 ring-black/20'
                   : 'border-slate-200'
               }`}
             >
@@ -572,7 +572,7 @@ export default function MembershipScene() {
                 <div className="flex items-center justify-between">
                   <span
                     className={`text-[12px] font-bold uppercase tracking-wider ${
-                      isRecommended ? 'text-[#0064e0]' : 'text-slate-500'
+                      isRecommended ? 'text-black' : 'text-slate-500'
                     }`}
                   >
                     {t.categoryLabel || (isRecommended ? 'PREMIUM ACCESS' : 'ANNUAL TIER')}
@@ -580,7 +580,7 @@ export default function MembershipScene() {
                   <span
                     className={`px-3 py-1 rounded-full text-[11px] font-bold ${
                       isRecommended
-                        ? 'bg-blue-50 text-[#0064e0] border border-blue-200'
+                        ? 'bg-black text-white border border-black'
                         : 'bg-slate-100 text-slate-700 border border-slate-200'
                     }`}
                   >
@@ -625,7 +625,7 @@ export default function MembershipScene() {
                 <button
                   type="button"
                   onClick={() => setApplyTier(t)}
-                  className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-xs sm:text-sm shadow-sm cursor-pointer"
+                  className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-black hover:bg-slate-900 active:scale-[0.99] transition-all text-xs sm:text-sm shadow-sm cursor-pointer"
                 >
                   Apply & Pay Dues ({formatPaise(t.fee_paise)})
                 </button>
@@ -655,7 +655,7 @@ export default function MembershipScene() {
 
             {!session ? (
               <div className="text-center py-6 space-y-4">
-                <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 text-[#0064e0] flex items-center justify-center text-2xl font-bold">
+                <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 text-black border border-slate-200 flex items-center justify-center text-2xl font-bold">
                   🔒
                 </div>
                 <div className="space-y-1.5">
@@ -667,7 +667,7 @@ export default function MembershipScene() {
                 <div className="flex flex-col sm:flex-row gap-3 pt-3">
                   <a
                     href="/login"
-                    className="flex-1 py-3 px-6 rounded-full bg-[#0064e0] text-white text-[14px] font-bold hover:bg-[#0052b8] t-button-action text-center inline-block"
+                    className="flex-1 py-3 px-6 rounded-full bg-black text-white text-[14px] font-bold hover:bg-slate-900 t-button-action text-center inline-block"
                   >
                     Sign In to Continue
                   </a>
@@ -921,7 +921,7 @@ export default function MembershipScene() {
                   {/* Requested Tier Info */}
                   <div className="text-[13px] text-[var(--color-ink)] flex items-center gap-2">
                     <span className="font-bold text-slate-700">Requested Membership Tier:</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0064e0] font-bold text-xs border border-blue-100">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-black font-bold text-xs border border-slate-200">
                       {requestedTier?.name || 'Standard Tier'} ({requestedTier?.categoryLabel || 'ANNUAL'})
                     </span>
                     <span className="text-xs text-slate-500 font-mono">

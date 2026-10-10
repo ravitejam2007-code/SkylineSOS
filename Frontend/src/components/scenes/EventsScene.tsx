@@ -57,7 +57,7 @@ const DEFAULT_EVENTS: CuratedEvent[] = [
     imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
     description:
       'The flagship university technical gathering featuring keynote speakers, hackathon project showcases, and student awards banquet.',
-    titleColor: 'text-[#0064e0]',
+    titleColor: 'text-black',
     ticketCategories: [
       {
         id: 'tt_delegate_pass',
@@ -636,7 +636,7 @@ export default function EventsScene() {
           <button
             type="button"
             onClick={() => setShowPostEventModal(true)}
-            className="px-5 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+            className="px-5 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
           >
             <span>+ Post New Event</span>
           </button>
@@ -672,7 +672,7 @@ export default function EventsScene() {
                 {/* Seats Left Pill (Top Right, Vibrant Cobalt or Sold Out Red) */}
                 <div
                   className={`absolute top-4 right-4 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 ${
-                    isSoldOut ? 'bg-rose-600' : 'bg-[#0064e0]'
+                    isSoldOut ? 'bg-rose-600' : 'bg-black'
                   }`}
                 >
                   {isSoldOut ? (
@@ -759,7 +759,7 @@ export default function EventsScene() {
                           </div>
 
                           <div className="text-right">
-                            <div className="text-[14px] font-bold text-[#0064e0]">
+                            <div className="text-[14px] font-bold text-black">
                               ₹{category.memberPricePaise / 100}{' '}
                               <span className="text-[11px] font-medium text-[#64748b]">(Member)</span>
                             </div>
@@ -787,7 +787,7 @@ export default function EventsScene() {
                     <button
                       type="button"
                       onClick={() => openReservationModal(evt)}
-                      className="flex-1 py-3.5 px-6 rounded-full font-semibold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                      className="flex-1 py-3.5 px-6 rounded-full font-semibold text-white bg-black hover:bg-slate-900 active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                     >
                       Reserve Event Passes →
                     </button>
@@ -816,7 +816,7 @@ export default function EventsScene() {
             {/* Header */}
             <div className="flex justify-between items-start border-b border-slate-100 pb-4">
               <div>
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#e0edff] text-[#0064e0]">
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-black border border-slate-200">
                   Admin & Staff Terminal
                 </span>
                 <h3 className="text-2xl font-bold text-[#0f172a] mt-1.5">Conduct & Post New Event</h3>
@@ -841,7 +841,7 @@ export default function EventsScene() {
                   value={newEventTitle}
                   onChange={(e) => setNewEventTitle(e.target.value)}
                   placeholder="e.g. National Student AI Summit 2026"
-                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-[#0064e0]"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
                 />
               </div>
 
@@ -855,7 +855,7 @@ export default function EventsScene() {
                   value={newEventDescription}
                   onChange={(e) => setNewEventDescription(e.target.value)}
                   placeholder="Comprehensive details regarding the event, schedule, keynote guests..."
-                  className="w-full p-4 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-[#0064e0]"
+                  className="w-full p-4 rounded-2xl border border-slate-200 text-sm focus:outline-none focus:border-black"
                 />
               </div>
 
@@ -869,7 +869,7 @@ export default function EventsScene() {
                   value={newEventVenue}
                   onChange={(e) => setNewEventVenue(e.target.value)}
                   placeholder="e.g. Main Auditorium Hall A, Campus North"
-                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-[#0064e0]"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
                 />
               </div>
 
@@ -884,7 +884,7 @@ export default function EventsScene() {
                     value={newEventStart}
                     onChange={(e) => setNewEventStart(e.target.value)}
                     placeholder="17-10-2026 07:43 PM"
-                    className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-[#0064e0]"
+                    className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
                   />
                 </div>
                 <div>
@@ -897,7 +897,7 @@ export default function EventsScene() {
                     value={newEventEnd}
                     onChange={(e) => setNewEventEnd(e.target.value)}
                     placeholder="18-10-2026 03:43 AM"
-                    className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-[#0064e0]"
+                    className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
                   />
                 </div>
               </div>
@@ -911,7 +911,7 @@ export default function EventsScene() {
                   value={newEventBanner}
                   onChange={(e) => setNewEventBanner(e.target.value)}
                   placeholder="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1000&q=80"
-                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-[#0064e0]"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
                 />
               </div>
 
@@ -966,7 +966,7 @@ export default function EventsScene() {
                               )
                             }
                             placeholder="Standard Delegate Pass"
-                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0064e0]"
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-black"
                           />
                         </div>
                         <div>
@@ -984,7 +984,7 @@ export default function EventsScene() {
                               )
                             }
                             placeholder="100"
-                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0064e0]"
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-black"
                           />
                         </div>
                       </div>
@@ -1003,7 +1003,7 @@ export default function EventsScene() {
                               )
                             }
                             placeholder="150"
-                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0064e0]"
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-black"
                           />
                         </div>
                         <div>
@@ -1021,7 +1021,7 @@ export default function EventsScene() {
                               )
                             }
                             placeholder="300"
-                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0064e0]"
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-black"
                           />
                         </div>
                       </div>
@@ -1037,7 +1037,7 @@ export default function EventsScene() {
                             )
                           }
                           placeholder="General entrance to all workshops & sessions"
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0064e0]"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-black"
                         />
                       </div>
                     </div>
@@ -1057,7 +1057,7 @@ export default function EventsScene() {
                 <button
                   type="submit"
                   disabled={isPostingEvent}
-                  className="flex-1 py-3 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-3 rounded-full bg-black hover:bg-slate-900 text-white text-xs sm:text-sm font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isPostingEvent ? <ButtonSpinner size={16} /> : 'Publish & Conduct Event'}
                 </button>
@@ -1073,7 +1073,7 @@ export default function EventsScene() {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative border border-slate-100">
             <div className="flex justify-between items-start border-b border-slate-100 pb-4">
               <div>
-                <span className="text-xs font-bold text-[#0064e0] uppercase tracking-wider">
+                <span className="text-xs font-bold text-black uppercase tracking-wider">
                   Pass Reservation
                 </span>
                 <h3 className="text-xl font-bold text-[#0f172a] mt-0.5">{selectedEvent.title}</h3>
@@ -1109,7 +1109,7 @@ export default function EventsScene() {
                           isCatFull
                             ? 'border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed'
                             : selectedTicketCategory.id === cat.id
-                            ? 'border-[#0064e0] bg-blue-50/50 ring-1 ring-[#0064e0] cursor-pointer'
+                            ? 'border-black bg-slate-50 ring-1 ring-black cursor-pointer'
                             : 'border-slate-200 hover:border-slate-300 bg-white cursor-pointer'
                         }`}
                       >
@@ -1124,7 +1124,7 @@ export default function EventsScene() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold text-[#0064e0]">
+                          <div className="text-sm font-bold text-black">
                             ₹{isMember ? cat.memberPricePaise / 100 : cat.nonMemberPricePaise / 100}
                           </div>
                           <div className="text-[11px] text-slate-400">
@@ -1155,13 +1155,13 @@ export default function EventsScene() {
                 )}
                 <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-extrabold text-[#0f172a]">
                   <span>Total Amount</span>
-                  <span className="text-[#0064e0]">
+                  <span className="text-black">
                     ₹{(((isMember ? selectedTicketCategory.memberPricePaise : selectedTicketCategory.nonMemberPricePaise)) / 100)}
                   </span>
                 </div>
               </div>
 
-              <div className="text-[11px] text-[#64748b] bg-blue-50/60 p-3 rounded-xl border border-blue-100/80">
+              <div className="text-[11px] text-[#64748b] bg-slate-50 p-3 rounded-xl border border-slate-200">
                 ℹ <strong>Single Reservation Rule:</strong> Each student account is limited to 1 pass reservation per event. Your digital entrance pass with door OTP will be generated upon confirmation.
               </div>
 
@@ -1179,7 +1179,7 @@ export default function EventsScene() {
                     className={`w-full py-3.5 px-6 rounded-full font-bold text-white transition-all text-sm shadow-sm flex items-center justify-center gap-2 ${
                       isDisabled
                         ? 'bg-slate-400 cursor-not-allowed opacity-60'
-                        : 'bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] cursor-pointer'
+                        : 'bg-black hover:bg-slate-900 active:scale-[0.99] cursor-pointer'
                     }`}
                   >
                     {isBuying ? (
@@ -1201,7 +1201,7 @@ export default function EventsScene() {
       <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 md:p-10 shadow-2xs space-y-6">
         <div className="border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#e0edff] text-[#0064e0]">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-black border border-slate-200">
               My Wallet
             </span>
             <h2 className="text-xl sm:text-2xl font-bold text-[#0f172a]">
@@ -1221,7 +1221,7 @@ export default function EventsScene() {
             <div>
               <a
                 href="/login"
-                className="inline-block px-6 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white font-bold text-xs sm:text-sm transition-all shadow-xs cursor-pointer"
+                className="inline-block px-6 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white font-bold text-xs sm:text-sm transition-all shadow-xs cursor-pointer"
               >
                 Sign In Now
               </a>
@@ -1272,7 +1272,7 @@ export default function EventsScene() {
                       <span className="text-[#64748b] font-medium truncate max-w-[140px]">
                         Tier: <strong className="text-slate-800 uppercase">{pass.tier_name}</strong>
                       </span>
-                      <span className="font-mono font-extrabold text-[#0064e0] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                      <span className="font-mono font-extrabold text-black bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                         {pass.seat}
                       </span>
                     </div>
@@ -1319,7 +1319,7 @@ export default function EventsScene() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-slate-500 font-semibold uppercase">Door OTP:</span>
                         {isOtpRevealed ? (
-                          <span className="font-mono font-bold text-xs tracking-wider text-[#0064e0] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                          <span className="font-mono font-bold text-xs tracking-wider text-black bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                             {pass.otp}
                           </span>
                         ) : (
@@ -1336,7 +1336,7 @@ export default function EventsScene() {
                             [pass.id]: !prev[pass.id],
                           }))
                         }
-                        className="text-[10px] font-bold text-[#0064e0] hover:underline cursor-pointer"
+                        className="text-[10px] font-bold text-black hover:underline cursor-pointer"
                       >
                         {isOtpRevealed ? 'Hide' : 'Reveal OTP'}
                       </button>
@@ -1444,7 +1444,7 @@ export default function EventsScene() {
                     </td>
                     <td className="py-3.5 px-4 text-[#334155]">
                       <div>{app.validity}</div>
-                      <div className="font-extrabold text-[#0064e0] font-mono">{app.seat}</div>
+                      <div className="font-extrabold text-black font-mono">{app.seat}</div>
                     </td>
                     <td className="py-3.5 px-4">
                       {app.status === 'approved' ? (
@@ -1460,12 +1460,12 @@ export default function EventsScene() {
                             onChange={(e) =>
                               setOtpInputs((prev) => ({ ...prev, [app.id]: e.target.value }))
                             }
-                            className="w-28 px-3 py-1.5 rounded-full border border-slate-200 text-center text-xs font-mono font-bold tracking-wider uppercase focus:outline-none focus:border-[#0064e0]"
+                            className="w-28 px-3 py-1.5 rounded-full border border-slate-200 text-center text-xs font-mono font-bold tracking-wider uppercase focus:outline-none focus:border-black"
                           />
                           <button
                             type="button"
                             onClick={() => handleApproveOtp(app)}
-                            className="px-4 py-1.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                            className="px-4 py-1.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                           >
                             Approve
                           </button>

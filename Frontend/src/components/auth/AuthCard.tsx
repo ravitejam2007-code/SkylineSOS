@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { signInWithPassword, signUp, type RoleType } from '../../lib/auth';
+import { signInWithPassword, signUp, verifyAdminSecretCode, type RoleType } from '../../lib/auth';
 import { ButtonSpinner } from '../ui/LoadingState';
 
 type RoleKey = 'student' | 'volunteer' | 'admin' | 'treasurer';
@@ -32,7 +32,7 @@ const ROLE_OPTIONS: RoleOption[] = [
     title: 'President / Admin',
     destination: 'Admin Dashboard',
     badge: 'Executive',
-    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+    badgeClass: 'bg-slate-900 text-white border-slate-900',
   },
   {
     key: 'treasurer',
@@ -47,6 +47,7 @@ export default function AuthCard() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [adminSecretCode, setAdminSecretCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [selectedRole, setSelectedRole] = useState<RoleKey>('student');
@@ -110,6 +111,14 @@ export default function AuthCard() {
 
     try {
       const mappedRole: RoleType = selectedRole === 'student' ? 'member' : (selectedRole as RoleType);
+
+      if (mappedRole === 'admin' || email.toLowerCase().includes('admin')) {
+        if (!verifyAdminSecretCode(adminSecretCode)) {
+          setErrorMessage('Access Denied: Valid Admin Secret Security Code is mandatory for administrator sign-in. Use code: SKYLINE_ADMIN_2026');
+          setLoading(false);
+          return;
+        }
+      }
 
       if (authMode === 'signup') {
         const session = await signUp({
@@ -279,6 +288,26 @@ export default function AuthCard() {
             className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] bg-white text-[14px] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
           />
         </div>
+
+        {(selectedRole === 'admin' || email.toLowerCase().includes('admin')) && (
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
+              <span>🔒</span>
+              <span>Admin Secret Security Code Required *</span>
+            </div>
+            <input
+              type="password"
+              required
+              value={adminSecretCode}
+              onChange={(e) => setAdminSecretCode(e.target.value)}
+              placeholder="Enter admin secret code"
+              className="w-full px-4 py-2.5 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-black font-mono"
+            />
+            <span className="block text-[11px] text-amber-700">
+              Default Master Key: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded font-bold">SKYLINE_ADMIN_2026</code>
+            </span>
+          </div>
+        )}
 
         {/* Assigned Role Destination (Custom Dropdown with transitions-dev) */}
         <div className="relative" ref={dropdownRef}>

@@ -344,7 +344,7 @@ export default function FundraiserScene() {
       case 'high':
         return 'bg-amber-100 text-amber-800';
       case 'medium':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-slate-100 text-slate-800 border border-slate-200';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -700,8 +700,8 @@ export default function FundraiserScene() {
                             </div>
                             {/* Message Log */}
                             {task.messages && task.messages.length > 0 && (
-                              <div className="mt-1.5 p-2 rounded-xl bg-blue-50/60 border border-blue-100 text-[11px] text-blue-900 font-normal">
-                                <span className="font-semibold text-[#0064e0]">Latest Message:</span> "
+                              <div className="mt-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-900 font-normal">
+                                <span className="font-semibold text-black">Latest Message:</span> "
                                 {task.messages[task.messages.length - 1].text}" —{' '}
                                 <em className="text-slate-500 font-sans">
                                   {task.messages[task.messages.length - 1].author}
@@ -726,7 +726,7 @@ export default function FundraiserScene() {
                           <td className="py-3.5 px-4 min-w-[150px]">
                             <div className="flex items-center justify-between text-[11px] font-bold mb-1">
                               <span className="text-slate-600">Progress</span>
-                              <span className="text-[#0064e0] font-mono">{percent}%</span>
+                              <span className="text-black font-mono">{percent}%</span>
                             </div>
                             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
                               <div
@@ -734,7 +734,7 @@ export default function FundraiserScene() {
                                   percent === 100
                                     ? 'bg-emerald-500'
                                     : percent > 0
-                                    ? 'bg-[#0064e0]'
+                                    ? 'bg-black'
                                     : 'bg-slate-300'
                                 }`}
                                 style={{ width: `${percent}%` }}
@@ -794,7 +794,7 @@ export default function FundraiserScene() {
             <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-blue-100 text-[#0064e0]">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-black border border-slate-200">
                     Operations Task Board
                   </span>
                   <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a] mt-1">
@@ -812,7 +812,7 @@ export default function FundraiserScene() {
                     onClick={() => setTaskViewFilter('all')}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                       taskViewFilter === 'all'
-                        ? 'bg-[#0064e0] text-white shadow-xs'
+                        ? 'bg-black text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -823,7 +823,7 @@ export default function FundraiserScene() {
                     onClick={() => setTaskViewFilter('mine')}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                       taskViewFilter === 'mine'
-                        ? 'bg-[#0064e0] text-white shadow-xs'
+                        ? 'bg-black text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -886,7 +886,7 @@ export default function FundraiserScene() {
                         <div
                           key={task.id}
                           className={`p-5 rounded-2xl border bg-slate-50/50 space-y-4 hover:shadow-xs transition-shadow ${
-                            isAssignedToMe ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200'
+                            isAssignedToMe ? 'border-black ring-1 ring-black/20' : 'border-slate-200'
                           }`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -894,7 +894,7 @@ export default function FundraiserScene() {
                               <div className="flex items-center gap-2">
                                 <h4 className="font-bold text-sm sm:text-base text-[#0f172a]">{task.title}</h4>
                                 {isAssignedToMe && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-[#0064e0] uppercase">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-black border border-slate-200 uppercase">
                                     Assigned to You
                                   </span>
                                 )}
@@ -917,7 +917,7 @@ export default function FundraiserScene() {
                           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5">
                             <div className="flex items-center justify-between text-xs font-bold">
                               <span className="text-slate-700">How much work is done:</span>
-                              <span className="text-[#0064e0] font-mono">{percent}% Complete</span>
+                              <span className="text-black font-mono">{percent}% Complete</span>
                             </div>
 
                             <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
@@ -926,7 +926,7 @@ export default function FundraiserScene() {
                                   percent === 100
                                     ? 'bg-emerald-500'
                                     : percent > 0
-                                    ? 'bg-[#0064e0]'
+                                    ? 'bg-black'
                                     : 'bg-slate-300'
                                 }`}
                                 style={{ width: `${percent}%` }}
@@ -1005,12 +1005,12 @@ export default function FundraiserScene() {
                                   }
                                 }}
                                 placeholder="Send message (e.g. Complete setup, need 2 more volunteers)..."
-                                className="flex-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs focus:outline-none focus:border-[#0064e0]"
+                                className="flex-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs focus:outline-none focus:border-black"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSendTaskMessage(task.id)}
-                                className="px-4 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold cursor-pointer transition-colors"
+                                className="px-4 py-2 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold cursor-pointer transition-colors"
                               >
                                 Send Update
                               </button>
@@ -1028,7 +1028,7 @@ export default function FundraiserScene() {
               <p className="text-sm font-semibold text-slate-800">Sign in to access your assigned volunteer tasks</p>
               <a
                 href="/login"
-                className="inline-block px-5 py-2 rounded-full bg-[#0064e0] text-white text-xs font-bold hover:bg-[#0052b8]"
+                className="inline-block px-5 py-2 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-900"
               >
                 Sign In
               </a>
@@ -1047,7 +1047,7 @@ export default function FundraiserScene() {
             <div className="pt-2">
               <a
                 href="/memberships"
-                className="inline-block px-6 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+                className="inline-block px-6 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
               >
                 Explore Membership Benefits →
               </a>

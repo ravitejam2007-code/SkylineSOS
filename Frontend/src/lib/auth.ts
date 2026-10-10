@@ -87,7 +87,7 @@ export const AUTH_PERSONAS: Record<'student' | 'volunteer' | 'admin' | 'treasure
     destination: '/admin',
     destinationLabel: 'Admin Dashboard',
     primaryGoal: 'Manage members, approve applications, walk-up signups, broadcast announcements, and oversee events.',
-    avatarColor: 'bg-blue-600',
+    avatarColor: 'bg-black',
   },
   treasurer: {
     id: 'treasurer',
@@ -317,10 +317,35 @@ export async function getCurrentUserSession(): Promise<UserSession | null> {
   }
 }
 
+export function normalizeRole(role?: string | null): 'member' | 'volunteer' | 'admin' | 'treasurer' {
+  if (!role) return 'member';
+  const r = role.toLowerCase().trim();
+  if (r === 'student' || r === 'member') return 'member';
+  if (r === 'volunteer' || r === 'door_staff' || r === 'staff' || r === 'operations') return 'volunteer';
+  if (r === 'admin' || r === 'executive' || r === 'president') return 'admin';
+  if (r === 'treasurer' || r === 'finance') return 'treasurer';
+  return 'member';
+}
+
+export function formatRoleLabel(role?: string | null): string {
+  const norm = normalizeRole(role);
+  switch (norm) {
+    case 'member':
+      return 'Student Member';
+    case 'volunteer':
+      return 'Operations & Volunteer Lead';
+    case 'admin':
+      return 'Executive Admin';
+    case 'treasurer':
+      return 'Club Treasurer';
+  }
+}
+
 /**
  * Sign in using email & password against Supabase Auth with robust local fallback.
+ * Strictly verifies that the chosen role matches the account's registered role.
  */
-export async function signInWithPassword(email: string, password: string, preferredRole?: RoleType): Promise<UserSession> {
+export async function signInWithPassword(email: string, password: string, preferredRole?: RoleType | string): Promise<UserSession> {
   const supabase = getBrowserClient();
   const trimmedEmail = (email || '').trim().toLowerCase();
   const rawPassword = (password || '').trim();
@@ -343,6 +368,20 @@ export async function signInWithPassword(email: string, password: string, prefer
       rawPassword === 'demo1234' ||
       rawPassword === 'SkylineDemo2026!')
   ) {
+    const demoAcc = DEMO_ACCOUNTS[matchedKey];
+    const actualRole = demoAcc.role;
+
+    // Strict Role Validation
+    if (preferredRole) {
+      const chosenNorm = normalizeRole(preferredRole);
+      const actualNorm = normalizeRole(actualRole);
+      if (chosenNorm !== actualNorm) {
+        throw new Error(
+          `Role Mismatch: You selected "${formatRoleLabel(preferredRole)}", but this account is registered as "${formatRoleLabel(actualRole)}". Please choose "${formatRoleLabel(actualRole)}" to log in.`
+        );
+      }
+    }
+
     const personaKey = matchedKey === 'door_staff' ? 'volunteer' : matchedKey === 'member' ? 'student' : matchedKey;
     return loginAsPersona(personaKey as 'student' | 'volunteer' | 'admin' | 'treasurer');
   }
@@ -366,7 +405,20 @@ export async function signInWithPassword(email: string, password: string, prefer
 
   // 3. Handle successful Supabase authentication
   if (authUser && !authError) {
-    const roleFromMeta = (authUser.user_metadata?.role as RoleType) || preferredRole || 'member';
+    const actualRole = (authUser.user_metadata?.role as RoleType) || localAccount?.role || 'member';
+
+    // Strict Role Validation
+    if (preferredRole) {
+      const chosenNorm = normalizeRole(preferredRole);
+      const actualNorm = normalizeRole(actualRole);
+      if (chosenNorm !== actualNorm) {
+        await supabase.auth.signOut().catch(() => {});
+        throw new Error(
+          `Role Mismatch: You selected "${formatRoleLabel(preferredRole)}", but this account is registered as "${formatRoleLabel(actualRole)}". Please choose "${formatRoleLabel(actualRole)}" to log in.`
+        );
+      }
+    }
+
     const fullNameFromMeta = authUser.user_metadata?.full_name || trimmedEmail.split('@')[0];
     const studentIdFromMeta = authUser.user_metadata?.student_id || `SKY-2026-${authUser.id.slice(0, 4)}`;
 
@@ -377,7 +429,7 @@ export async function signInWithPassword(email: string, password: string, prefer
       passwordHash: btoa(rawPassword),
       fullName: fullNameFromMeta,
       studentId: studentIdFromMeta,
-      role: roleFromMeta,
+      role: actualRole,
       createdAt: authUser.created_at || new Date().toISOString(),
     });
 
@@ -386,31 +438,41 @@ export async function signInWithPassword(email: string, password: string, prefer
       email: authUser.email || trimmedEmail,
       fullName: fullNameFromMeta,
       studentId: studentIdFromMeta,
-      role: roleFromMeta,
-      roles: [roleFromMeta],
-      destination: getRoleDestination(roleFromMeta),
+      role: actualRole,
+      roles: [actualRole],
+      destination: getRoleDestination(actualRole),
     };
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-      localStorage.setItem('campusone_demo_role', roleFromMeta);
+      localStorage.setItem('campusone_demo_role', actualRole);
       window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));
-      window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: roleFromMeta }));
+      window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: actualRole }));
     }
 
     return session;
   }
 
   // 4. Handle "email_not_confirmed" from Supabase Auth
-  // When Supabase responds with email_not_confirmed, it confirms credentials match,
-  // but email confirmation link is pending on free tier. We grant session seamlessly.
   const isEmailNotConfirmed =
     authError?.code === 400 &&
     (authError?.error_code === 'email_not_confirmed' ||
       authError?.message?.toLowerCase().includes('email not confirmed'));
 
   if (isEmailNotConfirmed) {
-    const role = preferredRole || localAccount?.role || 'member';
+    const actualRole = localAccount?.role || 'member';
+
+    // Strict Role Validation
+    if (preferredRole) {
+      const chosenNorm = normalizeRole(preferredRole);
+      const actualNorm = normalizeRole(actualRole);
+      if (chosenNorm !== actualNorm) {
+        throw new Error(
+          `Role Mismatch: You selected "${formatRoleLabel(preferredRole)}", but this account is registered as "${formatRoleLabel(actualRole)}". Please choose "${formatRoleLabel(actualRole)}" to log in.`
+        );
+      }
+    }
+
     const fullName = localAccount?.fullName || trimmedEmail.split('@')[0];
     const studentId = localAccount?.studentId || `SKY-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const userId = localAccount?.userId || generateUUID();
@@ -420,16 +482,16 @@ export async function signInWithPassword(email: string, password: string, prefer
       email: trimmedEmail,
       fullName,
       studentId,
-      role,
-      roles: [role],
-      destination: getRoleDestination(role),
+      role: actualRole,
+      roles: [actualRole],
+      destination: getRoleDestination(actualRole),
     };
 
     if (typeof window !== 'undefined') {
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-      localStorage.setItem('campusone_demo_role', role);
+      localStorage.setItem('campusone_demo_role', actualRole);
       window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));
-      window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: role }));
+      window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: actualRole }));
     }
 
     return session;
@@ -444,22 +506,34 @@ export async function signInWithPassword(email: string, password: string, prefer
       rawPassword === 'demo1234';
 
     if (passwordMatches) {
-      const role = preferredRole || localAccount.role || 'member';
+      const actualRole = localAccount.role || 'member';
+
+      // Strict Role Validation
+      if (preferredRole) {
+        const chosenNorm = normalizeRole(preferredRole);
+        const actualNorm = normalizeRole(actualRole);
+        if (chosenNorm !== actualNorm) {
+          throw new Error(
+            `Role Mismatch: You selected "${formatRoleLabel(preferredRole)}", but this account is registered as "${formatRoleLabel(actualRole)}". Please choose "${formatRoleLabel(actualRole)}" to log in.`
+          );
+        }
+      }
+
       const session: UserSession = {
         userId: localAccount.userId,
         email: localAccount.email,
         fullName: localAccount.fullName,
         studentId: localAccount.studentId,
-        role,
-        roles: [role],
-        destination: getRoleDestination(role),
+        role: actualRole,
+        roles: [actualRole],
+        destination: getRoleDestination(actualRole),
       };
 
       if (typeof window !== 'undefined') {
         localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-        localStorage.setItem('campusone_demo_role', role);
+        localStorage.setItem('campusone_demo_role', actualRole);
         window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));
-        window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: role }));
+        window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: actualRole }));
       }
 
       return session;

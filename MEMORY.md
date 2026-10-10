@@ -361,7 +361,28 @@
   - **Fix:** Declared `const isStaff = Boolean(session && (session.role === 'admin' || session.role === 'volunteer' || session.role === 'treasurer' || session.role === 'door_staff' || (session.roles && session.roles.some((r: any) => r !== 'member'))))` in scope.
   - **Result:** Restored full interactive rendering of the Membership page, including the 3 row-wise plans and the administrative review table.
   - **Verification:**
-    - Ran `npm test`: 79/79 invariant tests passed with 100% pass rate.
-    - Ran `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly.
+- **Comprehensive Color Transformation (Blue to Black) & Strict Login Role Validation:**
+  - **Full Blue-to-Black Theme Overhaul:**
+    - Replaced all blue color accents (`#0064e0`, `#0052b8`, `#1876f2`, `#385898`, `#0457cb`, `#0091ff`, `bg-blue-*`, `text-blue-*`, `border-blue-*`) with black and slate styling across the entire frontend.
+    - Updated theme tokens in [`global.css`](file:///E:/projects/SkylineSOS/Frontend/src/styles/global.css) (`--color-primary: #000000;`, `--color-primary-deep: #18181b;`, `--color-primary-soft: #27272a;`, `--color-fb-blue: #000000;`, `--color-meta-link: #000000;`, `--color-oculus-purple: #18181b;`).
+    - Updated [`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx): Post event modal inputs and CTA buttons, ticket pass cards, QR OTP badge, wallet pill, seats pill, and entrance approval gate table updated to black/slate.
+    - Updated [`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx): Recommended tier card border and badges, apply buttons, modal lock icons, and requested tier badges updated to black/slate.
+    - Updated [`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx): Priority badges, progress bars, task cards, task board tabs, and send update buttons updated to black.
+    - Updated [`StudentPortalScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx): Portal locked banner, sign-in button, seat confirmed badges, and event access card updated to black/slate.
+    - Updated [`LoginScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/LoginScene.tsx) & [`SignUpScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/SignUpScene.tsx): Role selector pill styles, admin code input focus borders, and sign-in buttons updated to black.
+    - Updated [`RoleSwitcher.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/RoleSwitcher.tsx), [`TreasurerScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/TreasurerScene.tsx), [`AdminDashboardScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/AdminDashboardScene.tsx), [`LoadingState.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/ui/LoadingState.tsx), [`SearchPill.astro`](file:///E:/projects/SkylineSOS/Frontend/src/components/ui/SearchPill.astro), [`index.astro`](file:///E:/projects/SkylineSOS/Frontend/src/pages/index.astro), and [`auth.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/auth.ts).
+    - Verified zero remaining blue color references in `Frontend/src/`.
+  - **Strict Login Role Validation:**
+    - Implemented mandatory role selection at login in both [`LoginScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/LoginScene.tsx) (interactive 4-role selection grid) and [`AuthCard.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/auth/AuthCard.tsx) (custom animated role selector).
+    - Added `normalizeRole` and `formatRoleLabel` helpers to [`auth.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/auth.ts) supporting `member` (Student Member), `volunteer` (Operations & Volunteer Lead / Door Staff), `admin` (Executive Admin), and `treasurer` (Club Treasurer).
+    - Enforced strict role matching in `signInWithPassword`:
+      - Validates credentials and verifies that the chosen role exactly matches the account's registered role across demo accounts, Supabase Auth accounts, and local registered accounts.
+      - If the selected role does not match the account's registered role, login is blocked immediately with an explicit error: `"Role Mismatch: You selected \"[Chosen Role]\", but this account is registered as \"[Actual Role]\". Please choose \"[Actual Role]\" to log in."`
+      - No user session or storage token is created when a role mismatch occurs.
+      - If the selected role matches, the user is authenticated and redirected to their role's authorized dashboard.
+      - Enforced mandatory Admin Secret Security Code (`SKYLINE_ADMIN_2026`) when logging in as administrator.
+  - **Verification:**
+    - Ran `npm test`: 79/79 invariant tests passed across 24 suites with 100% pass rate.
+    - Ran `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
 
 

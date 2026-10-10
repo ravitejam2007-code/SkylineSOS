@@ -19,7 +19,7 @@ export function LoadingCard({
       className={`py-24 flex flex-col items-center justify-center text-center space-y-4 ${className}`}
     >
       <div className="flex items-center justify-center p-3.5 rounded-2xl bg-[var(--color-surface-soft)] text-[var(--color-primary)]">
-        <Blocks size={size} color="#0064e0" />
+        <Blocks size={size} color="#000000" />
       </div>
       <p className="text-[12px] font-semibold tracking-wider text-[var(--color-steel)] uppercase">
         {label}

@@ -12,6 +12,7 @@ import {
 export default function LoginScene() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'member' | 'volunteer' | 'admin' | 'treasurer'>('member');
   const [adminSecretCode, setAdminSecretCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -44,8 +45,8 @@ export default function LoginScene() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // If logging into an admin account, require secret code
-    if (email.toLowerCase().includes('admin')) {
+    // If logging into an admin account or admin role selected, require secret code
+    if (selectedRole === 'admin' || email.toLowerCase().includes('admin')) {
       if (!verifyAdminSecretCode(adminSecretCode)) {
         setErrorMsg('Access Denied: Valid Admin Secret Security Code is mandatory for administrator sign-in. Use code: SKYLINE_ADMIN_2026');
         setLoading(false);
@@ -54,7 +55,7 @@ export default function LoginScene() {
     }
 
     try {
-      const session = await signInWithPassword(email, password);
+      const session = await signInWithPassword(email, password, selectedRole);
       setCurrentSession(session);
       setSuccessMsg(`Welcome back, ${session.fullName}! Signed in as [${session.roles.join(', ') || 'member'}].`);
       localStorage.setItem('campusone_demo_role', session.roles[0] || 'member');
@@ -179,6 +180,34 @@ export default function LoginScene() {
 
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
+              <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1.5">
+                Choose Account Role *
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { key: 'member', label: '🎓 Student Member' },
+                  { key: 'volunteer', label: '🤝 Operations & Lead' },
+                  { key: 'admin', label: '🛡️ Executive Admin' },
+                  { key: 'treasurer', label: '💰 Club Treasurer' },
+                ].map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setSelectedRole(opt.key as any)}
+                    className={`p-2.5 rounded-2xl border text-xs font-bold text-left transition-all cursor-pointer flex items-center justify-between ${
+                      selectedRole === opt.key
+                        ? 'border-black bg-black text-white shadow-xs'
+                        : 'border-slate-200 text-slate-700 bg-white hover:border-slate-400'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {selectedRole === opt.key && <span className="text-[10px]">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">
                 Student Email
               </label>
@@ -188,7 +217,7 @@ export default function LoginScene() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="e.g. yourname@skyline.edu"
-                className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-[14px] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-[14px] focus:outline-none focus:border-black transition-colors"
               />
             </div>
 
@@ -202,11 +231,11 @@ export default function LoginScene() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-[14px] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-[14px] focus:outline-none focus:border-black transition-colors"
               />
             </div>
 
-            {email.toLowerCase().includes('admin') && (
+            {(selectedRole === 'admin' || email.toLowerCase().includes('admin')) && (
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
                   <span>🔒</span>
@@ -218,7 +247,7 @@ export default function LoginScene() {
                   value={adminSecretCode}
                   onChange={(e) => setAdminSecretCode(e.target.value)}
                   placeholder="Enter admin secret code"
-                  className="w-full px-4 py-2 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-[#0064e0] font-mono"
+                  className="w-full px-4 py-2 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-black font-mono"
                 />
                 <span className="block text-[11px] text-amber-700">
                   Default Organization Master Key: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded font-bold">SKYLINE_ADMIN_2026</code>
@@ -231,7 +260,7 @@ export default function LoginScene() {
               disabled={loading}
               className="w-full py-3 px-6 rounded-full bg-[var(--color-ink-deep)] text-white text-[14px] font-bold hover:bg-black transition-colors disabled:opacity-50"
             >
-              {loading ? 'Authenticating...' : 'Sign In'}
+              {loading ? 'Authenticating...' : `Sign In as ${selectedRole.toUpperCase()}`}
             </button>
           </form>
 
@@ -334,7 +363,7 @@ export default function LoginScene() {
                   value={modalAdminSecret}
                   onChange={(e) => setModalAdminSecret(e.target.value)}
                   placeholder="Enter secret code (e.g. SKYLINE_ADMIN_2026)"
-                  className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-xs text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0064e0] font-mono"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-xs text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:border-black font-mono"
                 />
                 <span className="block text-[10px] text-slate-400 mt-1">
                   Master Organization Key: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono">SKYLINE_ADMIN_2026</code>

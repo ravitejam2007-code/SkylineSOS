@@ -110,7 +110,7 @@ export default function SignUpScene() {
                 onClick={() => setAccountType('student')}
                 className={`py-2.5 px-3 rounded-2xl border text-xs font-bold text-center transition-all cursor-pointer ${
                   accountType === 'student'
-                    ? 'border-[#0064e0] bg-blue-50/50 text-[#0064e0] ring-1 ring-[#0064e0]'
+                    ? 'border-black bg-black text-white ring-1 ring-black'
                     : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
                 }`}
               >
@@ -142,7 +142,7 @@ export default function SignUpScene() {
                 value={adminSecretCode}
                 onChange={(e) => setAdminSecretCode(e.target.value)}
                 placeholder="Enter admin secret code"
-                className="w-full px-4 py-2 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-[#0064e0] font-mono"
+                className="w-full px-4 py-2 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-black font-mono"
               />
               <span className="block text-[11px] text-amber-700">
                 Organization Master Key: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded font-bold">SKYLINE_ADMIN_2026</code>
