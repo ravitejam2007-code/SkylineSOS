@@ -160,17 +160,21 @@ export default function EventsScene() {
   ]);
   const [isPostingEvent, setIsPostingEvent] = useState(false);
 
-  // User Ticket Pass & QR (Screenshot 011914)
-  const [myTicketPass, setMyTicketPass] = useState<EventTicketPass | null>(() => {
+  // User Ticket Passes & QR (Screenshot 011914 - Support Multi-event individual tickets)
+  const [myTicketPasses, setMyTicketPasses] = useState<EventTicketPass[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('skylinesos:my_ticket_pass');
+        const stored = localStorage.getItem('skylinesos:my_ticket_passes');
         if (stored) return JSON.parse(stored);
+        // Fallback backward compatibility
+        const single = localStorage.getItem('skylinesos:my_ticket_pass');
+        if (single) return [JSON.parse(single)];
       } catch {}
     }
-    return null;
+    return []; // Empty by default! Stops automatic ticket generation until student clicks Reserve Passes.
   });
-  const [myTicketQrUrl, setMyTicketQrUrl] = useState<string>('');
+  const [qrUrls, setQrUrls] = useState<Record<string, string>>({});
+  const [revealedOtps, setRevealedOtps] = useState<Record<string, boolean>>({});
 
   // Admin Console & Approval State (Screenshot 012208)
   const [ticketApplications, setTicketApplications] = useState<EventTicketPass[]>(() => {
@@ -222,8 +226,8 @@ export default function EventsScene() {
 
     const handleTicketsChanged = () => {
       try {
-        const storedMy = localStorage.getItem('skylinesos:my_ticket_pass');
-        if (storedMy) setMyTicketPass(JSON.parse(storedMy));
+        const storedMy = localStorage.getItem('skylinesos:my_ticket_passes');
+        if (storedMy) setMyTicketPasses(JSON.parse(storedMy));
         const storedApps = localStorage.getItem('skylinesos:ticket_applications');
         if (storedApps) setTicketApplications(JSON.parse(storedApps));
       } catch {}
@@ -237,23 +241,25 @@ export default function EventsScene() {
     };
   }, []);
 
-  // Generate QR code for student ticket whenever active ticket changes
+  // Generate QR code for every student ticket
   useEffect(() => {
-    if (myTicketPass) {
-      const qrData = JSON.stringify({
-        ticket: myTicketPass.code,
-        seat: myTicketPass.seat,
-        otp: myTicketPass.otp,
-        event: myTicketPass.event_title,
-        status: myTicketPass.status,
-        holder: myTicketPass.holder_name,
-        verification: 'SkylineSOS Official Gate Token',
-      });
-      generateQrDataUrl(qrData, { width: 240 }).then(setMyTicketQrUrl);
-    } else {
-      setMyTicketQrUrl('');
-    }
-  }, [myTicketPass]);
+    myTicketPasses.forEach((pass) => {
+      if (!qrUrls[pass.id]) {
+        const qrData = JSON.stringify({
+          ticket: pass.code,
+          seat: pass.seat,
+          otp: pass.otp,
+          event: pass.event_title,
+          status: pass.status,
+          holder: pass.holder_name,
+          verification: 'SkylineSOS Official Gate Token',
+        });
+        generateQrDataUrl(qrData, { width: 200 }).then((url) => {
+          setQrUrls((prev) => ({ ...prev, [pass.id]: url }));
+        });
+      }
+    });
+  }, [myTicketPasses]);
 
   // Handle Admin Add Category in New Event Form
   const handleAddCategory = () => {
@@ -323,6 +329,20 @@ export default function EventsScene() {
     }
   };
 
+  // Handle Admin Delete Event (Screenshot user request)
+  const handleDeleteEvent = (eventId: string, eventTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${eventTitle}"? This cannot be undone.`)) {
+      return;
+    }
+    const updated = curatedEvents.filter((e) => e.id !== eventId);
+    setCuratedEvents(updated);
+    try {
+      localStorage.setItem('skylinesos:curated_events', JSON.stringify(updated));
+    } catch {}
+    setPurchaseSuccess(`Event "${eventTitle}" deleted successfully from campus calendar.`);
+    setTimeout(() => setPurchaseSuccess(null), 4000);
+  };
+
   // Open reservation modal
   const openReservationModal = (event: CuratedEvent, category?: CuratedEvent['ticketCategories'][0]) => {
     if (!session) {
@@ -331,8 +351,9 @@ export default function EventsScene() {
     }
 
     // Constraint: 1 ticket per event per student account
-    if (myTicketPass && myTicketPass.event_id === event.id) {
-      alert(`You have already generated a ticket for "${event.title}". Each student is limited to 1 ticket reservation per event.`);
+    const alreadyReserved = myTicketPasses.find((p) => p.event_id === event.id);
+    if (alreadyReserved) {
+      alert(`You have already generated a ticket for "${event.title}" (${alreadyReserved.seat}). Each student is limited to 1 ticket reservation per event.`);
       return;
     }
 
@@ -351,7 +372,8 @@ export default function EventsScene() {
     }
 
     // Double check 1 ticket limit per event
-    if (myTicketPass && myTicketPass.event_id === selectedEvent.id) {
+    const alreadyReserved = myTicketPasses.find((p) => p.event_id === selectedEvent.id);
+    if (alreadyReserved) {
       alert(`You have already generated a ticket for "${selectedEvent.title}". Each student is limited to 1 ticket reservation per event.`);
       setSelectedEvent(null);
       return;
@@ -366,11 +388,11 @@ export default function EventsScene() {
       // Generate distinct random Seat # and Ticket code
       const hexSuffix = Math.floor(0x1000 + Math.random() * 0xefff).toString(16).toUpperCase();
       const assignedSeat = `Seat #${hexSuffix}`;
-      const ticketCode = `TKT-CE7F38-${hexSuffix}`;
+      const ticketCode = `TKT-${selectedEvent.id.toUpperCase()}-${hexSuffix}`;
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
       const newPass: EventTicketPass = {
-        id: `tkt-${Date.now()}`,
+        id: `tkt-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         code: ticketCode,
         seat: assignedSeat,
         otp: generatedOtp,
@@ -384,10 +406,11 @@ export default function EventsScene() {
         created_at: new Date().toISOString(),
       };
 
-      // Set user ticket pass and save to storage
-      setMyTicketPass(newPass);
+      // Add to user ticket passes array
+      const updatedPasses = [newPass, ...myTicketPasses.filter((p) => p.id !== newPass.id)];
+      setMyTicketPasses(updatedPasses);
       try {
-        localStorage.setItem('skylinesos:my_ticket_pass', JSON.stringify(newPass));
+        localStorage.setItem('skylinesos:my_ticket_passes', JSON.stringify(updatedPasses));
       } catch {}
 
       // Add to admin ticket applications so admin can review and enter OTP
@@ -397,7 +420,7 @@ export default function EventsScene() {
         localStorage.setItem('skylinesos:ticket_applications', JSON.stringify(updatedApplications));
       } catch {}
 
-      setPurchaseSuccess(`Pass reserved! Your ticket code is ${newPass.code}. Door OTP: ${generatedOtp}`);
+      setPurchaseSuccess(`Pass reserved for ${selectedEvent.title}! Your ticket is ${newPass.code}. Door OTP is securely encoded in QR.`);
       setSelectedEvent(null);
     } catch (err: any) {
       alert(err.message || 'Pass reservation failed');
@@ -428,14 +451,14 @@ export default function EventsScene() {
         localStorage.setItem('skylinesos:ticket_applications', JSON.stringify(updatedApps));
       } catch {}
 
-      // Update student ticket pass if it matches
-      if (myTicketPass && (myTicketPass.id === app.id || myTicketPass.code === app.code)) {
-        const approvedStudentPass = { ...myTicketPass, status: 'approved' as const };
-        setMyTicketPass(approvedStudentPass);
-        try {
-          localStorage.setItem('skylinesos:my_ticket_pass', JSON.stringify(approvedStudentPass));
-        } catch {}
-      }
+      // Update student ticket pass in myTicketPasses
+      const updatedStudentPasses = myTicketPasses.map((p) =>
+        p.id === app.id || p.code === app.code ? { ...p, status: 'approved' as const } : p
+      );
+      setMyTicketPasses(updatedStudentPasses);
+      try {
+        localStorage.setItem('skylinesos:my_ticket_passes', JSON.stringify(updatedStudentPasses));
+      } catch {}
 
       setApprovalFeedback({
         success: true,
@@ -601,14 +624,26 @@ export default function EventsScene() {
                 </div>
               </div>
 
-              {/* Full-width Cobalt CTA Button */}
-              <button
-                type="button"
-                onClick={() => openReservationModal(evt)}
-                className="w-full py-3.5 px-6 rounded-full font-semibold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-              >
-                Reserve Event Passes →
-              </button>
+              {/* Full-width Cobalt CTA Button + Admin Delete */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openReservationModal(evt)}
+                  className="flex-1 py-3.5 px-6 rounded-full font-semibold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  Reserve Event Passes →
+                </button>
+                {session?.role === 'admin' && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteEvent(evt.id, evt.title)}
+                    className="p-3.5 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors shadow-2xs flex items-center justify-center cursor-pointer shrink-0"
+                    title="Delete Event (Admin Only)"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -999,98 +1034,133 @@ export default function EventsScene() {
               </a>
             </div>
           </div>
-        ) : !myTicketPass ? (
+        ) : myTicketPasses.length === 0 ? (
           <div className="py-12 text-center space-y-3">
             <div className="text-3xl">🎟️</div>
             <p className="text-sm font-semibold text-[#0f172a]">No event passes reserved yet</p>
             <p className="text-xs text-[#64748b] max-w-sm mx-auto">
-              Select an upcoming event above to reserve your pass and generate your entrance QR code and door OTP.
+              Select an upcoming event above to reserve your pass and generate your individual entrance QR code and door OTP.
             </p>
           </div>
         ) : (
-          /* Ticket Status Card (Exact Layout from Screenshot 011914) */
-          <div className="max-w-md mx-auto p-6 sm:p-8 rounded-3xl border border-slate-200 bg-white space-y-5 shadow-sm">
-            {/* Top Row: Title + Status Pill */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h4 className="text-xs sm:text-sm font-bold text-[#0f172a] uppercase tracking-wider">
-                MY EVENT TICKET STATUS
-              </h4>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                  myTicketPass.status === 'approved'
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                    : 'bg-amber-100 text-amber-800 border border-amber-200'
-                }`}
-              >
-                {myTicketPass.status === 'approved' ? 'APPROVED' : 'PENDING APPROVAL'}
-              </span>
-            </div>
+          /* Multi-Ticket Compact Grid (Small Size Individual Tickets - User Request) */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {myTicketPasses.map((pass) => {
+              const passQrUrl = qrUrls[pass.id];
+              const isOtpRevealed = Boolean(revealedOtps[pass.id]);
 
-            {/* Pass Tier & Assigned Seat */}
-            <div className="flex items-center justify-between">
-              <div className="text-xs sm:text-sm text-[#0f172a]">
-                Pass Tier: <span className="font-bold uppercase">{myTicketPass.tier_name}</span>
-              </div>
-              <div className="text-sm sm:text-base font-extrabold text-[#0064e0] font-mono">
-                {myTicketPass.seat}
-              </div>
-            </div>
+              return (
+                <div
+                  key={pass.id}
+                  className="p-5 sm:p-6 rounded-3xl border border-slate-200 bg-white space-y-4 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow"
+                >
+                  {/* Top Row: Header + Status Pill */}
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                    <span className="text-[11px] font-bold text-[#0f172a] uppercase tracking-wider">
+                      EVENT PASS
+                    </span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        pass.status === 'approved'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                      }`}
+                    >
+                      {pass.status === 'approved' ? 'APPROVED' : 'PENDING APPROVAL'}
+                    </span>
+                  </div>
 
-            {/* Event Name & Ticket Number */}
-            <p className="text-xs text-[#334155] leading-relaxed">
-              Event: <strong>{myTicketPass.event_title}</strong> • Ticket: <span className="font-mono font-bold text-[#0f172a]">{myTicketPass.code}</span>
-            </p>
+                  {/* Event Title & Seat */}
+                  <div>
+                    <h4 className="text-sm font-bold text-[#0f172a] line-clamp-1" title={pass.event_title}>
+                      {pass.event_title}
+                    </h4>
+                    <div className="flex items-center justify-between mt-1 text-xs">
+                      <span className="text-[#64748b] font-medium truncate max-w-[140px]">
+                        Tier: <strong className="text-slate-800 uppercase">{pass.tier_name}</strong>
+                      </span>
+                      <span className="font-mono font-extrabold text-[#0064e0] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                        {pass.seat}
+                      </span>
+                    </div>
+                  </div>
 
-            {/* Notification Banner */}
-            {myTicketPass.status === 'approved' ? (
-              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs leading-relaxed font-medium">
-                🎉 <strong>Congratulations!</strong> Your ticket has been <strong>APPROVED</strong> for entry. Present your QR code to staff at the entrance. Assigned: <strong>{myTicketPass.seat}</strong>.
-              </div>
-            ) : (
-              <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs leading-relaxed">
-                ⏳ Ticket approval is <strong>PENDING</strong>. Present your QR code to staff at the entrance. Assigned: <strong>{myTicketPass.seat}</strong>.
-              </div>
-            )}
+                  {/* Ticket Number */}
+                  <div className="text-[11px] text-[#475569] font-mono bg-slate-50 p-2 rounded-xl border border-slate-100 flex justify-between items-center">
+                    <span>Code:</span>
+                    <strong className="text-[#0f172a]">{pass.code}</strong>
+                  </div>
 
-            {/* QR Code Card */}
-            <div className="p-6 rounded-2xl border border-slate-200/80 bg-slate-50/50 flex flex-col items-center justify-center space-y-3">
-              {myTicketQrUrl ? (
-                <img
-                  src={myTicketQrUrl}
-                  alt={`QR Pass for ${myTicketPass.code}`}
-                  className="w-48 h-48 sm:w-56 sm:h-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xs object-contain"
-                />
-              ) : (
-                <div className="w-48 h-48 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-xs text-slate-400">
-                  Generating QR...
+                  {/* Status Banner */}
+                  {pass.status === 'approved' ? (
+                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] leading-relaxed font-medium">
+                      🎉 <strong>Congratulations!</strong> Ticket <strong>APPROVED</strong>. Present QR code at entrance gate.
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-[11px] leading-relaxed">
+                      ⏳ Status: <strong>PENDING APPROVAL</strong>. Present QR code to staff at the entrance.
+                    </div>
+                  )}
+
+                  {/* Compact QR Code Box */}
+                  <div className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 flex flex-col items-center justify-center space-y-2.5">
+                    {passQrUrl ? (
+                      <img
+                        src={passQrUrl}
+                        alt={`QR Pass for ${pass.code}`}
+                        className="w-32 h-32 sm:w-36 sm:h-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xs object-contain"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-xs text-slate-400">
+                        Generating QR...
+                      </div>
+                    )}
+
+                    <div className="text-[10px] text-[#64748b] font-medium flex items-center gap-1">
+                      <span>📷</span>
+                      <span>Scan QR at Entrance</span>
+                    </div>
+
+                    {/* Hidden OTP Block (User request: OTP is hidden until QR scan / reveal) */}
+                    <div className="pt-1.5 w-full border-t border-slate-200/60 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase">Door OTP:</span>
+                        {isOtpRevealed ? (
+                          <span className="font-mono font-bold text-xs tracking-wider text-[#0064e0] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                            {pass.otp}
+                          </span>
+                        ) : (
+                          <span className="font-mono font-bold text-xs tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                            ••••••
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRevealedOtps((prev) => ({
+                            ...prev,
+                            [pass.id]: !prev[pass.id],
+                          }))
+                        }
+                        className="text-[10px] font-bold text-[#0064e0] hover:underline cursor-pointer"
+                      >
+                        {isOtpRevealed ? 'Hide' : 'Reveal OTP'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bottom Status Indicator */}
+                  <div className="pt-2 border-t border-slate-100 text-center text-[11px] text-[#64748b]">
+                    {pass.status === 'approved' ? (
+                      <span className="text-emerald-700 font-bold">✓ Approved & Verified • {pass.seat}</span>
+                    ) : (
+                      <span>Pending Staff Approval • {pass.seat}</span>
+                    )}
+                  </div>
                 </div>
-              )}
-              <div className="text-xs text-[#64748b] font-medium flex items-center gap-1.5">
-                <span>📷</span>
-                <span>Scan for Entrance Verification</span>
-              </div>
-
-              {/* Attendee OTP Helper */}
-              <div className="pt-2 text-center">
-                <span className="text-[11px] text-slate-500 font-semibold uppercase">Attendee Door OTP: </span>
-                <span className="font-mono font-bold text-sm tracking-wider text-[#0064e0] bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
-                  {myTicketPass.otp}
-                </span>
-              </div>
-            </div>
-
-            {/* Bottom Status Line */}
-            <div className="pt-3 border-t border-slate-100 text-center text-xs text-[#64748b]">
-              {myTicketPass.status === 'approved' ? (
-                <span className="text-emerald-700 font-bold">
-                  ✓ Entrance Status: Approved & Verified • {myTicketPass.seat}
-                </span>
-              ) : (
-                <span>
-                  Entrance Status: Pending Staff Approval • {myTicketPass.seat}
-                </span>
-              )}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>

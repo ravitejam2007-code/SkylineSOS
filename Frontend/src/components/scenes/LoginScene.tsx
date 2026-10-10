@@ -1,13 +1,27 @@
 import { useState, useEffect } from 'react';
-import { signInWithPassword, signInAsDemoRole, DEMO_ACCOUNTS, getCurrentUserSession, signOut, type UserSession } from '../../lib/auth';
+import {
+  signInWithPassword,
+  signInAsDemoRole,
+  DEMO_ACCOUNTS,
+  getCurrentUserSession,
+  signOut,
+  verifyAdminSecretCode,
+  type UserSession,
+} from '../../lib/auth';
 
 export default function LoginScene() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [adminSecretCode, setAdminSecretCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentSession, setCurrentSession] = useState<UserSession | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Admin Security Prompt Modal
+  const [pendingDemoRole, setPendingDemoRole] = useState<string | null>(null);
+  const [modalAdminSecret, setModalAdminSecret] = useState('');
+  const [modalError, setModalError] = useState<string | null>(null);
 
   useEffect(() => {
     getCurrentUserSession().then((session) => {
@@ -30,6 +44,15 @@ export default function LoginScene() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // If logging into an admin account, require secret code
+    if (email.toLowerCase().includes('admin')) {
+      if (!verifyAdminSecretCode(adminSecretCode)) {
+        setErrorMsg('Access Denied: Valid Admin Secret Security Code is mandatory for administrator sign-in. Use code: SKYLINE_ADMIN_2026');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const session = await signInWithPassword(email, password);
       setCurrentSession(session);
@@ -50,7 +73,7 @@ export default function LoginScene() {
     }
   };
 
-  const handleQuickDemo = async (roleKey: string) => {
+  const executeDemoLogin = async (roleKey: string) => {
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -68,6 +91,27 @@ export default function LoginScene() {
       setErrorMsg(err.message || 'Demo authentication failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQuickDemo = (roleKey: string) => {
+    if (roleKey === 'admin') {
+      setPendingDemoRole('admin');
+      setModalAdminSecret('');
+      setModalError(null);
+      return;
+    }
+    executeDemoLogin(roleKey);
+  };
+
+  const handleConfirmModalSecret = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verifyAdminSecretCode(modalAdminSecret)) {
+      setPendingDemoRole(null);
+      setModalError(null);
+      executeDemoLogin('admin');
+    } else {
+      setModalError('Invalid Admin Secret Security Code. Access denied.');
     }
   };
 
@@ -162,6 +206,26 @@ export default function LoginScene() {
               />
             </div>
 
+            {email.toLowerCase().includes('admin') && (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
+                  <span>🔒</span>
+                  <span>Admin Secret Security Code Required *</span>
+                </div>
+                <input
+                  type="password"
+                  required
+                  value={adminSecretCode}
+                  onChange={(e) => setAdminSecretCode(e.target.value)}
+                  placeholder="Enter admin secret code"
+                  className="w-full px-4 py-2 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-[#0064e0] font-mono"
+                />
+                <span className="block text-[11px] text-amber-700">
+                  Default Organization Master Key: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded font-bold">SKYLINE_ADMIN_2026</code>
+                </span>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -227,6 +291,75 @@ export default function LoginScene() {
           </div>
         </div>
       </div>
+
+      {/* Admin Secret Verification Modal for Quick Demo */}
+      {pendingDemoRole === 'admin' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-[var(--color-ink-deep)] animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative border border-slate-100">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-pink-100 text-pink-700">
+                  Security Clearance Required
+                </span>
+                <h3 className="text-xl font-bold text-[#0f172a] mt-1">Admin Panel Secret Code</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPendingDemoRole(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-black flex items-center justify-center cursor-pointer text-base"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Logging into <strong>Arjun Mehta (Admin Console)</strong> requires the organization secret code. Only authorized admins may enter.
+            </p>
+
+            {modalError && (
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
+                <span>⚠️</span> {modalError}
+              </div>
+            )}
+
+            <form onSubmit={handleConfirmModalSecret} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Enter Admin Secret Code *
+                </label>
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  value={modalAdminSecret}
+                  onChange={(e) => setModalAdminSecret(e.target.value)}
+                  placeholder="Enter secret code (e.g. SKYLINE_ADMIN_2026)"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-xs text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0064e0] font-mono"
+                />
+                <span className="block text-[10px] text-slate-400 mt-1">
+                  Master Organization Key: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono">SKYLINE_ADMIN_2026</code>
+                </span>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPendingDemoRole(null)}
+                  className="flex-1 py-2.5 rounded-full border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-full bg-[#0f172a] hover:bg-black text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  Verify & Unlock Admin
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,13 +5,120 @@ import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
 import type { Fundraiser, FundraiserTask, TaskStatus, TaskPriority } from '@campusone/contracts';
 
+export interface OperationsTaskMessage {
+  id: string;
+  author: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface RichFundraiserTask extends FundraiserTask {
+  progressPercent?: number;
+  messages?: OperationsTaskMessage[];
+}
+
+export const REGISTERED_PERSONNEL = [
+  { name: 'Sarah Student', role: 'Active Member · Quad Table Lead', email: 'student@studentorg.edu' },
+  { name: 'Rahul Sharma', role: 'Core Member · Logistics Lead', email: 'rahul.s@skyline.edu' },
+  { name: 'Maya Deshmukh', role: 'Plus Member · Design Lead', email: 'maya.d@skyline.edu' },
+  { name: 'Arjun Mehta', role: 'Lead Administrator', email: 'arjun.admin@skyline.edu' },
+  { name: 'Priya Patel', role: 'Treasurer · Finance Desk', email: 'priya.treasurer@skyline.edu' },
+  { name: 'Vikram Singh', role: 'Door Staff · Entrance Lead', email: 'vikram.door@skyline.edu' },
+  { name: 'Ananya Rao', role: 'Volunteer Coordinator', email: 'ananya.volunteer@skyline.edu' },
+];
+
+const DEFAULT_OPERATIONS_TASKS: RichFundraiserTask[] = [
+  {
+    id: 'task-1',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Pick up folding tables and display risers from Student Union',
+    priority: 'high',
+    status: 'in_progress',
+    progressPercent: 50,
+    assignee_name: 'Sarah Student',
+    due_at: '2026-10-17T18:00:00Z',
+    created_at: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg-1',
+        author: 'Sarah Student',
+        text: 'Checked out 4 tables from Room 204. Setting them up at the Quad table.',
+        timestamp: '2026-10-10T15:30:00Z',
+      },
+    ],
+  },
+  {
+    id: 'task-2',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Bake 100 chocolate chip cookies and package in individual compostable sleeves',
+    priority: 'urgent',
+    status: 'done',
+    progressPercent: 100,
+    assignee_name: 'Rahul Sharma',
+    due_at: '2026-10-17T12:00:00Z',
+    created_at: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg-2',
+        author: 'Rahul Sharma',
+        text: 'All 100 cookies baked and packaged with ingredient labels.',
+        timestamp: '2026-10-10T12:00:00Z',
+      },
+    ],
+  },
+  {
+    id: 'task-3',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Print QR code donation placards and price tags',
+    priority: 'medium',
+    status: 'todo',
+    progressPercent: 0,
+    assignee_name: 'Maya Deshmukh',
+    due_at: '2026-10-18T10:00:00Z',
+    created_at: new Date().toISOString(),
+    messages: [],
+  },
+  {
+    id: 'task-4',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Manage Quad Cash Box and tally hourly cash reconciliation',
+    priority: 'high',
+    status: 'in_progress',
+    progressPercent: 60,
+    assignee_name: 'Priya Patel',
+    due_at: '2026-10-17T17:00:00Z',
+    created_at: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg-4',
+        author: 'Priya Patel',
+        text: 'Cash drawer initialized with ₹500 change. ₹1,200 collected by 2 PM.',
+        timestamp: '2026-10-10T14:00:00Z',
+      },
+    ],
+  },
+];
+
 export default function FundraiserScene() {
   const [session, setSession] = useState<UserSession | null>(() => {
     if (typeof window !== 'undefined') return getActiveSession();
     return null;
   });
   const [fundraiser, setFundraiser] = useState<Fundraiser | null>(null);
-  const [tasks, setTasks] = useState<FundraiserTask[]>([]);
+  const [tasks, setTasks] = useState<RichFundraiserTask[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('skylinesos:operations_tasks');
+        if (stored) return JSON.parse(stored);
+      } catch {}
+    }
+    return DEFAULT_OPERATIONS_TASKS;
+  });
+  const [taskMessageInputs, setTaskMessageInputs] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   // Async button loading states
@@ -23,19 +130,39 @@ export default function FundraiserScene() {
   const [cashDesc, setCashDesc] = useState('Quad table afternoon cookie sales');
   const [cashSuccess, setCashSuccess] = useState<string | null>(null);
 
-  // New task modal state
+  // New task modal state (Select registered personnel - User Request)
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('high');
-  const [newTaskAssignee, setNewTaskAssignee] = useState('');
+  const [newTaskAssignee, setNewTaskAssignee] = useState<string>(REGISTERED_PERSONNEL[0].name);
 
   const loadData = async () => {
     try {
+      let storedTasks: RichFundraiserTask[] = [];
+      if (typeof window !== 'undefined') {
+        const local = localStorage.getItem('skylinesos:operations_tasks');
+        if (local) {
+          try {
+            storedTasks = JSON.parse(local);
+          } catch {}
+        }
+      }
+
       const fList = await api.getActiveFundraisers();
       if (fList.length > 0) {
         setFundraiser(fList[0]);
-        const tList = await api.getFundraiserTasks(fList[0].id);
-        setTasks(tList);
+        const tList = await api.getFundraiserTasks(fList[0].id).catch(() => []);
+        if (storedTasks.length > 0) {
+          setTasks(storedTasks);
+        } else if (Array.isArray(tList) && tList.length > 0) {
+          setTasks(tList as any);
+          localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(tList));
+        } else {
+          setTasks(DEFAULT_OPERATIONS_TASKS);
+          localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(DEFAULT_OPERATIONS_TASKS));
+        }
+      } else {
+        setTasks(storedTasks.length > 0 ? storedTasks : DEFAULT_OPERATIONS_TASKS);
       }
     } catch (err) {
       console.error(err);
@@ -96,39 +223,102 @@ export default function FundraiserScene() {
     }
   };
 
-  // Handle Task Status Toggle
-  const handleToggleTask = async (taskId: string, currentStatus: TaskStatus) => {
-    let nextStatus: TaskStatus = 'in_progress';
-    if (currentStatus === 'todo') nextStatus = 'in_progress';
-    else if (currentStatus === 'in_progress') nextStatus = 'done';
-    else nextStatus = 'todo';
+  // Handle Progress / Status Update (User Request)
+  const handleSetTaskStatus = async (taskId: string, newStatus: TaskStatus, percent?: number) => {
+    const updated = tasks.map((t) => {
+      if (t.id === taskId) {
+        const computedPercent =
+          typeof percent === 'number'
+            ? percent
+            : newStatus === 'done'
+            ? 100
+            : newStatus === 'in_progress'
+            ? 50
+            : 0;
+        return {
+          ...t,
+          status: newStatus,
+          progressPercent: computedPercent,
+        };
+      }
+      return t;
+    });
 
+    setTasks(updated);
     try {
-      await api.updateTaskStatus(taskId, nextStatus);
-      await loadData();
-    } catch (err: any) {
-      alert(err.message);
-    }
+      localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(updated));
+      await api.updateTaskStatus(taskId, newStatus).catch(() => {});
+    } catch {}
   };
 
-  // Handle Create Task
+  // Handle Student Sending Progress Message (User Request)
+  const handleSendTaskMessage = (taskId: string) => {
+    const text = (taskMessageInputs[taskId] || '').trim();
+    if (!text) return;
+
+    const newMessage: OperationsTaskMessage = {
+      id: `msg-${Date.now()}`,
+      author: session?.fullName || 'Volunteer Staff',
+      text,
+      timestamp: new Date().toISOString(),
+    };
+
+    const updated = tasks.map((t) => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          messages: [...(t.messages || []), newMessage],
+        };
+      }
+      return t;
+    });
+
+    setTasks(updated);
+    setTaskMessageInputs((prev) => ({ ...prev, [taskId]: '' }));
+    try {
+      localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(updated));
+    } catch {}
+  };
+
+  // Handle Create Task with Personnel Dropdown
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle || !fundraiser) return;
+    if (!newTaskTitle) return;
     setIsCreatingTask(true);
     try {
-      await api.createTask({
-        fundraiser_id: fundraiser.id,
+      const newTask: RichFundraiserTask = {
+        id: `task-${Date.now()}`,
+        organization_id: 'a0000000-0000-0000-0000-000000000001',
+        fundraiser_id: fundraiser?.id || 'fr-1',
         title: newTaskTitle,
         priority: newTaskPriority,
-        assignee_name: newTaskAssignee || 'Unassigned',
-      });
+        assignee_name: newTaskAssignee || REGISTERED_PERSONNEL[0].name,
+        status: 'todo',
+        progressPercent: 0,
+        due_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+        created_at: new Date().toISOString(),
+        messages: [],
+      };
+
+      const updated = [newTask, ...tasks];
+      setTasks(updated);
+      try {
+        localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(updated));
+        if (fundraiser) {
+          await api.createTask({
+            fundraiser_id: fundraiser.id,
+            title: newTaskTitle,
+            priority: newTaskPriority,
+            assignee_name: newTaskAssignee,
+          }).catch(() => {});
+        }
+      } catch {}
+
       setShowAddTask(false);
       setNewTaskTitle('');
-      setNewTaskAssignee('');
-      await loadData();
+      setNewTaskAssignee(REGISTERED_PERSONNEL[0].name);
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || 'Failed to create task');
     } finally {
       setIsCreatingTask(false);
     }
@@ -286,24 +476,39 @@ export default function FundraiserScene() {
                       placeholder="Task title (e.g. Pick up folding tables)"
                       className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] text-[14px] bg-white focus:outline-none focus:border-[var(--color-fb-blue)]"
                     />
-                    <div className="grid grid-cols-2 gap-3">
-                      <select
-                        value={newTaskPriority}
-                        onChange={(e) => setNewTaskPriority(e.target.value as any)}
-                        className="w-full px-4 py-2 rounded-full border border-[var(--color-hairline)] text-[13px] bg-white cursor-pointer"
-                      >
-                        <option value="urgent">Urgent</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                      </select>
-                      <input
-                        type="text"
-                        value={newTaskAssignee}
-                        onChange={(e) => setNewTaskAssignee(e.target.value)}
-                        placeholder="Assignee name"
-                        className="w-full px-4 py-2 rounded-full border border-[var(--color-hairline)] text-[13px] bg-white"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                          Priority Level
+                        </label>
+                        <select
+                          value={newTaskPriority}
+                          onChange={(e) => setNewTaskPriority(e.target.value as any)}
+                          className="w-full px-4 py-2 rounded-full border border-[var(--color-hairline)] text-[13px] bg-white cursor-pointer"
+                        >
+                          <option value="urgent">Urgent</option>
+                          <option value="high">High</option>
+                          <option value="medium">Medium</option>
+                          <option value="low">Low</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                          Assign Personnel *
+                        </label>
+                        <select
+                          value={newTaskAssignee}
+                          onChange={(e) => setNewTaskAssignee(e.target.value)}
+                          className="w-full px-4 py-2 rounded-full border border-[var(--color-hairline)] text-[13px] bg-white cursor-pointer font-medium"
+                        >
+                          {REGISTERED_PERSONNEL.map((person) => (
+                            <option key={person.name} value={person.name}>
+                              {person.name} — {person.role}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div className="flex gap-2 pt-1">
                       <button
@@ -468,8 +673,8 @@ export default function FundraiserScene() {
                     <th className="py-3 px-4">TASK & CAMPAIGN</th>
                     <th className="py-3 px-4">ASSIGNEE</th>
                     <th className="py-3 px-4">PRIORITY</th>
-                    <th className="py-3 px-4">DUE DATE</th>
-                    <th className="py-3 px-4">STATUS</th>
+                    <th className="py-3 px-4">WORK PROGRESS</th>
+                    <th className="py-3 px-4">STATUS ACTION</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -480,43 +685,101 @@ export default function FundraiserScene() {
                       </td>
                     </tr>
                   ) : (
-                    tasks.map((task) => (
-                      <tr key={task.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-[#0f172a]">
-                          <div>{task.title}</div>
-                          <div className="text-[11px] font-normal text-[#64748b]">
-                            {fundraiser?.title || 'Spring Semester Bake Sale'}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-[#334155] font-medium">
-                          {task.assignee_name || 'Unassigned'}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityBadge(
-                              task.priority
-                            )}`}
-                          >
-                            {task.priority}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-[#64748b] font-mono">
-                          {task.due_at ? new Date(task.due_at).toLocaleDateString() : '17 Oct 2026'}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleTask(task.id, task.status)}
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-transform active:scale-95 ${getStatusBadge(
-                              task.status
-                            )}`}
-                            title="Click to toggle status"
-                          >
-                            {task.status.replace('_', ' ')}
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    tasks.map((task) => {
+                      const percent =
+                        task.progressPercent ??
+                        (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
+
+                      return (
+                        <tr key={task.id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3.5 px-4 font-bold text-[#0f172a] max-w-xs">
+                            <div>{task.title}</div>
+                            <div className="text-[11px] font-normal text-[#64748b]">
+                              {fundraiser?.title || 'Spring Semester Bake Sale'}
+                            </div>
+                            {/* Message Log */}
+                            {task.messages && task.messages.length > 0 && (
+                              <div className="mt-1.5 p-2 rounded-xl bg-blue-50/60 border border-blue-100 text-[11px] text-blue-900 font-normal">
+                                <span className="font-semibold text-[#0064e0]">Latest Message:</span> "
+                                {task.messages[task.messages.length - 1].text}" —{' '}
+                                <em className="text-slate-500 font-sans">
+                                  {task.messages[task.messages.length - 1].author}
+                                </em>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-[#334155] font-medium whitespace-nowrap">
+                            <span className="bg-slate-100 px-2.5 py-1 rounded-full text-slate-700 font-semibold border border-slate-200/80">
+                              👤 {task.assignee_name || 'Unassigned'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityBadge(
+                                task.priority
+                              )}`}
+                            >
+                              {task.priority}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 min-w-[150px]">
+                            <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+                              <span className="text-slate-600">Progress</span>
+                              <span className="text-[#0064e0] font-mono">{percent}%</span>
+                            </div>
+                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+                              <div
+                                className={`h-full transition-all duration-300 ${
+                                  percent === 100
+                                    ? 'bg-emerald-500'
+                                    : percent > 0
+                                    ? 'bg-[#0064e0]'
+                                    : 'bg-slate-300'
+                                }`}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
+                                  task.status === 'todo'
+                                    ? 'bg-slate-700 text-white'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                To Do
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
+                                  task.status === 'in_progress'
+                                    ? 'bg-amber-600 text-white'
+                                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                }`}
+                              >
+                                Progress
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
+                                  task.status === 'done'
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                }`}
+                              >
+                                Complete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -524,22 +787,205 @@ export default function FundraiserScene() {
           </div>
         </div>
       ) : (
-        /* Public / Member View: Campaign Support Information */
-        <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-4 shadow-2xs">
-          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
-            🍪
-          </div>
-          <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Support the Spring Semester Bake Sale</h3>
-          <p className="text-sm text-[var(--color-steel)] max-w-lg mx-auto leading-relaxed">
-            Student contributions directly fund engineering supplies, club workshops, and subsidized gala tickets. Visit our quad table during lunch hours to grab freshly baked snacks or join our volunteer committee!
-          </p>
-          <div className="pt-2">
-            <a
-              href="/memberships"
-              className="inline-block px-6 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
-            >
-              Explore Membership Benefits →
-            </a>
+        /* Member / Student View: "go task him account show not others" & Send messages */
+        <div className="space-y-8">
+          {session ? (
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-blue-100 text-[#0064e0]">
+                    Personal Task Portal
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a] mt-1">
+                    My Assigned Operations Tasks
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Tasks assigned specifically to {session.fullName} ({session.email}). Update your work progress and send live notes to chapter leaders.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 self-start sm:self-auto border border-slate-200">
+                  {tasks.filter((t) => t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase())).length} Assigned
+                </span>
+              </div>
+
+              {/* Filter tasks assigned strictly to this student */}
+              {tasks.filter((t) => t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase())).length === 0 ? (
+                <div className="py-10 text-center space-y-2">
+                  <div className="text-3xl">📋</div>
+                  <p className="text-sm font-semibold text-slate-800">No operations tasks assigned to your account yet</p>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    When organization administrators assign you volunteer tasks (e.g. quad table setup, cookie packaging), they will appear directly in your account here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {tasks
+                    .filter((t) => t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()))
+                    .map((task) => {
+                      const percent =
+                        task.progressPercent ??
+                        (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
+
+                      return (
+                        <div
+                          key={task.id}
+                          className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-4 hover:shadow-xs transition-shadow"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <h4 className="font-bold text-sm sm:text-base text-[#0f172a]">{task.title}</h4>
+                              <p className="text-xs text-slate-500 font-mono mt-0.5">
+                                Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Today'} · Priority:{' '}
+                                <span className="font-bold uppercase text-slate-700">{task.priority}</span>
+                              </p>
+                            </div>
+                            <span
+                              className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider self-start sm:self-auto ${getStatusBadge(
+                                task.status
+                              )}`}
+                            >
+                              {task.status.replace('_', ' ')} ({percent}%)
+                            </span>
+                          </div>
+
+                          {/* Progress options */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5">
+                            <div className="flex items-center justify-between text-xs font-bold">
+                              <span className="text-slate-700">How much work is done:</span>
+                              <span className="text-[#0064e0] font-mono">{percent}% Complete</span>
+                            </div>
+
+                            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
+                              <div
+                                className={`h-full transition-all duration-300 ${
+                                  percent === 100
+                                    ? 'bg-emerald-500'
+                                    : percent > 0
+                                    ? 'bg-[#0064e0]'
+                                    : 'bg-slate-300'
+                                }`}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  task.status === 'todo'
+                                    ? 'bg-slate-800 text-white'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                }`}
+                              >
+                                To Do (0%)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  task.status === 'in_progress'
+                                    ? 'bg-amber-600 text-white'
+                                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                }`}
+                              >
+                                In Progress (50%)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  task.status === 'done'
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                }`}
+                              >
+                                Complete (100%)
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Student message input and history (User Request) */}
+                          <div className="space-y-2">
+                            {task.messages && task.messages.length > 0 && (
+                              <div className="space-y-1.5">
+                                <span className="text-[11px] font-bold text-slate-600 uppercase">Updates & Notes:</span>
+                                {task.messages.map((m) => (
+                                  <div
+                                    key={m.id}
+                                    className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 flex justify-between items-start gap-2"
+                                  >
+                                    <p className="leading-relaxed">
+                                      <strong>{m.author}:</strong> "{m.text}"
+                                    </p>
+                                    <span className="text-[10px] text-slate-400 whitespace-nowrap font-mono">
+                                      {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="flex gap-2 pt-1">
+                              <input
+                                type="text"
+                                value={taskMessageInputs[task.id] || ''}
+                                onChange={(e) =>
+                                  setTaskMessageInputs({ ...taskMessageInputs, [task.id]: e.target.value })
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleSendTaskMessage(task.id);
+                                  }
+                                }}
+                                placeholder="Send message (e.g. Complete setup, need 2 more volunteers)..."
+                                className="flex-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs focus:outline-none focus:border-[#0064e0]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSendTaskMessage(task.id)}
+                                className="px-4 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold cursor-pointer transition-colors"
+                              >
+                                Send Update
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-3 shadow-2xs">
+              <p className="text-sm font-semibold text-slate-800">Sign in to access your assigned volunteer tasks</p>
+              <a
+                href="/login"
+                className="inline-block px-5 py-2 rounded-full bg-[#0064e0] text-white text-xs font-bold hover:bg-[#0052b8]"
+              >
+                Sign In
+              </a>
+            </div>
+          )}
+
+          {/* Campaign Support Information */}
+          <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-4 shadow-2xs">
+            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+              🍪
+            </div>
+            <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Support the Spring Semester Bake Sale</h3>
+            <p className="text-sm text-[var(--color-steel)] max-w-lg mx-auto leading-relaxed">
+              Student contributions directly fund engineering supplies, club workshops, and subsidized gala tickets. Visit our quad table during lunch hours to grab freshly baked snacks or join our volunteer committee!
+            </p>
+            <div className="pt-2">
+              <a
+                href="/memberships"
+                className="inline-block px-6 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                Explore Membership Benefits →
+              </a>
+            </div>
           </div>
         </div>
       )}

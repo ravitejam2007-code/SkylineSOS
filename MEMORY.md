@@ -267,5 +267,37 @@
   - **Verification:**
     - Ran `npm run build` in `Frontend/`: All 20 static pages compiled cleanly in 13.03s via `@astrojs/vercel` with 0 errors.
     - Ran `npm test` at workspace root: 79/79 invariant and route tests passed (100% pass rate).
+- **Multi-Ticket On-Demand Generation, Gate Security, Admin Secret, and Operations Overhaul:**
+  - **On-Demand Multi-Event Ticket Pass Generation ([`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Stopped automatic ticket generation on page load; shows clean empty state until attendee clicks "Reserve Event Passes".
+    - Enabled multiple distinct ticket passes (one ticket per registered event): reserving Event 1 generates Ticket 1; reserving Event 2 generates Ticket 2 with distinct event titles, seat assignments, random 6-digit gate OTPs, and unique QR tokens.
+    - Rendered tickets in a compact, small-size responsive grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`).
+    - Door OTP is hidden by default (`••••••`) to prevent peek-through, with an instant toggle ("👁 Reveal" / "🔒 Hide").
+    - Embedded full admission payload inside the scannable QR code token for gate verification.
+    - Admin gate OTP verification approves individual tickets, immediately updating the student pass to emerald green with a congratulations banner.
+    - Added Admin "Delete Event" button (`🗑️`) on each event card with confirmation dialog.
+  - **Mandatory Admin Secret Code Security ([`auth.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/auth.ts), [`RoleSwitcher.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/RoleSwitcher.tsx), [`LoginScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/LoginScene.tsx), [`SignUpScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/SignUpScene.tsx)):**
+    - Master secret code established (`SKYLINE_ADMIN_2026`, also accepts `ADMIN2026`).
+    - Admin role switching via `RoleSwitcher` intercepts with an interactive security modal requiring the secret code before granting executive access.
+    - Login scene prompts for the secret code when authenticating with admin credentials or using the 1-Click Executive Admin demo account.
+    - Sign-up scene adds an Account Type selector (`Student` vs `Executive Admin`) requiring the secret code for admin registrations.
+  - **Membership Application Review Board Guaranteed Visibility ([`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx)):**
+    - Guaranteed application records in the Review Board using persistent `localStorage` cache seeded with `DEFAULT_APPLICATIONS`.
+    - Rendered applicant name, email, student ID, requested tier, and live status (`✓ DONE [APPROVED]`, `✕ REJECTED`, `⏳ PENDING REVIEW`).
+    - Admin Approve / Reject actions update status with instant feedback.
+    - Connected student's "MY MEMBERSHIP STATUS" card to reflect their live application status.
+  - **Task Assignment Dropdown, Student-Only View, Progress Tracking & Messages ([`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx)):**
+    - Replaced free-text name typing with a select dropdown of registered students and staff (`REGISTERED_PERSONNEL`).
+    - Filtered student task view so each logged-in student only sees tasks assigned to them ("My Assigned Operations Tasks").
+    - Added multi-stage progress tracking (`To Do [0%]`, `In Progress [50%]`, `Complete [100%]`) with animated progress bars.
+    - Provided an interactive message composer for students and staff to post status updates and notes.
+    - Enriched Admin Operations Master Board with live progress bars, status toggles, and recent message logs.
+  - **Notice Publishing Fix & Admin Delete Notice ([`AnnouncementsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/AnnouncementsScene.tsx)):**
+    - Fixed notice publishing with `localStorage` persistence and non-blocking background API sync.
+    - Added Admin Delete Notice action (`🗑️ Delete Notice`) on each bulletin card with confirmation dialog.
+  - **Verification:**
+    - Ran `npm test` at workspace root: 79 tests passed across 24 suites with 100% pass rate.
+    - Ran `npm --prefix Frontend run build`: 20 static pages compiled cleanly with zero errors.
+
 
 

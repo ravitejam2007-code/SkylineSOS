@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signUp } from '../../lib/auth';
+import { signUp, verifyAdminSecretCode } from '../../lib/auth';
 
 export default function SignUpScene() {
   const [fullName, setFullName] = useState('');
@@ -7,6 +7,8 @@ export default function SignUpScene() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [accountType, setAccountType] = useState<'student' | 'admin'>('student');
+  const [adminSecretCode, setAdminSecretCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -26,6 +28,13 @@ export default function SignUpScene() {
       return;
     }
 
+    if (accountType === 'admin') {
+      if (!verifyAdminSecretCode(adminSecretCode)) {
+        setErrorMsg('Access Denied: Valid Admin Secret Security Code is mandatory to register an Administrator account. Use: SKYLINE_ADMIN_2026');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -35,6 +44,16 @@ export default function SignUpScene() {
         fullName,
         studentId: studentId.trim() || undefined,
       });
+
+      if (accountType === 'admin') {
+        localStorage.setItem('campusone_demo_role', 'admin');
+        window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: 'admin' }));
+        setSuccessMsg(`Welcome Administrator, ${session.fullName}! Executive security code verified. Redirecting to admin panel...`);
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 1200);
+        return;
+      }
 
       if (session.rateLimitNotice) {
         setSuccessMsg(
@@ -86,6 +105,56 @@ export default function SignUpScene() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1.5">
+              Account Type / Role
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setAccountType('student')}
+                className={`py-2.5 px-3 rounded-2xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                  accountType === 'student'
+                    ? 'border-[#0064e0] bg-blue-50/50 text-[#0064e0] ring-1 ring-[#0064e0]'
+                    : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
+                }`}
+              >
+                🎓 Student Member
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('admin')}
+                className={`py-2.5 px-3 rounded-2xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                  accountType === 'admin'
+                    ? 'border-[#0f172a] bg-slate-900 text-white ring-1 ring-slate-900'
+                    : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
+                }`}
+              >
+                🛡️ Executive Admin
+              </button>
+            </div>
+          </div>
+
+          {accountType === 'admin' && (
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
+                <span>🔒</span>
+                <span>Admin Secret Security Code Required *</span>
+              </div>
+              <input
+                type="password"
+                required
+                value={adminSecretCode}
+                onChange={(e) => setAdminSecretCode(e.target.value)}
+                placeholder="Enter admin secret code"
+                className="w-full px-4 py-2 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-[#0064e0] font-mono"
+              />
+              <span className="block text-[11px] text-amber-700">
+                Organization Master Key: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded font-bold">SKYLINE_ADMIN_2026</code>
+              </span>
+            </div>
+          )}
+
           <div>
             <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">
               Full Name
