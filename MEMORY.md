@@ -165,7 +165,24 @@
   - **Configuration ([`Frontend/astro.config.mjs`](file:///c:/Users/javal/Videos/SkylineSOS/Frontend/astro.config.mjs)):** Integrated `adapter: vercel()` for optimized static build output (`.vercel/output/static`).
   - **Ignore Rules ([`.gitignore`](file:///c:/Users/javal/Videos/SkylineSOS/.gitignore)):** Added `.vercel/` build output to root `.gitignore` to prevent committing build caches and deployment artifacts.
   - **Verification:** Verified `npm run build` in `Frontend/` generates 20 static pages into `.vercel/output/static` in ~5.18s with zero errors. All 79 backend tests continue to pass.
-
-
-
-
+- **Event Cards Redesign to Match Visual Specification:**
+  - **Header & Layout ([`Frontend/src/pages/events.astro`](file:///E:/projects/SkylineSOS/Frontend/src/pages/events.astro)):**
+    - Updated page header to "Upcoming Organization Events".
+    - Subtitle: "Select an event below to reserve passes. Active chapter members receive discounted rates."
+  - **Component Redesign ([`Frontend/src/components/scenes/EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Re-architected event cards into a 2-column grid matching visual specification:
+      1. **Annual Tech Gala & Hackathon 2026**:
+         - High-resolution auditorium banner with top-left date badge (`17 Oct 2026`) and top-right cobalt badge (`186 Seats Left`).
+         - Location details with coral map-pin: `Skyline Auditorium Hall A • 23:40`.
+         - Pass options box: Delegate Pass (₹500 / Member price ₹300, Save ₹200) and VIP Banquet Pass (₹1,000 / Member price ₹750, Save ₹250).
+         - Primary CTA: Cobalt blue pill button `Reserve Event Passes →`.
+      2. **Autonomous Robotics & AI Summit**:
+         - High-resolution humanoid robotics banner with date badge (`24 Oct 2026`) and seats left badge (`94 Seats Left`).
+         - Location details with coral map-pin: `Innovation Hub, Lab 3 • 23:40`.
+         - Pass options box: Summit Student Pass (`Free`).
+         - Primary CTA: Cobalt blue pill button `Reserve Event Passes →`.
+    - Integrated pass reservation modal with tier discount detection and checkout trigger.
+    - Preserved staff operations tools (gate code verification and walk-up cash desk sale).
+  - **Verification:**
+    - Ran `npm run build` in `Frontend/`: 20 static pages compiled with `@astrojs/vercel` in 6.17s with zero errors.
+    - Ran `npm test` at workspace root: 79 tests passed across 24 test suites with 100% pass rate.

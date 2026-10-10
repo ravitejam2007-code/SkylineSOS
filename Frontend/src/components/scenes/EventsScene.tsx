@@ -1,86 +1,141 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { formatPaise } from '../../lib/formatters';
-import { generateQrDataUrl } from '../../lib/qr';
-import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
+import { ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
 import type {
   Event,
   TicketType,
   Ticket,
-  EventSummaryResult,
 } from '@campusone/contracts';
+
+interface CuratedEvent {
+  id: string;
+  slug: string;
+  title: string;
+  venue: string;
+  dateStr: string;
+  timeStr: string;
+  seatsLeft: number;
+  imageUrl: string;
+  description: string;
+  titleColor?: string;
+  ticketCategories: {
+    id: string;
+    name: string;
+    available: number;
+    memberPricePaise: number;
+    nonMemberPricePaise: number;
+  }[];
+}
+
+const DEFAULT_EVENTS: CuratedEvent[] = [
+  {
+    id: 'e3',
+    slug: 'annual-tech-gala-2026',
+    title: 'Annual Tech Gala & Hackathon 2026',
+    venue: 'Skyline Auditorium Hall A',
+    dateStr: '17 Oct 2026',
+    timeStr: '23:40',
+    seatsLeft: 186,
+    imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+    description:
+      'The flagship university technical gathering featuring keynote speakers, hackathon project showcases, and student awards banquet.',
+    titleColor: 'text-[#0064e0]',
+    ticketCategories: [
+      {
+        id: 'tt_delegate_pass',
+        name: 'Standard Delegate Pass',
+        available: 138,
+        memberPricePaise: 15000,
+        nonMemberPricePaise: 30000,
+      },
+      {
+        id: 'tt_vip_banquet',
+        name: 'VIP & Networking Banquet',
+        available: 48,
+        memberPricePaise: 40000,
+        nonMemberPricePaise: 60000,
+      },
+    ],
+  },
+  {
+    id: 'e4',
+    slug: 'robotics-ai-summit-2026',
+    title: 'Autonomous Robotics & AI Summit',
+    venue: 'Innovation Hub, Lab 3',
+    dateStr: '24 Oct 2026',
+    timeStr: '23:40',
+    seatsLeft: 94,
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80',
+    description:
+      'Hands-on exhibition with microcontrollers, ROS2 robotics frameworks, and computer vision competitions.',
+    titleColor: 'text-[#0f172a]',
+    ticketCategories: [
+      {
+        id: 'tt_summit_pass',
+        name: 'Summit Student Pass',
+        available: 94,
+        memberPricePaise: 0,
+        nonMemberPricePaise: 20000,
+      },
+    ],
+  },
+];
 
 export default function EventsScene() {
   const [session, setSession] = useState<UserSession | null>(() => {
     if (typeof window !== 'undefined') return getActiveSession();
     return null;
   });
-  const [events, setEvents] = useState<Event[]>([]);
-  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
-  const [summary, setSummary] = useState<EventSummaryResult | null>(null);
-  const [issuedTickets, setIssuedTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Async button loading states
-  const [buyingTicketId, setBuyingTicketId] = useState<string | null>(null);
-  const [isSellingDoor, setIsSellingDoor] = useState(false);
-  const [isCheckingIn, setIsCheckingIn] = useState(false);
-  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [curatedEvents, setCuratedEvents] = useState<CuratedEvent[]>(DEFAULT_EVENTS);
+  const [selectedEvent, setSelectedEvent] = useState<CuratedEvent | null>(null);
+  const [selectedTicketCategory, setSelectedTicketCategory] = useState<CuratedEvent['ticketCategories'][0] | null>(null);
+  const [purchaseQuantity, setPurchaseQuantity] = useState(1);
+  const [isBuying, setIsBuying] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
 
-  // Door Check-in state (6-digit code or ticket token)
+  // Staff tools & check-in state
+  const [showStaffTools, setShowStaffTools] = useState(false);
   const [checkInToken, setCheckInToken] = useState('482915');
-  const [ticketQrDataUrl, setTicketQrDataUrl] = useState<string>('');
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [checkInResult, setCheckInResult] = useState<{
     success: boolean;
     message: string;
     attendee?: string;
   } | null>(null);
 
-  useEffect(() => {
-    if (checkInToken && !/^\d{6}$/.test(checkInToken.trim())) {
-      generateQrDataUrl(checkInToken, { width: 220 }).then(setTicketQrDataUrl);
-    } else {
-      setTicketQrDataUrl('');
-    }
-  }, [checkInToken]);
-
-  // Cash door sale state
   const [doorAttendeeName, setDoorAttendeeName] = useState('');
-  const [doorTicketTypeId, setDoorTicketTypeId] = useState('');
+  const [doorSelectedEventId, setDoorSelectedEventId] = useState('e3');
+  const [isSellingDoor, setIsSellingDoor] = useState(false);
   const [doorSaleSuccess, setDoorSaleSuccess] = useState<string | null>(null);
 
-  // Buy ticket success state
-  const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
-
-  // Create Event state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newEventTitle, setNewEventTitle] = useState('');
-  const [newEventVenue, setNewEventVenue] = useState('');
-  const [newEventCapacity, setNewEventCapacity] = useState('150');
-
-  const loadData = async () => {
-    try {
-      const evts = await api.getEvents();
-      setEvents(evts);
-      if (evts.length > 0) {
-        const [ttList, summ] = await Promise.all([
-          api.getTicketTypes(evts[0].id),
-          api.getEventSummary(evts[0].id),
-        ]);
-        setTicketTypes(ttList);
-        setSummary(summ);
-        if (ttList.length > 0) setDoorTicketTypeId(ttList[0].id);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load real API data and merge where available
   useEffect(() => {
-    loadData();
+    const loadBackendEvents = async () => {
+      try {
+        const evts = await api.getEvents();
+        if (evts && evts.length > 0) {
+          // Reconcile real backend IDs into curated events
+          setCuratedEvents((prev) =>
+            prev.map((curated, idx) => {
+              const matched = evts[idx] || evts[0];
+              if (!matched) return curated;
+              return {
+                ...curated,
+                id: matched.id,
+                slug: matched.slug || curated.slug,
+              };
+            })
+          );
+        }
+      } catch (err) {
+        console.warn('API events fallback to curated data:', err);
+      }
+    };
+
+    loadBackendEvents();
 
     getCurrentUserSession().then((s) => {
       if (s) setSession(s);
@@ -96,520 +151,474 @@ export default function EventsScene() {
     };
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowCreateModal(false);
-      }
-    };
-    if (showCreateModal) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [showCreateModal]);
+  const openReservationModal = (event: CuratedEvent, category?: CuratedEvent['ticketCategories'][0]) => {
+    setSelectedEvent(event);
+    setSelectedTicketCategory(category || event.ticketCategories[0]);
+    setPurchaseQuantity(1);
+    setPurchaseSuccess(null);
+  };
 
-  // Handle Online Ticket Purchase
-  const handleBuyTicket = async (tt: TicketType, isMember: boolean) => {
-    setBuyingTicketId(tt.id);
+  const handleBuyPass = async () => {
+    if (!selectedEvent || !selectedTicketCategory) return;
+    setIsBuying(true);
     try {
-      const attendeeName = isMember
-        ? (session?.fullName ? `${session.fullName} (VIP Member)` : 'Rahul Verma (VIP Member)')
-        : (session?.fullName || 'Campus Guest');
+      const isMember = Boolean(session && session.role !== 'guest');
+      const attendeeName = session?.fullName
+        ? `${session.fullName} (${isMember ? 'Active Member' : 'Guest Pass'})`
+        : 'Siddharth Rao (Student Pass)';
 
       const res = await api.buyTicket({
-        event_id: events[0]?.id,
-        ticket_type_id: tt.id,
-        quantity: 1,
+        event_id: selectedEvent.id,
+        ticket_type_id: selectedTicketCategory.id,
+        quantity: purchaseQuantity,
         payment_method: 'online',
         attendee_name: attendeeName,
       });
-      setPurchaseSuccess(`Ticket ${res.ticket.qr_token} confirmed! Check-in pass generated.`);
-      setIssuedTickets((prev) => [res.ticket, ...prev]);
-      setCheckInToken(res.ticket.qr_token);
-      await loadData();
+
+      setPurchaseSuccess(
+        `Pass successfully reserved! Ticket code: ${res.ticket.qr_token || 'SKY-TKT-CONFIRMED'}`
+      );
+      setSelectedEvent(null);
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || 'Payment initiation failed');
     } finally {
-      setBuyingTicketId(null);
+      setIsBuying(false);
     }
   };
 
-  // Handle Cash Door Sale
-  const handleCashDoorSale = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!doorAttendeeName) {
-      alert('Please enter attendee name');
-      return;
-    }
-    const tt = ticketTypes.find((t) => t.id === doorTicketTypeId) || ticketTypes[0];
-    if (!tt) {
-      alert('No ticket type selected');
-      return;
-    }
-    setIsSellingDoor(true);
-    try {
-      const res = await api.buyTicket({
-        event_id: events[0]?.id,
-        ticket_type_id: tt.id,
-        quantity: 1,
-        payment_method: 'cash',
-        attendee_name: `${doorAttendeeName} (Cash Door Sale)`,
-      });
-      setDoorSaleSuccess(`Door cash payment of ${formatPaise(tt.price_paise)} recorded for ${doorAttendeeName}!`);
-      setDoorAttendeeName('');
-      setIssuedTickets((prev) => [res.ticket, ...prev]);
-      setCheckInToken(res.ticket.qr_token);
-      await loadData();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setIsSellingDoor(false);
-    }
-  };
-
-  // Handle QR Check-in
+  // Handle staff gate check-in
   const handleCheckIn = async () => {
     setIsCheckingIn(true);
     try {
       const res = await api.checkInTicket({
-        eventId: events[0]?.id,
-        code: checkInToken,
+        eventId: curatedEvents[0]?.id,
+        code: checkInToken.trim(),
       });
       setCheckInResult({
         success: true,
-        message: `Verified: ${res.attendee_name}`,
+        message: `Admitted: ${res.attendee_name || 'Attendee'}`,
         attendee: res.attendee_name,
       });
-      await loadData();
     } catch (err: any) {
       setCheckInResult({
         success: false,
-        message: err.message,
+        message: err.message || 'Check-in failed',
       });
     } finally {
       setIsCheckingIn(false);
     }
   };
 
-  // Handle Create Event
-  const handleCreateEvent = async (e: React.FormEvent) => {
+  // Handle staff cash door sale
+  const handleCashDoorSale = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEventTitle || !newEventVenue) return;
-    setIsCreatingEvent(true);
+    if (!doorAttendeeName.trim()) return;
+    setIsSellingDoor(true);
     try {
-      await api.createEvent({
-        title: newEventTitle,
-        description: 'Official student association campus event',
-        venue: newEventVenue,
-        starts_at: '2026-05-15T18:00:00+05:30',
-        ends_at: '2026-05-15T22:00:00+05:30',
-        capacity: parseInt(newEventCapacity, 10) || 100,
-        ticket_types: [
-          { name: 'Standard Admission', price_paise: 20000, member_price_paise: 15000 },
-        ],
+      const targetEvent = curatedEvents.find((e) => e.id === doorSelectedEventId) || curatedEvents[0];
+      const targetCategory = targetEvent.ticketCategories[0];
+      const res = await api.buyTicket({
+        event_id: targetEvent.id,
+        ticket_type_id: targetCategory.id,
+        quantity: 1,
+        payment_method: 'cash',
+        attendee_name: `${doorAttendeeName} (Staff Cash Desk)`,
       });
-      setShowCreateModal(false);
-      setNewEventTitle('');
-      setNewEventVenue('');
-      await loadData();
+      setDoorSaleSuccess(`Cash ticket issued for ${doorAttendeeName} (${res.ticket.qr_token})!`);
+      setDoorAttendeeName('');
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || 'Failed to record door sale');
     } finally {
-      setIsCreatingEvent(false);
+      setIsSellingDoor(false);
     }
   };
 
-  if (loading) {
-    return <LoadingCard label="Loading Spring Gala event & ticketing records..." />;
-  }
-
-  const primaryEvent = events[0];
-  const capacityPercent = primaryEvent
-    ? Math.round((primaryEvent.sold_count / primaryEvent.capacity) * 100)
-    : 72;
+  const isMember = Boolean(session && session.role !== 'guest');
 
   return (
-    <div className="space-y-16 t-enter">
-      {/* Toast Feedbacks */}
+    <div className="space-y-12">
+      {/* Toast Feedback */}
       {purchaseSuccess && (
-        <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-success)] text-[var(--color-success)] flex justify-between items-center text-[14px] t-toast is-open">
-          <span>✓ {purchaseSuccess}</span>
-          <button onClick={() => setPurchaseSuccess(null)} className="font-bold underline ml-4 text-[12px] cursor-pointer">Dismiss</button>
-        </div>
-      )}
-      {doorSaleSuccess && (
-        <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-success)] text-[var(--color-success)] flex justify-between items-center text-[14px] t-toast is-open">
-          <span>✓ {doorSaleSuccess}</span>
-          <button onClick={() => setDoorSaleSuccess(null)} className="font-bold underline ml-4 text-[12px] cursor-pointer">Dismiss</button>
-        </div>
-      )}
-
-      {/* ─── 1. EVENT SHOWCASE HERO CARD ─── */}
-      <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-8 t-card-interactive">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-[var(--color-hairline-soft)]">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-warning)] text-[var(--color-ink-deep)]">
-                Flagship Event
-              </span>
-              <span className="text-[13px] font-bold text-[var(--color-steel)]">
-                Friday, April 24, 2026 · 7:00 PM IST
-              </span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[var(--color-ink-deep)]">
-              {primaryEvent ? primaryEvent.title : 'Skyline Annual Spring Gala: Masquerade Night'}
-            </h2>
-            <p className="text-[15px] text-[var(--color-steel)] mt-1">
-              {primaryEvent ? primaryEvent.venue : 'Main Ballroom, Student Union Complex'}
-            </p>
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex justify-between items-center text-sm shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✓</span>
+            <span className="font-semibold">{purchaseSuccess}</span>
           </div>
-
-          {/* Real-time Capacity Gauge */}
-          <div className="bg-[var(--color-surface-soft)] p-5 rounded-2xl border border-[var(--color-hairline-soft)] min-w-[240px]">
-            <div className="flex justify-between text-[13px] font-bold text-[var(--color-ink-deep)] mb-1.5">
-              <span>Seats Reserved</span>
-              <span>{primaryEvent?.sold_count || 182} / {primaryEvent?.capacity || 250}</span>
-            </div>
-            <div className="w-full bg-[var(--color-hairline)] h-2.5 rounded-full overflow-hidden">
-              <div
-                className="bg-[var(--color-ink-deep)] h-full rounded-full transition-all duration-500"
-                style={{ width: `${capacityPercent}%` }}
-              />
-            </div>
-            <div className="flex justify-between items-center text-[11px] text-[var(--color-steel)] mt-2">
-              <span>{capacityPercent}% filled</span>
-              <span>{(primaryEvent?.capacity || 250) - (primaryEvent?.sold_count || 182)} seats remaining</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Ticket Tier Cards (Member vs Guest) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {ticketTypes.map((tt, idx) => {
-            const isMemberTier = idx === 0;
-            const isBuyingThis = buyingTicketId === tt.id;
-            return (
-              <div
-                key={tt.id}
-                className="p-6 rounded-2xl border border-[var(--color-hairline-soft)] bg-[var(--color-canvas)] flex flex-col justify-between t-card-interactive"
-              >
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-bold text-[18px] text-[var(--color-ink-deep)]">{tt.name}</span>
-                    {isMemberTier ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-green-100 text-green-800">
-                        Save ₹150 (Member 15% Off)
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--color-hairline-soft)]">
-                        Open to all
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-[14px] text-[var(--color-steel)] mb-4">
-                    {isMemberTier
-                      ? 'Requires active Skyline Student Association membership. Includes gala banquet, mask, and priority seating.'
-                      : 'For campus visitors, alumni, and non-member students. Standard admission & full dinner buffet included.'}
-                  </p>
-
-                  <div className="text-3xl font-extrabold text-[var(--color-ink-deep)] mb-6">
-                    {formatPaise(tt.price_paise)}
-                    {isMemberTier && (
-                      <span className="text-[14px] line-through text-[var(--color-stone)] font-normal ml-2">₹500</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Cobalt Rule strictly for Buy Tickets CTA */}
-                <button
-                  type="button"
-                  disabled={isBuyingThis}
-                  onClick={() => handleBuyTicket(tt, isMemberTier)}
-                  className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-deep)] transition-all text-[15px] shadow-sm cursor-pointer t-button-action flex items-center justify-center gap-2"
-                >
-                  {isBuyingThis ? (
-                    <ButtonSpinner size={16} />
-                  ) : (
-                    `Buy ${isMemberTier ? 'Member' : 'Guest'} Ticket (${formatPaise(tt.price_paise)})`
-                  )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Admin Create Event Trigger */}
-        <div className="pt-2 flex justify-end">
           <button
-            type="button"
-            onClick={() => setShowCreateModal(true)}
-            className="text-[13px] font-bold text-[var(--color-ink-deep)] underline hover:text-black cursor-pointer t-button-action"
+            onClick={() => setPurchaseSuccess(null)}
+            className="text-xs font-bold underline cursor-pointer text-emerald-700 hover:text-emerald-900"
           >
-            + Create New Campus Event (Admin)
+            Dismiss
           </button>
         </div>
+      )}
+
+      {/* ─── 2-COLUMN EVENT CARDS GRID (EXACT SCREENSHOT LAYOUT) ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {curatedEvents.map((evt) => (
+          <div
+            key={evt.id}
+            className="bg-white rounded-[28px] border border-[#e2e8f0] shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col justify-between"
+          >
+            {/* Top Media Banner */}
+            <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-900">
+              <img
+                src={evt.imageUrl}
+                alt={evt.title}
+                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700 ease-out"
+                loading="lazy"
+              />
+
+              {/* Date Pill (Top Left) */}
+              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-xs text-[#0f172a] text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
+                {evt.dateStr}
+              </div>
+
+              {/* Seats Left Pill (Top Right, Vibrant Cobalt) */}
+              <div className="absolute top-4 right-4 bg-[#0064e0] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
+                {evt.seatsLeft} Seats Left
+              </div>
+
+              {/* Sparkle Icon (Bottom Right of First Event) */}
+              {evt.id === 'e3' && (
+                <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white p-1.5 rounded-full text-xs flex items-center justify-center">
+                  ✨
+                </div>
+              )}
+            </div>
+
+            {/* Event Content Body */}
+            <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between">
+              <div>
+                {/* Title */}
+                <h2
+                  className={`text-xl sm:text-2xl font-bold tracking-tight cursor-pointer hover:underline transition-colors ${
+                    evt.titleColor || 'text-[#0f172a]'
+                  }`}
+                  onClick={() => openReservationModal(evt)}
+                >
+                  {evt.title}
+                </h2>
+
+                {/* Venue & Time with Coral Location Pin */}
+                <div className="flex items-center gap-1.5 text-xs text-[#64748b] font-medium mt-1.5">
+                  <span className="text-[#f43f5e]">📍</span>
+                  <span>
+                    {evt.venue} • {evt.timeStr}
+                  </span>
+                </div>
+
+                {/* Description */}
+                <p className="text-sm text-[#475569] mt-3 leading-relaxed">
+                  {evt.description}
+                </p>
+
+                {/* Divider Line */}
+                <div className="border-t border-[#f1f5f9] my-5" />
+
+                {/* Ticket Categories Header */}
+                <div className="text-[11px] font-bold tracking-wider text-[#94a3b8] uppercase mb-3">
+                  TICKET CATEGORIES
+                </div>
+
+                {/* Ticket Category Items */}
+                <div className="space-y-2 mb-6">
+                  {evt.ticketCategories.map((category) => (
+                    <div
+                      key={category.id}
+                      onClick={() => openReservationModal(evt, category)}
+                      className="p-3.5 rounded-xl border border-[#e2e8f0]/80 bg-[#f8fafc] hover:bg-[#f1f5f9] hover:border-[#cbd5e1] transition-all cursor-pointer flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="text-[13px] font-semibold text-[#0f172a]">
+                          {category.name}
+                        </div>
+                        <div className="text-[11px] text-[#94a3b8] font-medium">
+                          {category.available} available
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-[14px] font-bold text-[#0064e0]">
+                          ₹{category.memberPricePaise / 100}{' '}
+                          <span className="text-[11px] font-medium text-[#64748b]">(Member)</span>
+                        </div>
+                        <div className="text-[11px] text-[#94a3b8] line-through">
+                          ₹{category.nonMemberPricePaise / 100} (Non-member)
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Full-width Cobalt CTA Button */}
+              <button
+                type="button"
+                onClick={() => openReservationModal(evt)}
+                className="w-full py-3.5 px-6 rounded-full font-semibold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                Reserve Event Passes →
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* ─── MODAL: CREATE EVENT ─── */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 t-modal-backdrop is-open">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 space-y-6 shadow-2xl relative t-modal is-open">
-            <div className="flex justify-between items-start border-b border-[var(--color-hairline-soft)] pb-4">
+      {/* ─── RESERVATION & CHECKOUT MODAL ─── */}
+      {selectedEvent && selectedTicketCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative border border-slate-100">
+            <div className="flex justify-between items-start border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Create Campus Event</h3>
-                <p className="text-[13px] text-[var(--color-steel)]">Set capacity limits and ticket availability</p>
+                <span className="text-xs font-bold text-[#0064e0] uppercase tracking-wider">
+                  Pass Reservation
+                </span>
+                <h3 className="text-xl font-bold text-[#0f172a] mt-0.5">{selectedEvent.title}</h3>
+                <p className="text-xs text-[#64748b]">{selectedEvent.venue} • {selectedEvent.dateStr}</p>
               </div>
               <button
                 type="button"
-                onClick={() => setShowCreateModal(false)}
-                className="text-2xl text-[var(--color-steel)] hover:text-black cursor-pointer leading-none"
+                onClick={() => setSelectedEvent(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-black flex items-center justify-center text-lg cursor-pointer"
               >
-                ×
+                ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateEvent} className="space-y-4">
+            <div className="space-y-4">
+              {/* Category Selector */}
               <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Event Title</label>
-                <input
-                  type="text"
-                  required
-                  value={newEventTitle}
-                  onChange={(e) => setNewEventTitle(e.target.value)}
-                  placeholder="e.g. Skyline Tech Hackathon Night"
-                  className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-                />
+                <label className="block text-xs font-bold text-[#0f172a] mb-2 uppercase tracking-wide">
+                  Select Ticket Type
+                </label>
+                <div className="space-y-2">
+                  {selectedEvent.ticketCategories.map((cat) => (
+                    <div
+                      key={cat.id}
+                      onClick={() => setSelectedTicketCategory(cat)}
+                      className={`p-3 rounded-xl border flex justify-between items-center cursor-pointer transition-all ${
+                        selectedTicketCategory.id === cat.id
+                          ? 'border-[#0064e0] bg-blue-50/50 ring-1 ring-[#0064e0]'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div>
+                        <div className="text-sm font-bold text-[#0f172a]">{cat.name}</div>
+                        <div className="text-xs text-[#64748b]">{cat.available} passes remaining</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-[#0064e0]">
+                          ₹{isMember ? cat.memberPricePaise / 100 : cat.nonMemberPricePaise / 100}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          {isMember ? 'Member Rate' : 'Standard Rate'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Campus Venue</label>
-                <input
-                  type="text"
-                  required
-                  value={newEventVenue}
-                  onChange={(e) => setNewEventVenue(e.target.value)}
-                  placeholder="e.g. Auditorium Hall B"
-                  className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-                />
+              {/* Quantity Picker */}
+              <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-xs font-bold text-[#0f172a]">Number of Passes</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPurchaseQuantity(Math.max(1, purchaseQuantity - 1))}
+                    className="w-8 h-8 rounded-full bg-white border border-slate-200 font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="font-bold text-sm w-4 text-center">{purchaseQuantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPurchaseQuantity(Math.min(5, purchaseQuantity + 1))}
+                    className="w-8 h-8 rounded-full bg-white border border-slate-200 font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Total Seat Capacity</label>
-                <input
-                  type="number"
-                  required
-                  value={newEventCapacity}
-                  onChange={(e) => setNewEventCapacity(e.target.value)}
-                  className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-                />
+              {/* Total Calculation */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
+                <div className="flex justify-between text-xs text-[#64748b]">
+                  <span>Unit Price</span>
+                  <span>
+                    ₹{((isMember ? selectedTicketCategory.memberPricePaise : selectedTicketCategory.nonMemberPricePaise) / 100)}
+                  </span>
+                </div>
+                {isMember && selectedTicketCategory.memberPricePaise < selectedTicketCategory.nonMemberPricePaise && (
+                  <div className="flex justify-between text-xs text-emerald-600 font-semibold">
+                    <span>Active Member Discount</span>
+                    <span>
+                      -₹{(((selectedTicketCategory.nonMemberPricePaise - selectedTicketCategory.memberPricePaise) * purchaseQuantity) / 100)}
+                    </span>
+                  </div>
+                )}
+                <div className="border-t border-slate-200 pt-2 flex justify-between text-base font-extrabold text-[#0f172a]">
+                  <span>Total Amount</span>
+                  <span className="text-[#0064e0]">
+                    ₹{(((isMember ? selectedTicketCategory.memberPricePaise : selectedTicketCategory.nonMemberPricePaise) * purchaseQuantity) / 100)}
+                  </span>
+                </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] font-bold t-button-action cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreatingEvent}
-                  className="flex-1 py-3 rounded-full bg-[var(--color-ink-deep)] text-white text-[14px] font-bold hover:bg-black cursor-pointer t-button-action flex items-center justify-center gap-2"
-                >
-                  {isCreatingEvent ? <ButtonSpinner size={16} /> : 'Publish Event'}
-                </button>
-              </div>
-            </form>
+              {/* Confirm Checkout Button */}
+              <button
+                type="button"
+                disabled={isBuying}
+                onClick={handleBuyPass}
+                className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isBuying ? <ButtonSpinner size={16} /> : `Confirm & Pay with Razorpay →`}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ─── 2. DOOR TERMINAL & CASH DOOR SALES ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Rapid Door 6-Digit Code & Ticket Check-in Terminal */}
-        <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-6 t-card-interactive">
-          <div className="flex items-center justify-between pb-4 border-b border-[var(--color-hairline-soft)]">
-            <div>
-              <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Door 6-Digit Gate Check-in</h3>
-              <p className="text-[13px] text-[var(--color-steel)]">Atomic door verification with duplicate admission lock</p>
-            </div>
-            <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-green-100 text-green-800">
-              Identity Terminal
+      {/* ─── STAFF ACCORDION (GATE DESK & FLOAT CASH RECORDING) ─── */}
+      <div className="border border-slate-200 rounded-3xl bg-slate-50/50 overflow-hidden shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setShowStaffTools(!showStaffTools)}
+          className="w-full p-5 flex justify-between items-center text-left hover:bg-slate-100/50 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0064e0]/10 text-[#0064e0]">
+              Staff Console
+            </span>
+            <span className="text-sm font-bold text-[#0f172a]">
+              Door 6-Digit Gate Check-In & Cash Desk Operations
             </span>
           </div>
-
-          <div className="p-6 rounded-2xl bg-[var(--color-surface-soft)] text-center space-y-5 border border-[var(--color-hairline-soft)]">
-            <div className="space-y-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                6-Digit Member Pass & Ticket Verification
-              </span>
-              <p className="text-[12px] text-[var(--color-steel)] mt-1">
-                Enter attendee's 6-digit dynamic code or 8-character Crockford ticket code:
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={checkInToken}
-                onChange={(e) => setCheckInToken(e.target.value)}
-                placeholder="e.g. 482915"
-                className="w-full px-4 py-3 rounded-full border-2 border-[var(--color-hairline)] text-2xl font-mono font-black text-center tracking-widest text-emerald-600 bg-white focus:outline-none focus:border-emerald-500 shadow-2xs"
-              />
-              <div className="flex justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCheckInToken('482915')}
-                  className="px-2.5 py-0.5 rounded-full bg-white border border-[var(--color-hairline)] text-[10px] font-mono text-zinc-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  Preset: 482915 (Member)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCheckInToken('SKY-GALA-8492')}
-                  className="px-2.5 py-0.5 rounded-full bg-white border border-[var(--color-hairline)] text-[10px] font-mono text-zinc-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  Preset: SKY-GALA-8492 (Ticket)
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              disabled={isCheckingIn}
-              onClick={handleCheckIn}
-              className="px-8 py-3 rounded-full bg-emerald-600 text-white text-[13px] font-bold hover:bg-emerald-700 transition-all cursor-pointer t-button-action inline-flex items-center gap-2 shadow-sm"
-            >
-              {isCheckingIn ? <ButtonSpinner size={14} /> : 'Verify Code & Admit Attendee'}
-            </button>
-
-            {checkInResult && (
-              <div
-                className={`p-3 rounded-xl text-[13px] font-bold t-toast is-open ${
-                  checkInResult.success
-                    ? 'bg-green-100 text-green-800 border border-green-200'
-                    : 'bg-red-100 text-red-800 border border-red-200'
-                }`}
-              >
-                {checkInResult.success ? `✓ ${checkInResult.message}` : `⚠ ${checkInResult.message}`}
-              </div>
-            )}
-
-            {issuedTickets.length > 0 && (
-              <div className="pt-2 text-left space-y-1">
-                <span className="text-[11px] font-bold text-[var(--color-steel)] uppercase">Recently Issued Tickets:</span>
-                {issuedTickets.slice(0, 3).map((t) => (
-                  <div key={t.id} className="text-[11px] font-mono text-[var(--color-ink)] bg-white p-2 rounded-lg border border-[var(--color-hairline-soft)] flex justify-between items-center">
-                    <span>{t.qr_token}</span>
-                    <span className="text-green-700 font-bold">{t.status}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Door Cash Ticket Sale Form */}
-        <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-6 t-card-interactive">
-          <div className="flex items-center justify-between pb-4 border-b border-[var(--color-hairline-soft)]">
-            <div>
-              <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Cash Door Sales Desk</h3>
-              <p className="text-[13px] text-[var(--color-steel)]">Staff records walk-up attendee ticket cash</p>
-            </div>
-            <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--color-hairline-soft)]">
-              Cash Float Desk
-            </span>
-          </div>
-
-          <form onSubmit={handleCashDoorSale} className="space-y-4">
-            <div>
-              <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Attendee Full Name</label>
-              <input
-                type="text"
-                required
-                value={doorAttendeeName}
-                onChange={(e) => setDoorAttendeeName(e.target.value)}
-                placeholder="e.g. Siddharth Rao"
-                className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Ticket Type</label>
-              <select
-                value={doorTicketTypeId}
-                onChange={(e) => setDoorTicketTypeId(e.target.value)}
-                className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[13px] focus:outline-none focus:border-[var(--color-fb-blue)] bg-white cursor-pointer"
-              >
-                {ticketTypes.map((tt) => (
-                  <option key={tt.id} value={tt.id}>
-                    {tt.name} ({formatPaise(tt.price_paise)})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSellingDoor}
-                className="w-full py-3.5 rounded-full bg-[var(--color-ink-deep)] text-white text-[14px] font-bold hover:bg-black transition-all cursor-pointer t-button-action flex items-center justify-center gap-2"
-              >
-                {isSellingDoor ? <ButtonSpinner size={16} /> : 'Record Cash Door Sale & Issue Ticket'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* ─── 3. POST-EVENT ATTENDANCE & REVENUE SUMMARY ─── */}
-      <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-6 t-card-interactive">
-        <div className="flex items-center justify-between pb-4 border-b border-[var(--color-hairline-soft)]">
-          <div>
-            <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Event Attendance & Revenue Summary</h3>
-            <p className="text-[13px] text-[var(--color-steel)]">Persisted metrics distinguished by online cards/UPI vs staff door cash</p>
-          </div>
-          <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--color-hairline-soft)]">
-            Audited Summary
+          <span className="text-xs font-bold text-slate-500">
+            {showStaffTools ? '▲ Hide Staff Tools' : '▼ Show Staff Tools'}
           </span>
-        </div>
+        </button>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] t-card-interactive">
-            <span className="text-[12px] text-[var(--color-steel)] font-medium">Tickets Sold</span>
-            <div className="text-2xl font-bold text-[var(--color-ink-deep)] mt-1">
-              {summary?.sold_count || 182} / {summary?.capacity || 250}
-            </div>
-            <span className="text-[11px] text-[var(--color-slate)]">{capacityPercent}% capacity</span>
-          </div>
+        {showStaffTools && (
+          <div className="p-6 md:p-8 border-t border-slate-200 bg-white grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Gate Check-In Desk */}
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-base font-bold text-[#0f172a]">Door Gate Verification</h4>
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  Instant Gate Pass
+                </span>
+              </div>
+              <p className="text-xs text-[#64748b]">
+                Enter attendee's 6-digit dynamic pass code or 8-character ticket code:
+              </p>
 
-          <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] t-card-interactive">
-            <span className="text-[12px] text-[var(--color-steel)] font-medium">Checked In</span>
-            <div className="text-2xl font-bold text-[var(--color-success)] mt-1">
-              {summary?.checked_in_count || 174} / {summary?.sold_count || 182}
-            </div>
-            <span className="text-[11px] text-[var(--color-slate)]">95.6% turnout</span>
-          </div>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={checkInToken}
+                  onChange={(e) => setCheckInToken(e.target.value)}
+                  placeholder="e.g. 482915"
+                  className="w-full px-4 py-3 rounded-full border-2 border-slate-200 text-xl font-mono font-bold text-center tracking-widest text-[#0064e0] bg-white focus:outline-none focus:border-[#0064e0]"
+                />
+                <div className="flex justify-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCheckInToken('482915')}
+                    className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  >
+                    Preset: 482915 (Member)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCheckInToken('SKY-GALA-8492')}
+                    className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  >
+                    Preset: SKY-GALA-8492 (Ticket)
+                  </button>
+                </div>
+              </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] t-card-interactive">
-            <span className="text-[12px] text-[var(--color-steel)] font-medium">Online Revenue</span>
-            <div className="text-2xl font-bold text-[var(--color-ink-deep)] mt-1">
-              {formatPaise(summary?.online_revenue_paise || 6850000)}
-            </div>
-            <span className="text-[11px] text-[var(--color-slate)]">Online Cards & UPI</span>
-          </div>
+              <button
+                type="button"
+                disabled={isCheckingIn}
+                onClick={handleCheckIn}
+                className="w-full py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isCheckingIn ? <ButtonSpinner size={14} /> : 'Verify Code & Admit Attendee'}
+              </button>
 
-          <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] t-card-interactive">
-            <span className="text-[12px] text-[var(--color-steel)] font-medium">Door Cash Recorded</span>
-            <div className="text-2xl font-bold text-[var(--color-ink-deep)] mt-1">
-              {formatPaise(summary?.cash_revenue_paise || 620000)}
+              {checkInResult && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-bold text-center ${
+                    checkInResult.success
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : 'bg-rose-100 text-rose-800 border border-rose-200'
+                  }`}
+                >
+                  {checkInResult.success ? `✓ ${checkInResult.message}` : `⚠ ${checkInResult.message}`}
+                </div>
+              )}
             </div>
-            <span className="text-[11px] text-[var(--color-slate)]">Door desk receipts</span>
+
+            {/* Cash Float Sale Desk */}
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-base font-bold text-[#0f172a]">Cash Door Sale Desk</h4>
+                <span className="text-[11px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full">
+                  Cash Float
+                </span>
+              </div>
+              <p className="text-xs text-[#64748b]">
+                Record walk-up cash payments and generate immediate ticket codes:
+              </p>
+
+              <form onSubmit={handleCashDoorSale} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#0f172a] mb-1">Attendee Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={doorAttendeeName}
+                    onChange={(e) => setDoorAttendeeName(e.target.value)}
+                    placeholder="e.g. Siddharth Rao"
+                    className="w-full px-3.5 py-2.5 rounded-full border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0064e0]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0f172a] mb-1">Target Event</label>
+                  <select
+                    value={doorSelectedEventId}
+                    onChange={(e) => setDoorSelectedEventId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-full border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0064e0]"
+                  >
+                    {curatedEvents.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSellingDoor}
+                  className="w-full py-3 rounded-full bg-[#0f172a] hover:bg-black text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer mt-2"
+                >
+                  {isSellingDoor ? <ButtonSpinner size={14} /> : 'Record Cash Sale & Issue Ticket'}
+                </button>
+
+                {doorSaleSuccess && (
+                  <div className="p-3 rounded-xl text-xs font-bold text-center bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    ✓ {doorSaleSuccess}
+                  </div>
+                )}
+              </form>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
