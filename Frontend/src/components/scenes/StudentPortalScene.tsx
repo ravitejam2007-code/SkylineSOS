@@ -4,6 +4,27 @@ import { getCurrentUserSession } from '../../lib/auth';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
 import type { StudentAllInOnePassResult, Announcement } from '@campusone/contracts';
 
+function checkIsMember(session: any, passPayload?: any): boolean {
+  if (!session) return false;
+  if (session.role === 'admin' || session.role === 'staff' || session.role === 'treasurer' || session.role === 'volunteer') return true;
+  if (passPayload?.membership?.status === 'active') return true;
+  if (typeof window !== 'undefined') {
+    try {
+      const rawApps = localStorage.getItem('skylinesos:membership_applications');
+      if (rawApps) {
+        const apps = JSON.parse(rawApps);
+        const userApp = apps.find(
+          (a: any) =>
+            (a.applicant_email && session.email && a.applicant_email.toLowerCase() === session.email.toLowerCase()) ||
+            (a.applicant_id && session.userId && a.applicant_id === session.userId)
+        );
+        if (userApp?.status === 'approved') return true;
+      }
+    } catch {}
+  }
+  return false;
+}
+
 export default function StudentPortalScene() {
   const [session, setSession] = useState<any>(null);
   const [pass, setPass] = useState<StudentAllInOnePassResult | null>(null);
@@ -19,11 +40,12 @@ export default function StudentPortalScene() {
   const [copied, setCopied] = useState<boolean>(false);
 
   const fetchRotatingCode = async () => {
+    if (!checkIsMember(session, pass?.payload)) return;
     try {
       setIsRefreshingCode(true);
       const codeRes = await api.getRotatingDoorPass();
       if (codeRes?.code) {
-        setSixDigitCode(codeRes.code);
+        setSixDigitCode(String(codeRes.code));
         setCountdown(codeRes.ttlSeconds || 60);
       }
     } catch (e) {
@@ -37,18 +59,19 @@ export default function StudentPortalScene() {
     try {
       const currentSession = await getCurrentUserSession();
       setSession(currentSession);
+      const isMember = checkIsMember(currentSession);
       const [passRes, annList, codeRes] = await Promise.all([
         api.generateAllInOnePass(currentSession?.userId),
         api.getAnnouncements('all_members'),
-        api.getRotatingDoorPass().catch(() => null),
+        isMember ? api.getRotatingDoorPass().catch(() => null) : Promise.resolve(null),
       ]);
       setPass(passRes);
       setAnnouncements(annList);
       if (codeRes?.code) {
-        setSixDigitCode(codeRes.code);
+        setSixDigitCode(String(codeRes.code));
         setCountdown(codeRes.ttlSeconds || 60);
-      } else if (passRes?.payload.door_verification_code) {
-        setSixDigitCode(passRes.payload.door_verification_code);
+      } else if (passRes?.payload?.door_verification_code) {
+        setSixDigitCode(String(passRes.payload.door_verification_code));
       }
     } catch (err) {
       console.error('Error loading student portal data:', err);
@@ -62,14 +85,16 @@ export default function StudentPortalScene() {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          fetchRotatingCode();
+          if (checkIsMember(session, pass?.payload)) {
+            fetchRotatingCode();
+          }
           return 60;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [session, pass]);
 
   const handleRefreshCode = () => {
     fetchRotatingCode();
@@ -91,7 +116,9 @@ export default function StudentPortalScene() {
       if (updated?.userId) {
         const passRes = await api.generateAllInOnePass(updated.userId);
         setPass(passRes);
-        fetchRotatingCode();
+        if (checkIsMember(updated, passRes?.payload)) {
+          fetchRotatingCode();
+        }
       }
     };
     window.addEventListener('campusone:auth_changed' as any, handleAuthChange);
@@ -162,27 +189,10 @@ export default function StudentPortalScene() {
   // Scoped strictly to authenticated user session
   const displayName = session.fullName || 'Student Member';
   const displayEmail = session.email;
-  const displayStudentId = session.studentId || `SKY-2026-${session.userId?.slice(0, 4) || 'NEW'}`;
+  const displayStudentId = session.studentId || `SKY-2026-${String(session.userId || 'NEW').slice(0, 4)}`;
 
   // Check if user has an approved membership application or is executive admin
-  const isAdmin = Boolean(session.role && session.role === 'admin');
-  let isApprovedMember = isAdmin;
-  if (!isApprovedMember && typeof window !== 'undefined') {
-    try {
-      const rawApps = localStorage.getItem('skylinesos:membership_applications');
-      if (rawApps) {
-        const apps = JSON.parse(rawApps);
-        const userApp = apps.find(
-          (a: any) =>
-            (a.applicant_email && session.email && a.applicant_email.toLowerCase() === session.email.toLowerCase()) ||
-            (a.applicant_id && session.userId && a.applicant_id === session.userId)
-        );
-        if (userApp?.status === 'approved') {
-          isApprovedMember = true;
-        }
-      }
-    } catch {}
-  }
+  const isApprovedMember = checkIsMember(session, pass?.payload);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
@@ -293,7 +303,7 @@ export default function StudentPortalScene() {
                     6-Digit Door Verification Code
                   </div>
                   <div className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-emerald-400 py-2 select-all drop-shadow-[0_0_16px_rgba(52,211,153,0.35)]">
-                    {sixDigitCode.slice(0, 3)} {sixDigitCode.slice(3, 6)}
+                    {String(sixDigitCode || '482915').slice(0, 3)} {String(sixDigitCode || '482915').slice(3, 6)}
                   </div>
                   <p className="text-[11px] text-slate-400 max-w-[210px] mx-auto">
                     Read or present this 6-digit code at event gates & club desks.
@@ -402,23 +412,31 @@ export default function StudentPortalScene() {
               </h4>
               <div className="space-y-2">
                 {upcomingEvents.length > 0 ? (
-                  upcomingEvents.map((ev) => (
-                    <div
-                      key={ev.ticket_id}
-                      className="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="text-[14px] font-bold text-[var(--color-ink-deep)]">{ev.event_title}</p>
-                        <p className="text-[11px] text-[var(--color-steel)]">{ev.venue} · {ev.ticket_type_name}</p>
+                  upcomingEvents.map((ev: any, idx: number) => {
+                    const ticketIdStr = String(ev?.ticket_id || ev?.id || `TKT-${idx + 1}`);
+                    const displayCode = ticketIdStr.length > 8 ? `${ticketIdStr.slice(0, 8)}...` : ticketIdStr;
+                    return (
+                      <div
+                        key={ev?.ticket_id || ev?.id || idx}
+                        className="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="text-[14px] font-bold text-[var(--color-ink-deep)]">
+                            {ev?.event_title || ev?.title || 'Skyline Event'}
+                          </p>
+                          <p className="text-[11px] text-[var(--color-steel)]">
+                            {ev?.venue || 'Campus Hall'} · {ev?.ticket_type_name || 'General Admission'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-black border border-slate-200">
+                            Seat Confirmed
+                          </span>
+                          <span className="text-[11px] font-mono text-[var(--color-steel)]">{displayCode}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-black border border-slate-200">
-                          Seat Confirmed
-                        </span>
-                        <span className="text-[11px] font-mono text-[var(--color-steel)]">{ev.ticket_id.slice(0, 8)}...</span>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] text-center text-[12px] text-[var(--color-steel)]">
                     No event tickets purchased yet. <a href="/events" className="text-[var(--color-primary)] font-bold underline">Browse Spring Gala tickets</a>.
@@ -479,7 +497,11 @@ export default function StudentPortalScene() {
             <div>
               <p className="text-[11px] font-bold text-[var(--color-steel)]">TICKET PASS</p>
               <p className="text-[14px] font-mono font-bold text-[var(--color-ink-deep)]">
-                {upcomingEvents[0]?.ticket_id ? `TKT-GALA-${upcomingEvents[0].ticket_id.slice(0, 4).toUpperCase()}` : 'TKT-GALA-8819'}
+                {upcomingEvents[0]?.ticket_id
+                  ? `TKT-GALA-${String(upcomingEvents[0].ticket_id).slice(0, 4).toUpperCase()}`
+                  : upcomingEvents[0]?.id
+                  ? `TKT-GALA-${String(upcomingEvents[0].id).slice(0, 4).toUpperCase()}`
+                  : 'TKT-GALA-8819'}
               </p>
             </div>
             <div className="px-3 py-1 rounded-full bg-black text-white text-[11px] font-mono font-bold">

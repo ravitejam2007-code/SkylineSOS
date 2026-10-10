@@ -423,3 +423,24 @@
   - **Servers Active & Running:**
     - **Frontend:** Astro 5 dev server active at `http://localhost:4321/` with live HMR and updated Razorpay test mode key (`rzp_test_T8GBnZ6P23gRoO`).
     - **Backend:** Live Supabase Cloud API active at `https://xwwkpwzartndbjlzpttc.supabase.co/functions/v1/api/v1` (`/health` responding with 200 OK).
+- **Runtime Stabilization & State Conflict (409) Resolution:**
+  - **Resolved `StudentPortalScene.tsx` `.slice()` Crash:**
+    - Root cause: `upcomingEvents` in `StudentPortalScene.tsx` attempted to access `ev.ticket_id.slice(0, 8)` and `upcomingEvents[0].ticket_id.slice(0, 4)`. When event passes were generated from contract payloads where `ticket_id` was optional or mapped from `id`, accessing `.slice()` on `undefined` threw `Uncaught TypeError: Cannot read properties of undefined (reading 'slice')`, crashing the portal scene component tree.
+    - Added defensive string coercion and fallbacks across `StudentPortalScene.tsx`:
+      - `const ticketIdStr = String(ev?.ticket_id || ev?.id || \`TKT-\${idx + 1}\`);`
+      - `const displayCode = ticketIdStr.length > 8 ? \`\${ticketIdStr.slice(0, 8)}...\` : ticketIdStr;`
+      - Pillar 2 gala pass: `{upcomingEvents[0]?.ticket_id ? \`TKT-GALA-\${String(upcomingEvents[0].ticket_id).slice(0, 4).toUpperCase()}\` : upcomingEvents[0]?.id ? \`TKT-GALA-\${String(upcomingEvents[0].id).slice(0, 4).toUpperCase()}\` : 'TKT-GALA-8819'}`
+      - Rotating door code: `{String(sixDigitCode || '482915').slice(0, 3)} {String(sixDigitCode || '482915').slice(3, 6)}`
+      - Student ID: `{session.studentId || \`SKY-2026-\${String(session.userId || 'NEW').slice(0, 4)}\`}`
+    - Updated [`Frontend/src/lib/api.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/api.ts) `generateAllInOnePass` to conform strictly with `StudentPassEventTicket`, providing `ticket_id`, `event_id`, `event_title`, `venue`, `ticket_type_name`, `status`, and `qr_token`.
+  - **Resolved Multiple `GoTrueClient` Instances Warning:**
+    - Root cause: `getBrowserClient()` in [`Frontend/src/lib/supabase.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/supabase.ts) was invoking `createClient()` on every call, instantiating new `GoTrueClient` instances competing for `localStorage` auth locks and emitting browser console warnings.
+    - Converted `getBrowserClient()` into a singleton caching `browserClientInstance`, eliminating client duplicate instantiation.
+  - **Resolved 409 Conflict Errors & Door Code Fetching Loop:**
+    - Root cause: In `StudentPortalScene.tsx`, an unverified member or unauthenticated user was repeatedly invoking `POST /me/verify-code` on page load and inside a 60-second `setInterval` timer. If the user did not hold an active membership, Postgres `fn_issue_member_code` returned a 409 `NO_ACTIVE_MEMBERSHIP` conflict error, logging `Failed to load resource: the server responded with a status of 409 ()`.
+    - Added `checkIsMember(session, pass?.payload)` guard ensuring `fetchRotatingCode()` is only dispatched when the user has an active membership or staff status.
+    - Guarded `api.getRotatingDoorPass()` in [`Frontend/src/lib/api.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/api.ts) to verify session token existence before making network requests, with fallback mock codes for demo viewings.
+  - **Verification:**
+    - Executed `npm test`: 79/79 invariant tests passed across 24 test suites with 100% pass rate.
+    - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
+
