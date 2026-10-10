@@ -1,14 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api, apiFetch } from '../../lib/api';
-import { formatPaise } from '../../lib/formatters';
 import { generateQrDataUrl } from '../../lib/qr';
 import { ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
-import type {
-  Event,
-  TicketType,
-  Ticket,
-} from '@campusone/contracts';
 
 interface CuratedEvent {
   id: string;

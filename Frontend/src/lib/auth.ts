@@ -2,7 +2,7 @@ import type { RoleType } from '@campusone/contracts';
 import { getBrowserClient } from './supabase';
 
 export type { RoleType };
-export type UserRole = RoleType | 'member';
+export type UserRole = RoleType | 'member' | 'guest' | 'applicant';
 
 export interface UserSession {
   userId: string;

@@ -100,7 +100,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}
  * Online checkout helper with Razorpay popup modal
  * Follows docs/frontend-api-integration-guide.md §4.2
  */
-declare const Razorpay: any;
+
 
 export async function startOnlineCheckout(items: Array<{ type: 'ticket' | 'merch' | 'membership'; refId: string; quantity: number }>) {
   const res = await apiFetch<{
@@ -114,7 +114,7 @@ export async function startOnlineCheckout(items: Array<{ type: 'ticket' | 'merch
 
   // Zero-total free checkouts bypass payment gateway immediately
   if (!res.razorpay) {
-    return { success: true, checkoutId: res.checkout.id, free: true };
+    return { success: true, checkoutId: res.checkout.id, free: true, tickets: [] };
   }
 
   return new Promise<{ success: boolean; checkoutId: string; tickets?: any[] }>((resolve, reject) => {
@@ -1122,20 +1122,29 @@ const serviceMethods = {
       // Ignored
     }
 
+    const passToken = `PASS-${verifyCode}-${Date.now()}`;
     const payload = {
+      pass_token: passToken,
       pass_version: 'v1.0' as const,
+      issuer: 'CampusOne EdTech / Skyline SOS',
+      generated_at: new Date().toISOString(),
       student: {
         id: 'member-user',
+        user_id: 'member-user',
         student_id: '4GT23AI005',
         full_name: 'Demo Member',
         email: 'member@skylinesos.demo',
       },
       membership: {
+        is_member: true,
         id: membershipData?.id || 'mem-active',
+        membership_id: membershipData?.id || 'mem-active',
         tier_id: membershipData?.membership_tiers?.id || 'tier-plus',
         tier_name: membershipData?.membership_tiers?.name || 'Plus Member',
-        status: membershipData?.status || 'active',
+        status: (membershipData?.status || 'active') as 'active' | 'expired' | 'none',
         expires_at: membershipData?.expires_on || new Date(Date.now() + 180 * 86400000).toISOString(),
+        ticket_discount_percent: membershipData?.membership_tiers?.discount_percent ?? 15,
+        merch_discount_percent: membershipData?.membership_tiers?.discount_percent ?? 15,
         discount_percent: membershipData?.membership_tiers?.discount_percent ?? 15,
       },
       active_tickets: [
@@ -1151,20 +1160,25 @@ const serviceMethods = {
         },
       ],
       upcoming_events: (eventsData || []).slice(0, 3).map((e) => ({
-        id: e.id,
-        title: e.title,
+        ticket_id: `tkt-${e.id}`,
+        event_id: e.id,
+        event_title: e.title,
         starts_at: e.starts_at,
         venue: e.venue,
-        is_registered: true,
+        ticket_type_name: 'Admit One',
+        status: 'issued' as const,
+        qr_token: `SKY-EVT-${e.id}-QR`,
       })),
       door_verification_code: verifyCode,
       ttl_seconds: ttlSeconds,
-      generated_at: new Date().toISOString(),
+      signature: 'hmac-sha256-edge-verified',
     };
 
     const qrDataUrl = await generateQrDataUrl(verifyCode, { width: 220 });
 
     return {
+      status: 'success' as const,
+      pass_token: passToken,
       payload,
       qr_code_svg: `<svg viewBox="0 0 100 100"><text x="50" y="50" font-size="20">${verifyCode}</text></svg>`,
       qr_data_url: qrDataUrl,

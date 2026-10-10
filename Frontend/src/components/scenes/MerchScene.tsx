@@ -50,7 +50,7 @@ export default function MerchScene() {
     setIsOrdering(true);
     try {
       const primaryProduct = products[selectedProductIndex] || products[0];
-      const res = await api.orderMerchVariant({
+      await api.orderMerchVariant({
         variant_id: selectedVariant.id,
         quantity: 1,
         is_member: isMember,

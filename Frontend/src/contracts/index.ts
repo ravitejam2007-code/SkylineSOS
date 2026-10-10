@@ -117,6 +117,7 @@ export interface Event {
   id: string;
   organization_id: string;
   title: string;
+  slug?: string | null;
   description?: string | null;
   venue: string;
   starts_at: string;
@@ -222,10 +223,12 @@ export interface ProductVariant {
   product_id: string;
   sku: string;
   size?: string | null;
+  label?: string | null;
   color?: string | null;
   price_paise: number;
   stock_on_hand: number;
   reserved_quantity: number;
+  available?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -471,9 +474,12 @@ export interface CheckInTicketParams {
 export interface CheckInTicketResult {
   valid: boolean;
   ticket_id: string;
-  status: TicketStatus;
+  event_id?: string;
+  status?: TicketStatus;
   checked_in_at: string;
   attendee_name: string;
+  ticket_type?: string;
+  already_checked_in?: boolean;
 }
 
 export interface TreasurerOverviewResult {
@@ -624,6 +630,7 @@ export interface StudentPassMembershipInfo {
   is_member: boolean;
   status: 'active' | 'expired' | 'none';
   membership_id?: string | null;
+  id?: string | null;
   tier_id?: string | null;
   tier_name?: string | null;
   starts_at?: string | null;
@@ -631,6 +638,7 @@ export interface StudentPassMembershipInfo {
   days_remaining?: number | null;
   ticket_discount_percent: number;
   merch_discount_percent: number;
+  discount_percent?: number;
   benefits?: string[];
 }
 
@@ -649,19 +657,23 @@ export interface StudentPassEventTicket {
 }
 
 export interface StudentAllInOnePassPayload {
-  pass_token: string;
+  pass_token?: string;
   pass_version: string;
-  issuer: string;
+  issuer?: string;
   generated_at: string;
+  door_verification_code?: string;
+  ttl_seconds?: number;
   student: {
-    user_id: string;
+    user_id?: string;
+    id?: string;
     full_name: string;
     email: string;
     student_id?: string | null;
   };
   membership: StudentPassMembershipInfo;
   upcoming_events: StudentPassEventTicket[];
-  signature: string;
+  signature?: string;
+  active_tickets?: any[];
 }
 
 export interface StudentAllInOnePassResult {
@@ -669,12 +681,21 @@ export interface StudentAllInOnePassResult {
   pass_token: string;
   qr_data_url?: string;
   qr_svg?: string;
+  qr_code_svg?: string;
+  signature?: string;
   payload: StudentAllInOnePassPayload;
 }
 
 export interface VerifyStudentPassResult {
-  status: 'success' | 'error';
-  verified: boolean;
+  status?: 'success' | 'error';
+  verified?: boolean;
+  valid?: boolean;
+  membership_status?: string;
+  tier_name?: string;
+  student_id?: string;
+  student_name?: string;
+  checked_in_tickets?: string[];
+  audit_log_id?: string;
   data?: {
     valid: boolean;
     pass_token: string;
