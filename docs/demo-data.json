@@ -1,0 +1,2499 @@
+{
+ "meta": {
+  "generated_for": "SkylineSOS",
+  "as_of": "2026-10-10",
+  "label": "SkylineSOS Demo Club",
+  "note": "Seed INPUTS only. Checkouts, memberships, tickets, ledger, audit rows are produced by calling the real RPCs."
+ },
+ "profiles": [
+  {
+   "ref": "u001",
+   "full_name": "Demo Admin",
+   "email": "admin@skylinesos.demo",
+   "student_id": "4GT23AI001",
+   "role": "admin"
+  },
+  {
+   "ref": "u002",
+   "full_name": "Demo Treasurer",
+   "email": "treasurer@skylinesos.demo",
+   "student_id": "4GT23AI002",
+   "role": "treasurer"
+  },
+  {
+   "ref": "u003",
+   "full_name": "Demo Door Staff",
+   "email": "door@skylinesos.demo",
+   "student_id": "4GT23AI003",
+   "role": "door"
+  },
+  {
+   "ref": "u004",
+   "full_name": "Demo Volunteer",
+   "email": "volunteer@skylinesos.demo",
+   "student_id": "4GT23AI004",
+   "role": "volunteer"
+  },
+  {
+   "ref": "u005",
+   "full_name": "Demo Member",
+   "email": "member@skylinesos.demo",
+   "student_id": "4GT23AI005",
+   "role": "member"
+  },
+  {
+   "ref": "u006",
+   "full_name": "Harsha Iyer",
+   "email": "harsha.iyer.6@students.skylinesos.demo",
+   "student_id": "4GT23AI006",
+   "role": "member"
+  },
+  {
+   "ref": "u007",
+   "full_name": "Deepika Poojary",
+   "email": "deepika.poojary.7@students.skylinesos.demo",
+   "student_id": "4GT23AI007",
+   "role": "member"
+  },
+  {
+   "ref": "u008",
+   "full_name": "Tanvi Hegde",
+   "email": "tanvi.hegde.8@students.skylinesos.demo",
+   "student_id": "4GT23AI008",
+   "role": "member"
+  },
+  {
+   "ref": "u009",
+   "full_name": "Kiran Dsouza",
+   "email": "kiran.dsouza.9@students.skylinesos.demo",
+   "student_id": "4GT23AI009",
+   "role": "member"
+  },
+  {
+   "ref": "u010",
+   "full_name": "Rashmi Joshi",
+   "email": "rashmi.joshi.10@students.skylinesos.demo",
+   "student_id": "4GT23AI010",
+   "role": "member"
+  },
+  {
+   "ref": "u011",
+   "full_name": "Divya Swamy",
+   "email": "divya.swamy.11@students.skylinesos.demo",
+   "student_id": "4GT23AI011",
+   "role": "member"
+  },
+  {
+   "ref": "u012",
+   "full_name": "Lavanya Acharya",
+   "email": "lavanya.acharya.12@students.skylinesos.demo",
+   "student_id": "4GT23AI012",
+   "role": "member"
+  },
+  {
+   "ref": "u013",
+   "full_name": "Nisha Kulkarni",
+   "email": "nisha.kulkarni.13@students.skylinesos.demo",
+   "student_id": "4GT23AI013",
+   "role": "member"
+  },
+  {
+   "ref": "u014",
+   "full_name": "Ishaan Gowda",
+   "email": "ishaan.gowda.14@students.skylinesos.demo",
+   "student_id": "4GT23AI014",
+   "role": "member"
+  },
+  {
+   "ref": "u015",
+   "full_name": "Rashmi Rao",
+   "email": "rashmi.rao.15@students.skylinesos.demo",
+   "student_id": "4GT23AI015",
+   "role": "member"
+  },
+  {
+   "ref": "u016",
+   "full_name": "Harsha Nair",
+   "email": "harsha.nair.16@students.skylinesos.demo",
+   "student_id": "4GT23AI016",
+   "role": "member"
+  },
+  {
+   "ref": "u017",
+   "full_name": "Pranav Kulkarni",
+   "email": "pranav.kulkarni.17@students.skylinesos.demo",
+   "student_id": "4GT23AI017",
+   "role": "member"
+  },
+  {
+   "ref": "u018",
+   "full_name": "Aarav Acharya",
+   "email": "aarav.acharya.18@students.skylinesos.demo",
+   "student_id": "4GT23AI018",
+   "role": "member"
+  },
+  {
+   "ref": "u019",
+   "full_name": "Varsha Iyer",
+   "email": "varsha.iyer.19@students.skylinesos.demo",
+   "student_id": "4GT23AI019",
+   "role": "member"
+  },
+  {
+   "ref": "u020",
+   "full_name": "Varun Shankar",
+   "email": "varun.shankar.20@students.skylinesos.demo",
+   "student_id": "4GT23AI020",
+   "role": "member"
+  },
+  {
+   "ref": "u021",
+   "full_name": "Tejas Murthy",
+   "email": "tejas.murthy.21@students.skylinesos.demo",
+   "student_id": "4GT23AI021",
+   "role": "member"
+  },
+  {
+   "ref": "u022",
+   "full_name": "Meera Shankar",
+   "email": "meera.shankar.22@students.skylinesos.demo",
+   "student_id": "4GT23AI022",
+   "role": "member"
+  },
+  {
+   "ref": "u023",
+   "full_name": "Spoorthi Poojary",
+   "email": "spoorthi.poojary.23@students.skylinesos.demo",
+   "student_id": "4GT23AI023",
+   "role": "member"
+  },
+  {
+   "ref": "u024",
+   "full_name": "Sahana Rao",
+   "email": "sahana.rao.24@students.skylinesos.demo",
+   "student_id": "4GT23AI024",
+   "role": "member"
+  },
+  {
+   "ref": "u025",
+   "full_name": "Ramya Iyer",
+   "email": "ramya.iyer.25@students.skylinesos.demo",
+   "student_id": "4GT23AI025",
+   "role": "member"
+  },
+  {
+   "ref": "u026",
+   "full_name": "Karthik Joshi",
+   "email": "karthik.joshi.26@students.skylinesos.demo",
+   "student_id": "4GT23AI026",
+   "role": "member"
+  },
+  {
+   "ref": "u027",
+   "full_name": "Keerthi Nair",
+   "email": "keerthi.nair.27@students.skylinesos.demo",
+   "student_id": "4GT23AI027",
+   "role": "member"
+  },
+  {
+   "ref": "u028",
+   "full_name": "Sachin Kulkarni",
+   "email": "sachin.kulkarni.28@students.skylinesos.demo",
+   "student_id": "4GT23AI028",
+   "role": "member"
+  },
+  {
+   "ref": "u029",
+   "full_name": "Naveen Swamy",
+   "email": "naveen.swamy.29@students.skylinesos.demo",
+   "student_id": "4GT23AI029",
+   "role": "member"
+  },
+  {
+   "ref": "u030",
+   "full_name": "Yashas Gowda",
+   "email": "yashas.gowda.30@students.skylinesos.demo",
+   "student_id": "4GT23AI030",
+   "role": "member"
+  },
+  {
+   "ref": "u031",
+   "full_name": "Amrutha Murthy",
+   "email": "amrutha.murthy.31@students.skylinesos.demo",
+   "student_id": "4GT23AI031",
+   "role": "member"
+  },
+  {
+   "ref": "u032",
+   "full_name": "Kavya Kulkarni",
+   "email": "kavya.kulkarni.32@students.skylinesos.demo",
+   "student_id": "4GT23AI032",
+   "role": "member"
+  },
+  {
+   "ref": "u033",
+   "full_name": "Shreya Rao",
+   "email": "shreya.rao.33@students.skylinesos.demo",
+   "student_id": "4GT23AI033",
+   "role": "member"
+  },
+  {
+   "ref": "u034",
+   "full_name": "Pooja Swamy",
+   "email": "pooja.swamy.34@students.skylinesos.demo",
+   "student_id": "4GT23AI034",
+   "role": "member"
+  },
+  {
+   "ref": "u035",
+   "full_name": "Harsha Prasad",
+   "email": "harsha.prasad.35@students.skylinesos.demo",
+   "student_id": "4GT23AI035",
+   "role": "member"
+  },
+  {
+   "ref": "u036",
+   "full_name": "Deepika Dsouza",
+   "email": "deepika.dsouza.36@students.skylinesos.demo",
+   "student_id": "4GT23AI036",
+   "role": "member"
+  },
+  {
+   "ref": "u037",
+   "full_name": "Chaitra Shankar",
+   "email": "chaitra.shankar.37@students.skylinesos.demo",
+   "student_id": "4GT23AI037",
+   "role": "member"
+  },
+  {
+   "ref": "u038",
+   "full_name": "Harini Bhat",
+   "email": "harini.bhat.38@students.skylinesos.demo",
+   "student_id": "4GT23AI038",
+   "role": "member"
+  },
+  {
+   "ref": "u039",
+   "full_name": "Bhavana Poojary",
+   "email": "bhavana.poojary.39@students.skylinesos.demo",
+   "student_id": "4GT23AI039",
+   "role": "member"
+  },
+  {
+   "ref": "u040",
+   "full_name": "Harini Gowda",
+   "email": "harini.gowda.40@students.skylinesos.demo",
+   "student_id": "4GT23AI040",
+   "role": "member"
+  },
+  {
+   "ref": "u041",
+   "full_name": "Megha Patil",
+   "email": "megha.patil.41@students.skylinesos.demo",
+   "student_id": "4GT23AI041",
+   "role": "member"
+  },
+  {
+   "ref": "u042",
+   "full_name": "Manoj Shetty",
+   "email": "manoj.shetty.42@students.skylinesos.demo",
+   "student_id": "4GT23AI042",
+   "role": "member"
+  },
+  {
+   "ref": "u043",
+   "full_name": "Amrutha Poojary",
+   "email": "amrutha.poojary.43@students.skylinesos.demo",
+   "student_id": "4GT23AI043",
+   "role": "member"
+  },
+  {
+   "ref": "u044",
+   "full_name": "Usha Hegde",
+   "email": "usha.hegde.44@students.skylinesos.demo",
+   "student_id": "4GT23AI044",
+   "role": "member"
+  },
+  {
+   "ref": "u045",
+   "full_name": "Amrutha Dsouza",
+   "email": "amrutha.dsouza.45@students.skylinesos.demo",
+   "student_id": "4GT23AI045",
+   "role": "member"
+  },
+  {
+   "ref": "u046",
+   "full_name": "Shreya Acharya",
+   "email": "shreya.acharya.46@students.skylinesos.demo",
+   "student_id": "4GT23AI046",
+   "role": "member"
+  },
+  {
+   "ref": "u047",
+   "full_name": "Naveen Acharya",
+   "email": "naveen.acharya.47@students.skylinesos.demo",
+   "student_id": "4GT23AI047",
+   "role": "member"
+  },
+  {
+   "ref": "u048",
+   "full_name": "Kiran Hegde",
+   "email": "kiran.hegde.48@students.skylinesos.demo",
+   "student_id": "4GT23AI048",
+   "role": "member"
+  },
+  {
+   "ref": "u049",
+   "full_name": "Sahana Kulkarni",
+   "email": "sahana.kulkarni.49@students.skylinesos.demo",
+   "student_id": "4GT23AI049",
+   "role": "member"
+  },
+  {
+   "ref": "u050",
+   "full_name": "Varsha Acharya",
+   "email": "varsha.acharya.50@students.skylinesos.demo",
+   "student_id": "4GT23AI050",
+   "role": "member"
+  },
+  {
+   "ref": "u051",
+   "full_name": "Amrutha Joshi",
+   "email": "amrutha.joshi.51@students.skylinesos.demo",
+   "student_id": "4GT23AI051",
+   "role": "member"
+  },
+  {
+   "ref": "u052",
+   "full_name": "Tejas Joshi",
+   "email": "tejas.joshi.52@students.skylinesos.demo",
+   "student_id": "4GT23AI052",
+   "role": "member"
+  },
+  {
+   "ref": "u053",
+   "full_name": "Pooja Nair",
+   "email": "pooja.nair.53@students.skylinesos.demo",
+   "student_id": "4GT23AI053",
+   "role": "member"
+  },
+  {
+   "ref": "u054",
+   "full_name": "Lavanya Poojary",
+   "email": "lavanya.poojary.54@students.skylinesos.demo",
+   "student_id": "4GT23AI054",
+   "role": "member"
+  },
+  {
+   "ref": "u055",
+   "full_name": "Yamini Acharya",
+   "email": "yamini.acharya.55@students.skylinesos.demo",
+   "student_id": "4GT23AI055",
+   "role": "member"
+  },
+  {
+   "ref": "u056",
+   "full_name": "Pooja Prasad",
+   "email": "pooja.prasad.56@students.skylinesos.demo",
+   "student_id": "4GT23AI056",
+   "role": "member"
+  },
+  {
+   "ref": "u057",
+   "full_name": "Chetan Nair",
+   "email": "chetan.nair.57@students.skylinesos.demo",
+   "student_id": "4GT23AI057",
+   "role": "member"
+  },
+  {
+   "ref": "u058",
+   "full_name": "Nikhil Gowda",
+   "email": "nikhil.gowda.58@students.skylinesos.demo",
+   "student_id": "4GT23AI058",
+   "role": "member"
+  },
+  {
+   "ref": "u059",
+   "full_name": "Aditya Naik",
+   "email": "aditya.naik.59@students.skylinesos.demo",
+   "student_id": "4GT23AI059",
+   "role": "member"
+  },
+  {
+   "ref": "u060",
+   "full_name": "Tanvi Dsouza",
+   "email": "tanvi.dsouza.60@students.skylinesos.demo",
+   "student_id": "4GT23AI060",
+   "role": "member"
+  }
+ ],
+ "membership_tiers": [
+  {
+   "ref": "t1",
+   "name": "Basic",
+   "fee_paise": 10000,
+   "duration_days": 365,
+   "discount_percent": 0,
+   "benefits": [
+    "Event access",
+    "Announcement feed"
+   ]
+  },
+  {
+   "ref": "t2",
+   "name": "Plus",
+   "fee_paise": 30000,
+   "duration_days": 365,
+   "discount_percent": 10,
+   "benefits": [
+    "Member ticket prices",
+    "10% merch discount",
+    "Priority registration"
+   ]
+  },
+  {
+   "ref": "t3",
+   "name": "Core",
+   "fee_paise": 50000,
+   "duration_days": 365,
+   "discount_percent": 20,
+   "benefits": [
+    "Member ticket prices",
+    "20% merch discount",
+    "Voting rights",
+    "Free gala entry"
+   ]
+  }
+ ],
+ "membership_applications": [
+  {
+   "ref": "a001",
+   "user": "u010",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a002",
+   "user": "u045",
+   "tier": "t3",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a003",
+   "user": "u055",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a004",
+   "user": "u039",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "ECE",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a005",
+   "user": "u026",
+   "tier": "t3",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a006",
+   "user": "u029",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a007",
+   "user": "u024",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a008",
+   "user": "u043",
+   "tier": "t1",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a009",
+   "user": "u015",
+   "tier": "t1",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a010",
+   "user": "u027",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a011",
+   "user": "u035",
+   "tier": "t3",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "ECE",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a012",
+   "user": "u006",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a013",
+   "user": "u030",
+   "tier": "t1",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a014",
+   "user": "u014",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a015",
+   "user": "u012",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a016",
+   "user": "u022",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a017",
+   "user": "u053",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a018",
+   "user": "u005",
+   "tier": "t3",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a019",
+   "user": "u019",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a020",
+   "user": "u009",
+   "tier": "t1",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a021",
+   "user": "u018",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a022",
+   "user": "u042",
+   "tier": "t1",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a023",
+   "user": "u008",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a024",
+   "user": "u047",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a025",
+   "user": "u058",
+   "tier": "t3",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a026",
+   "user": "u013",
+   "tier": "t3",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "ECE",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a027",
+   "user": "u044",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a028",
+   "user": "u046",
+   "tier": "t3",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a029",
+   "user": "u020",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a030",
+   "user": "u059",
+   "tier": "t2",
+   "status": "approved",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a031",
+   "user": "u031",
+   "tier": "t1",
+   "status": "pending",
+   "revision": 1,
+   "answers": {
+    "branch": "ECE",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a032",
+   "user": "u048",
+   "tier": "t2",
+   "status": "pending",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a033",
+   "user": "u016",
+   "tier": "t1",
+   "status": "pending",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a034",
+   "user": "u041",
+   "tier": "t2",
+   "status": "pending",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a035",
+   "user": "u054",
+   "tier": "t2",
+   "status": "pending",
+   "revision": 1,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 2,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a036",
+   "user": "u050",
+   "tier": "t2",
+   "status": "pending",
+   "revision": 1,
+   "answers": {
+    "branch": "ECE",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": null
+  },
+  {
+   "ref": "a037",
+   "user": "u033",
+   "tier": "t2",
+   "status": "rejected",
+   "revision": 2,
+   "answers": {
+    "branch": "AI&ML",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": "Duplicate application, please use existing one"
+  },
+  {
+   "ref": "a038",
+   "user": "u011",
+   "tier": "t2",
+   "status": "rejected",
+   "revision": 2,
+   "answers": {
+    "branch": "CSE",
+    "year": 3,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": "Student ID could not be matched"
+  },
+  {
+   "ref": "a039",
+   "user": "u051",
+   "tier": "t2",
+   "status": "rejected",
+   "revision": 1,
+   "answers": {
+    "branch": "CSE",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": "Student ID could not be matched"
+  },
+  {
+   "ref": "a040",
+   "user": "u025",
+   "tier": "t1",
+   "status": "rejected",
+   "revision": 1,
+   "answers": {
+    "branch": "Mech",
+    "year": 1,
+    "why_join": "Interested in club activities and events"
+   },
+   "rejection_reason": "Incomplete motivation statement"
+  }
+ ],
+ "membership_purchases": [
+  {
+   "ref": "mp001",
+   "application": "a001",
+   "method": "cash",
+   "start": "2026-04-13"
+  },
+  {
+   "ref": "mp002",
+   "application": "a002",
+   "method": "manual_upi",
+   "start": "2026-03-25"
+  },
+  {
+   "ref": "mp003",
+   "application": "a003",
+   "method": "cash",
+   "start": "2026-04-04"
+  },
+  {
+   "ref": "mp004",
+   "application": "a004",
+   "method": "cash",
+   "start": "2026-04-23"
+  },
+  {
+   "ref": "mp005",
+   "application": "a005",
+   "method": "manual_upi",
+   "start": "2026-05-29"
+  },
+  {
+   "ref": "mp006",
+   "application": "a006",
+   "method": "cash",
+   "start": "2026-07-27"
+  },
+  {
+   "ref": "mp007",
+   "application": "a007",
+   "method": "manual_upi",
+   "start": "2026-07-23"
+  },
+  {
+   "ref": "mp008",
+   "application": "a008",
+   "method": "manual_upi",
+   "start": "2026-08-25"
+  },
+  {
+   "ref": "mp009",
+   "application": "a009",
+   "method": "cash",
+   "start": "2026-08-01"
+  },
+  {
+   "ref": "mp010",
+   "application": "a010",
+   "method": "manual_upi",
+   "start": "2026-10-02"
+  },
+  {
+   "ref": "mp011",
+   "application": "a011",
+   "method": "manual_upi",
+   "start": "2026-08-01"
+  },
+  {
+   "ref": "mp012",
+   "application": "a012",
+   "method": "cash",
+   "start": "2026-10-02"
+  },
+  {
+   "ref": "mp013",
+   "application": "a013",
+   "method": "cash",
+   "start": "2026-09-11"
+  },
+  {
+   "ref": "mp014",
+   "application": "a014",
+   "method": "manual_upi",
+   "start": "2026-09-30"
+  },
+  {
+   "ref": "mp015",
+   "application": "a015",
+   "method": "cash",
+   "start": "2026-09-04"
+  },
+  {
+   "ref": "mp016",
+   "application": "a016",
+   "method": "manual_upi",
+   "start": "2026-04-13"
+  },
+  {
+   "ref": "mp017",
+   "application": "a017",
+   "method": "manual_upi",
+   "start": "2026-07-17"
+  },
+  {
+   "ref": "mp018",
+   "application": "a018",
+   "method": "cash",
+   "start": "2026-05-03"
+  },
+  {
+   "ref": "mp019",
+   "application": "a019",
+   "method": "manual_upi",
+   "start": "2026-06-24"
+  },
+  {
+   "ref": "mp020",
+   "application": "a020",
+   "method": "cash",
+   "start": "2026-05-03"
+  },
+  {
+   "ref": "mp021",
+   "application": "a021",
+   "method": "manual_upi",
+   "start": "2025-11-01"
+  },
+  {
+   "ref": "mp022",
+   "application": "a022",
+   "method": "cash",
+   "start": "2025-10-26"
+  },
+  {
+   "ref": "mp023",
+   "application": "a023",
+   "method": "manual_upi",
+   "start": "2025-11-03"
+  },
+  {
+   "ref": "mp024",
+   "application": "a024",
+   "method": "manual_upi",
+   "start": "2025-10-29"
+  },
+  {
+   "ref": "mp025",
+   "application": "a025",
+   "method": "manual_upi",
+   "start": "2025-09-11"
+  },
+  {
+   "ref": "mp026",
+   "application": "a026",
+   "method": "manual_upi",
+   "start": "2025-08-14"
+  },
+  {
+   "ref": "mp027",
+   "application": "a027",
+   "method": "manual_upi",
+   "start": "2025-10-02"
+  },
+  {
+   "ref": "mp028",
+   "application": "a028",
+   "method": "manual_upi",
+   "start": "2025-10-04"
+  }
+ ],
+ "events": [
+  {
+   "ref": "e1",
+   "slug": "freshers-welcome-2026",
+   "title": "Freshers Welcome",
+   "venue": "Seminar Hall",
+   "starts": "2026-08-22T10:00",
+   "capacity": 150,
+   "status": "past"
+  },
+  {
+   "ref": "e2",
+   "slug": "hack-night-sep",
+   "title": "Hack Night",
+   "venue": "Lab 3",
+   "starts": "2026-09-19T18:00",
+   "capacity": 60,
+   "status": "past"
+  },
+  {
+   "ref": "e3",
+   "slug": "skyline-gala-2026",
+   "title": "Skyline Gala Night",
+   "venue": "Open Auditorium",
+   "starts": "2026-10-17T18:30",
+   "capacity": 120,
+   "status": "published"
+  },
+  {
+   "ref": "e4",
+   "slug": "tech-talk-cloud-101",
+   "title": "Tech Talk: Cloud 101",
+   "venue": "Seminar Hall",
+   "starts": "2026-10-24T15:00",
+   "capacity": 80,
+   "status": "published"
+  },
+  {
+   "ref": "e5",
+   "slug": "annual-sports-meet",
+   "title": "Annual Sports Meet",
+   "venue": "College Ground",
+   "starts": "2026-11-07T09:00",
+   "capacity": 200,
+   "status": "published"
+  }
+ ],
+ "ticket_types": [
+  {
+   "ref": "tt01",
+   "event": "e1",
+   "name": "General",
+   "price_paise": 0,
+   "member_price_paise": 0,
+   "quantity_limit": 80,
+   "member_only": false
+  },
+  {
+   "ref": "tt02",
+   "event": "e1",
+   "name": "Guest",
+   "price_paise": 0,
+   "member_price_paise": null,
+   "quantity_limit": 60,
+   "member_only": false
+  },
+  {
+   "ref": "tt03",
+   "event": "e2",
+   "name": "Participant",
+   "price_paise": 5000,
+   "member_price_paise": 0,
+   "quantity_limit": 60,
+   "member_only": false
+  },
+  {
+   "ref": "tt04",
+   "event": "e3",
+   "name": "General admission",
+   "price_paise": 50000,
+   "member_price_paise": 30000,
+   "quantity_limit": 80,
+   "member_only": false
+  },
+  {
+   "ref": "tt05",
+   "event": "e3",
+   "name": "Guest pass",
+   "price_paise": 60000,
+   "member_price_paise": null,
+   "quantity_limit": 40,
+   "member_only": false
+  },
+  {
+   "ref": "tt06",
+   "event": "e3",
+   "name": "Core member",
+   "price_paise": 0,
+   "member_price_paise": 0,
+   "quantity_limit": 60,
+   "member_only": true
+  },
+  {
+   "ref": "tt07",
+   "event": "e4",
+   "name": "Standard",
+   "price_paise": 0,
+   "member_price_paise": 0,
+   "quantity_limit": 60,
+   "member_only": false
+  },
+  {
+   "ref": "tt08",
+   "event": "e4",
+   "name": "Workshop add-on",
+   "price_paise": 10000,
+   "member_price_paise": 5000,
+   "quantity_limit": 60,
+   "member_only": false
+  },
+  {
+   "ref": "tt09",
+   "event": "e5",
+   "name": "Spectator",
+   "price_paise": 2000,
+   "member_price_paise": 1000,
+   "quantity_limit": 80,
+   "member_only": false
+  },
+  {
+   "ref": "tt10",
+   "event": "e5",
+   "name": "Team entry",
+   "price_paise": 20000,
+   "member_price_paise": 15000,
+   "quantity_limit": 40,
+   "member_only": false
+  }
+ ],
+ "ticket_purchases": [
+  {
+   "ref": "tk001",
+   "buyer": "u022",
+   "ticket_type": "tt03",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk002",
+   "buyer": "u008",
+   "ticket_type": "tt03",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk003",
+   "buyer": "u003",
+   "ticket_type": "tt01",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk004",
+   "buyer": "u042",
+   "ticket_type": "tt03",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk005",
+   "buyer": "u038",
+   "ticket_type": "tt02",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk006",
+   "buyer": "u025",
+   "ticket_type": "tt02",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk007",
+   "buyer": "u015",
+   "ticket_type": "tt03",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk008",
+   "buyer": "u043",
+   "ticket_type": "tt01",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk009",
+   "buyer": "u036",
+   "ticket_type": "tt03",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk010",
+   "buyer": "u015",
+   "ticket_type": "tt01",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk011",
+   "buyer": "u031",
+   "ticket_type": "tt03",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": true
+  },
+  {
+   "ref": "tk012",
+   "buyer": "u009",
+   "ticket_type": "tt02",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk013",
+   "buyer": "u036",
+   "ticket_type": "tt01",
+   "qty": 1,
+   "method": "cash",
+   "check_in": true
+  },
+  {
+   "ref": "tk014",
+   "buyer": "u053",
+   "ticket_type": "tt03",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": true
+  },
+  {
+   "ref": "tk015",
+   "buyer": "u049",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk016",
+   "buyer": "u004",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk017",
+   "buyer": "u041",
+   "ticket_type": "tt04",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk018",
+   "buyer": "u004",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk019",
+   "buyer": "u033",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk020",
+   "buyer": "u058",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk021",
+   "buyer": "u024",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk022",
+   "buyer": "u054",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk023",
+   "buyer": "u056",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk024",
+   "buyer": "u023",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk025",
+   "buyer": "u030",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk026",
+   "buyer": "u058",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk027",
+   "buyer": "u020",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk028",
+   "buyer": "u041",
+   "ticket_type": "tt04",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk029",
+   "buyer": "u032",
+   "ticket_type": "tt04",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk030",
+   "buyer": "u053",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk031",
+   "buyer": "u027",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk032",
+   "buyer": "u012",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk033",
+   "buyer": "u024",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk034",
+   "buyer": "u017",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk035",
+   "buyer": "u048",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk036",
+   "buyer": "u035",
+   "ticket_type": "tt04",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk037",
+   "buyer": "u038",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk038",
+   "buyer": "u003",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk039",
+   "buyer": "u035",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk040",
+   "buyer": "u043",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk041",
+   "buyer": "u007",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk042",
+   "buyer": "u047",
+   "ticket_type": "tt04",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk043",
+   "buyer": "u036",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk044",
+   "buyer": "u003",
+   "ticket_type": "tt05",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk045",
+   "buyer": "u043",
+   "ticket_type": "tt06",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk046",
+   "buyer": "u058",
+   "ticket_type": "tt04",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk047",
+   "buyer": "u035",
+   "ticket_type": "tt09",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk048",
+   "buyer": "u009",
+   "ticket_type": "tt09",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk049",
+   "buyer": "u048",
+   "ticket_type": "tt08",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk050",
+   "buyer": "u055",
+   "ticket_type": "tt07",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk051",
+   "buyer": "u028",
+   "ticket_type": "tt10",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk052",
+   "buyer": "u047",
+   "ticket_type": "tt08",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk053",
+   "buyer": "u012",
+   "ticket_type": "tt07",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk054",
+   "buyer": "u011",
+   "ticket_type": "tt08",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk055",
+   "buyer": "u033",
+   "ticket_type": "tt07",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk056",
+   "buyer": "u054",
+   "ticket_type": "tt07",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk057",
+   "buyer": "u024",
+   "ticket_type": "tt07",
+   "qty": 1,
+   "method": "manual_upi",
+   "check_in": false
+  },
+  {
+   "ref": "tk058",
+   "buyer": "u035",
+   "ticket_type": "tt08",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk059",
+   "buyer": "u009",
+   "ticket_type": "tt08",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  },
+  {
+   "ref": "tk060",
+   "buyer": "u032",
+   "ticket_type": "tt09",
+   "qty": 1,
+   "method": "cash",
+   "check_in": false
+  }
+ ],
+ "products": [
+  {
+   "ref": "p1",
+   "name": "Skyline Hoodie",
+   "description": "Heavyweight fleece hoodie with embroidered logo"
+  },
+  {
+   "ref": "p2",
+   "name": "Club T-Shirt",
+   "description": "Cotton tee, club logo on chest"
+  },
+  {
+   "ref": "p3",
+   "name": "Skyline Cap",
+   "description": "Adjustable cotton cap"
+  },
+  {
+   "ref": "p4",
+   "name": "Sticker Pack",
+   "description": "Set of 6 vinyl stickers"
+  }
+ ],
+ "product_variants": [
+  {
+   "ref": "v01",
+   "product": "p1",
+   "sku": "P1-S",
+   "label": "S",
+   "price_paise": 79900,
+   "stock_on_hand": 4
+  },
+  {
+   "ref": "v02",
+   "product": "p1",
+   "sku": "P1-M",
+   "label": "M",
+   "price_paise": 79900,
+   "stock_on_hand": 12
+  },
+  {
+   "ref": "v03",
+   "product": "p1",
+   "sku": "P1-L",
+   "label": "L",
+   "price_paise": 79900,
+   "stock_on_hand": 12
+  },
+  {
+   "ref": "v04",
+   "product": "p1",
+   "sku": "P1-XL",
+   "label": "XL",
+   "price_paise": 79900,
+   "stock_on_hand": 12
+  },
+  {
+   "ref": "v05",
+   "product": "p2",
+   "sku": "P2-M",
+   "label": "M",
+   "price_paise": 39900,
+   "stock_on_hand": 25
+  },
+  {
+   "ref": "v06",
+   "product": "p2",
+   "sku": "P2-L",
+   "label": "L",
+   "price_paise": 39900,
+   "stock_on_hand": 25
+  },
+  {
+   "ref": "v07",
+   "product": "p2",
+   "sku": "P2-XL",
+   "label": "XL",
+   "price_paise": 39900,
+   "stock_on_hand": 25
+  },
+  {
+   "ref": "v08",
+   "product": "p3",
+   "sku": "P3-ONESIZE",
+   "label": "One size",
+   "price_paise": 24900,
+   "stock_on_hand": 30
+  },
+  {
+   "ref": "v09",
+   "product": "p4",
+   "sku": "P4-PACK",
+   "label": "Pack",
+   "price_paise": 9900,
+   "stock_on_hand": 60
+  }
+ ],
+ "merch_orders": [
+  {
+   "ref": "mo001",
+   "buyer": "u025",
+   "variant": "v02",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "pending"
+  },
+  {
+   "ref": "mo002",
+   "buyer": "u031",
+   "variant": "v06",
+   "qty": 2,
+   "method": "cash",
+   "fulfilment": "packed"
+  },
+  {
+   "ref": "mo003",
+   "buyer": "u044",
+   "variant": "v06",
+   "qty": 2,
+   "method": "manual_upi",
+   "fulfilment": "pending"
+  },
+  {
+   "ref": "mo004",
+   "buyer": "u050",
+   "variant": "v02",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo005",
+   "buyer": "u049",
+   "variant": "v05",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo006",
+   "buyer": "u033",
+   "variant": "v07",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo007",
+   "buyer": "u021",
+   "variant": "v07",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo008",
+   "buyer": "u056",
+   "variant": "v04",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo009",
+   "buyer": "u014",
+   "variant": "v07",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "packed"
+  },
+  {
+   "ref": "mo010",
+   "buyer": "u018",
+   "variant": "v07",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo011",
+   "buyer": "u054",
+   "variant": "v05",
+   "qty": 2,
+   "method": "manual_upi",
+   "fulfilment": "packed"
+  },
+  {
+   "ref": "mo012",
+   "buyer": "u041",
+   "variant": "v09",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo013",
+   "buyer": "u036",
+   "variant": "v03",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo014",
+   "buyer": "u041",
+   "variant": "v08",
+   "qty": 2,
+   "method": "manual_upi",
+   "fulfilment": "pending"
+  },
+  {
+   "ref": "mo015",
+   "buyer": "u046",
+   "variant": "v09",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo016",
+   "buyer": "u044",
+   "variant": "v02",
+   "qty": 2,
+   "method": "cash",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo017",
+   "buyer": "u042",
+   "variant": "v06",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo018",
+   "buyer": "u001",
+   "variant": "v03",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "packed"
+  },
+  {
+   "ref": "mo019",
+   "buyer": "u038",
+   "variant": "v06",
+   "qty": 2,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo020",
+   "buyer": "u001",
+   "variant": "v06",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "pending"
+  },
+  {
+   "ref": "mo021",
+   "buyer": "u021",
+   "variant": "v05",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo022",
+   "buyer": "u018",
+   "variant": "v09",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "packed"
+  },
+  {
+   "ref": "mo023",
+   "buyer": "u050",
+   "variant": "v09",
+   "qty": 1,
+   "method": "cash",
+   "fulfilment": "packed"
+  },
+  {
+   "ref": "mo024",
+   "buyer": "u015",
+   "variant": "v06",
+   "qty": 2,
+   "method": "cash",
+   "fulfilment": "packed"
+  },
+  {
+   "ref": "mo025",
+   "buyer": "u006",
+   "variant": "v05",
+   "qty": 2,
+   "method": "cash",
+   "fulfilment": "pending"
+  },
+  {
+   "ref": "mo026",
+   "buyer": "u018",
+   "variant": "v01",
+   "qty": 2,
+   "method": "cash",
+   "fulfilment": "packed"
+  },
+  {
+   "ref": "mo027",
+   "buyer": "u047",
+   "variant": "v09",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo028",
+   "buyer": "u023",
+   "variant": "v06",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  },
+  {
+   "ref": "mo029",
+   "buyer": "u057",
+   "variant": "v08",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "pending"
+  },
+  {
+   "ref": "mo030",
+   "buyer": "u009",
+   "variant": "v08",
+   "qty": 1,
+   "method": "manual_upi",
+   "fulfilment": "handed_over"
+  }
+ ],
+ "announcements": [
+  {
+   "ref": "an01",
+   "title": "Welcome to Skyline 2026",
+   "body": "Welcome to Skyline 2026. See the events page for details.",
+   "audience": "public",
+   "status": "published"
+  },
+  {
+   "ref": "an02",
+   "title": "Membership drive is open",
+   "body": "Membership drive is open. See the events page for details.",
+   "audience": "public",
+   "status": "published"
+  },
+  {
+   "ref": "an03",
+   "title": "Gala Night tickets are live",
+   "body": "Gala Night tickets are live. See the events page for details.",
+   "audience": "members",
+   "status": "published"
+  },
+  {
+   "ref": "an04",
+   "title": "Hack Night recap",
+   "body": "Hack Night recap. See the events page for details.",
+   "audience": "public",
+   "status": "published"
+  },
+  {
+   "ref": "an05",
+   "title": "Core team meeting this Friday",
+   "body": "Core team meeting this Friday. See the events page for details.",
+   "audience": "staff",
+   "status": "published"
+  },
+  {
+   "ref": "an06",
+   "title": "Hoodie pre-orders open",
+   "body": "Hoodie pre-orders open. See the events page for details.",
+   "audience": "members",
+   "status": "published"
+  },
+  {
+   "ref": "an07",
+   "title": "Volunteers needed for Gala",
+   "body": "Volunteers needed for Gala. See the events page for details.",
+   "audience": "members",
+   "status": "published"
+  },
+  {
+   "ref": "an08",
+   "title": "Cloud 101 talk announced",
+   "body": "Cloud 101 talk announced. See the events page for details.",
+   "audience": "public",
+   "status": "published"
+  },
+  {
+   "ref": "an09",
+   "title": "Sports Meet registrations",
+   "body": "Sports Meet registrations. See the events page for details.",
+   "audience": "members",
+   "status": "published"
+  },
+  {
+   "ref": "an10",
+   "title": "Treasurer: submit reimbursements by month end",
+   "body": "Treasurer: submit reimbursements by month end. See the events page for details.",
+   "audience": "staff",
+   "status": "draft"
+  }
+ ],
+ "fundraisers": [
+  {
+   "ref": "f1",
+   "name": "Gala Night Bake Sale",
+   "goal_paise": 2500000
+  },
+  {
+   "ref": "f2",
+   "name": "Scholarship Fund Drive",
+   "goal_paise": 5000000
+  }
+ ],
+ "tasks": [
+  {
+   "ref": "tsk01",
+   "fundraiser": "f1",
+   "title": "Book stall location",
+   "assignee": "u004",
+   "due_on": "2026-10-10",
+   "priority": "medium",
+   "status": "done"
+  },
+  {
+   "ref": "tsk02",
+   "fundraiser": "f1",
+   "title": "Collect baking volunteers",
+   "assignee": "u011",
+   "due_on": "2026-10-06",
+   "priority": "medium",
+   "status": "in_progress"
+  },
+  {
+   "ref": "tsk03",
+   "fundraiser": "f1",
+   "title": "Design poster",
+   "assignee": "u011",
+   "due_on": "2026-10-06",
+   "priority": "medium",
+   "status": "todo"
+  },
+  {
+   "ref": "tsk04",
+   "fundraiser": "f1",
+   "title": "Print posters",
+   "assignee": "u011",
+   "due_on": "2026-10-14",
+   "priority": "medium",
+   "status": "done"
+  },
+  {
+   "ref": "tsk05",
+   "fundraiser": "f1",
+   "title": "Set up payment desk",
+   "assignee": "u004",
+   "due_on": "2026-10-09",
+   "priority": "high",
+   "status": "in_progress"
+  },
+  {
+   "ref": "tsk06",
+   "fundraiser": "f1",
+   "title": "Procure ingredients",
+   "assignee": "u011",
+   "due_on": "2026-10-09",
+   "priority": "high",
+   "status": "todo"
+  },
+  {
+   "ref": "tsk07",
+   "fundraiser": "f1",
+   "title": "Price list",
+   "assignee": "u012",
+   "due_on": "2026-10-20",
+   "priority": "high",
+   "status": "done"
+  },
+  {
+   "ref": "tsk08",
+   "fundraiser": "f1",
+   "title": "Social media push",
+   "assignee": "u010",
+   "due_on": "2026-10-07",
+   "priority": "low",
+   "status": "in_progress"
+  },
+  {
+   "ref": "tsk09",
+   "fundraiser": "f2",
+   "title": "Pickup logistics",
+   "assignee": "u010",
+   "due_on": "2026-10-18",
+   "priority": "low",
+   "status": "todo"
+  },
+  {
+   "ref": "tsk10",
+   "fundraiser": "f2",
+   "title": "Count cash",
+   "assignee": "u010",
+   "due_on": "2026-10-17",
+   "priority": "high",
+   "status": "done"
+  },
+  {
+   "ref": "tsk11",
+   "fundraiser": "f2",
+   "title": "Thank-you notes",
+   "assignee": "u011",
+   "due_on": "2026-10-10",
+   "priority": "high",
+   "status": "in_progress"
+  },
+  {
+   "ref": "tsk12",
+   "fundraiser": "f2",
+   "title": "Sponsor outreach",
+   "assignee": "u010",
+   "due_on": "2026-10-19",
+   "priority": "high",
+   "status": "todo"
+  },
+  {
+   "ref": "tsk13",
+   "fundraiser": "f2",
+   "title": "Venue booking",
+   "assignee": "u011",
+   "due_on": "2026-10-14",
+   "priority": "high",
+   "status": "done"
+  },
+  {
+   "ref": "tsk14",
+   "fundraiser": "f2",
+   "title": "Wrap-up report",
+   "assignee": "u010",
+   "due_on": "2026-10-16",
+   "priority": "low",
+   "status": "in_progress"
+  }
+ ],
+ "contributions": [
+  {
+   "ref": "c01",
+   "fundraiser": "f1",
+   "amount_paise": 120000,
+   "method": "cash",
+   "note": "Donation box"
+  },
+  {
+   "ref": "c02",
+   "fundraiser": "f1",
+   "amount_paise": 25000,
+   "method": "cash",
+   "note": "Bake sale stall"
+  },
+  {
+   "ref": "c03",
+   "fundraiser": "f1",
+   "amount_paise": 40000,
+   "method": "manual_upi",
+   "note": "Donation box"
+  },
+  {
+   "ref": "c04",
+   "fundraiser": "f1",
+   "amount_paise": 25000,
+   "method": "manual_upi",
+   "note": "Alumni donation"
+  },
+  {
+   "ref": "c05",
+   "fundraiser": "f1",
+   "amount_paise": 25000,
+   "method": "manual_upi",
+   "note": "Donation box"
+  },
+  {
+   "ref": "c06",
+   "fundraiser": "f1",
+   "amount_paise": 25000,
+   "method": "cash",
+   "note": "Donation box"
+  },
+  {
+   "ref": "c07",
+   "fundraiser": "f1",
+   "amount_paise": 25000,
+   "method": "manual_upi",
+   "note": "Staff room sales"
+  },
+  {
+   "ref": "c08",
+   "fundraiser": "f1",
+   "amount_paise": 120000,
+   "method": "cash",
+   "note": "Alumni donation"
+  },
+  {
+   "ref": "c09",
+   "fundraiser": "f2",
+   "amount_paise": 25000,
+   "method": "manual_upi",
+   "note": "Bake sale stall"
+  },
+  {
+   "ref": "c10",
+   "fundraiser": "f2",
+   "amount_paise": 60000,
+   "method": "manual_upi",
+   "note": "Donation box"
+  },
+  {
+   "ref": "c11",
+   "fundraiser": "f2",
+   "amount_paise": 40000,
+   "method": "cash",
+   "note": "Bake sale stall"
+  },
+  {
+   "ref": "c12",
+   "fundraiser": "f2",
+   "amount_paise": 60000,
+   "method": "cash",
+   "note": "Bake sale stall"
+  }
+ ],
+ "expenses": [
+  {
+   "ref": "x01",
+   "amount_paise": 35000,
+   "category": "Food",
+   "description": "Cab fare for guest speaker",
+   "submitted_by": "u011",
+   "status": "submitted"
+  },
+  {
+   "ref": "x02",
+   "amount_paise": 150000,
+   "category": "Food",
+   "description": "Poster printing",
+   "submitted_by": "u004",
+   "status": "submitted"
+  },
+  {
+   "ref": "x03",
+   "amount_paise": 420000,
+   "category": "Printing",
+   "description": "Poster printing",
+   "submitted_by": "u010",
+   "status": "submitted"
+  },
+  {
+   "ref": "x04",
+   "amount_paise": 250000,
+   "category": "Printing",
+   "description": "Sound system rental",
+   "submitted_by": "u004",
+   "status": "paid"
+  },
+  {
+   "ref": "x05",
+   "amount_paise": 250000,
+   "category": "Printing",
+   "description": "Snacks for volunteers",
+   "submitted_by": "u004",
+   "status": "rejected"
+  },
+  {
+   "ref": "x06",
+   "amount_paise": 250000,
+   "category": "Equipment",
+   "description": "Snacks for volunteers",
+   "submitted_by": "u011",
+   "status": "paid"
+  },
+  {
+   "ref": "x07",
+   "amount_paise": 150000,
+   "category": "Equipment",
+   "description": "Cab fare for guest speaker",
+   "submitted_by": "u011",
+   "status": "rejected"
+  },
+  {
+   "ref": "x08",
+   "amount_paise": 35000,
+   "category": "Printing",
+   "description": "Sound system rental",
+   "submitted_by": "u004",
+   "status": "approved"
+  },
+  {
+   "ref": "x09",
+   "amount_paise": 150000,
+   "category": "Travel",
+   "description": "Sound system rental",
+   "submitted_by": "u004",
+   "status": "paid"
+  },
+  {
+   "ref": "x10",
+   "amount_paise": 80000,
+   "category": "Equipment",
+   "description": "Sound system rental",
+   "submitted_by": "u010",
+   "status": "approved"
+  }
+ ]
+}
