@@ -160,6 +160,11 @@
     - Converted the Door Check-in terminal into a dedicated 6-digit member code and Crockford ticket code identity verification terminal, removing mock QR graphics.
   - **API Client ([`Frontend/src/lib/api.ts`](file:///c:/Users/javal/Videos/SkylineSOS/Frontend/src/lib/api.ts)):**
     - Added `api.getRotatingDoorPass()` (`POST /me/verify-code`) and `api.verifyMemberByCode()` (`POST /staff/verify/member`).
+- **Vercel Deployment Integration (`Frontend/`):**
+  - **Adapter Installation:** Installed `@astrojs/vercel@^8.2.11` matching `astro@^5.4.1` peer dependencies.
+  - **Configuration ([`Frontend/astro.config.mjs`](file:///c:/Users/javal/Videos/SkylineSOS/Frontend/astro.config.mjs)):** Integrated `adapter: vercel()` for optimized static build output (`.vercel/output/static`).
+  - **Ignore Rules ([`.gitignore`](file:///c:/Users/javal/Videos/SkylineSOS/.gitignore)):** Added `.vercel/` build output to root `.gitignore` to prevent committing build caches and deployment artifacts.
+  - **Verification:** Verified `npm run build` in `Frontend/` generates 20 static pages into `.vercel/output/static` in ~5.18s with zero errors. All 79 backend tests continue to pass.
 
 
 

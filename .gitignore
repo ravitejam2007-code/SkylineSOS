@@ -5,6 +5,7 @@ node_modules/
 # Build artifacts
 dist/
 .astro/
+.vercel/
 
 # Environment variables & secrets
 .env
