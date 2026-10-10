@@ -384,5 +384,12 @@
   - **Verification:**
     - Ran `npm test`: 79/79 invariant tests passed across 24 suites with 100% pass rate.
     - Ran `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
-
-
+- **Upstream Synchronization & Merchandise Real Assets Integration (`git pull`):**
+  - **Git Pull & Origin Sync:**
+    - Synced remote commits from `origin/main` (commits `4129e34`, `d4d6b72`, `0cc93c0`) into local working branch `feature/sos-foundation`.
+    - Integrated real merchandise transparent-background RGBA PNG and JPG assets into `Frontend/public/merch/` (`cap.png`, `hoodie.png`, `stickers.png`, `tshirt.png`).
+    - Merged updated [`MerchScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MerchScene.tsx) featuring dynamic product switcher pills, visual PDP split, responsive image loader, and edge-function inventory stock verification.
+    - Standardized toggle styles in `MerchScene.tsx` to adhere to the strict black theme (`peer-checked:bg-black`).
+  - **Verification:**
+    - Executed `npm test`: 79/79 invariant tests passed across 24 suites with 100% pass rate.
+    - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.

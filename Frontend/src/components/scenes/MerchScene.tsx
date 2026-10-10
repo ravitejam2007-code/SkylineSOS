@@ -112,15 +112,37 @@ export default function MerchScene() {
         <div className="lg:col-span-7 space-y-6">
           <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-6 t-card-interactive">
             <div className="aspect-video w-full rounded-2xl bg-[var(--color-surface-soft)] flex items-center justify-center border border-[var(--color-hairline-soft)] relative overflow-hidden">
-              <div className="text-center p-8">
-                <span className="w-24 h-24 mx-auto rounded-full bg-[var(--color-ink-deep)] text-white flex items-center justify-center font-extrabold text-3xl mb-4 shadow-sm">
-                  SOS
-                </span>
-                <p className="font-bold text-2xl text-[var(--color-ink-deep)]">
-                  {primaryProduct?.name || 'Skyline Official Merchandise'}
-                </p>
-                <p className="text-[13px] text-[var(--color-steel)] mt-1">Official Student Organization Apparel & Goods</p>
-              </div>
+              {(() => {
+                const name = (primaryProduct?.name || '').toLowerCase();
+                let imgSrc: string | null = null;
+                if (name.includes('hoodie') || name.includes('sweatshirt') || name.includes('sweater')) {
+                  imgSrc = '/merch/hoodie.png';
+                } else if (name.includes('tshirt') || name.includes('t-shirt') || name.includes('tee') || name.includes('shirt')) {
+                  imgSrc = '/merch/tshirt.png';
+                } else if (name.includes('cap') || name.includes('hat') || name.includes('snapback') || name.includes('headwear')) {
+                  imgSrc = '/merch/cap.png';
+                } else if (name.includes('sticker') || name.includes('pack') || name.includes('badge')) {
+                  imgSrc = '/merch/stickers.png';
+                }
+
+                return imgSrc ? (
+                  <img
+                    src={imgSrc}
+                    alt={primaryProduct?.name || 'Skyline Merch'}
+                    className="w-full h-full object-contain transition-opacity duration-300"
+                  />
+                ) : (
+                  <div className="text-center p-8">
+                    <span className="w-24 h-24 mx-auto rounded-full bg-[var(--color-ink-deep)] text-white flex items-center justify-center font-extrabold text-3xl mb-4 shadow-sm">
+                      SOS
+                    </span>
+                    <p className="font-bold text-2xl text-[var(--color-ink-deep)]">
+                      {primaryProduct?.name || 'Skyline Official Merchandise'}
+                    </p>
+                    <p className="text-[13px] text-[var(--color-steel)] mt-1">Official Student Organization Apparel & Goods</p>
+                  </div>
+                );
+              })()}
 
               <div className="absolute top-4 left-4">
                 <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-warning)] text-[var(--color-ink-deep)]">
@@ -182,7 +204,7 @@ export default function MerchScene() {
                   onChange={(e) => setIsMember(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-fb-blue)]"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
               </label>
             </div>
 
