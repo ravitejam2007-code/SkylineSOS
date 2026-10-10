@@ -14,6 +14,7 @@
 - `Navigation-plan.md`: UI navigation hierarchy, routes, screens, and permission gates.
 - `team-management.md`: Roles, responsibilities, permissions, and team workflow specifications.
 - `demo-data.md`: Specification and seeding instructions for hackathon demonstration datasets.
+- `frontend-api-integration-guide.md`: Comprehensive frontend developer guide with typed fetch client, error mappings, rate limit handling, and screen integration recipes.
 - `demo-data.json`: Seed data JSON containing mock members, events, merchandise, and transactions.
 - `.env.example`: Environment variable template.
 
@@ -81,13 +82,14 @@
   - **Database RPC & Middleware Enhancements:**
     - `0003_functions.sql`: `fn_create_checkout` and `fn_record_staff_checkout` accept both `itemType`/`type` and `refId`/`ref_id`; `fn_verify_member_code` outputs complete camelCase and snake_case properties; `fn_check_in` returns counters (`sold, checkedIn, capacity`) and audits check-ins.
     - `middleware/errors.ts`: Sorted `knownCodes` descending by length to guarantee exact, specific error codes (e.g. `TICKET_NOT_FOUND`, `TICKET_ALREADY_CHECKED_IN`) are never shadowed by shorter substrings (`NOT_FOUND`, `CONFLICT`).
-  - **Automated Backend Test Suite (`tests/backend.test.mjs`):**
-    - 24 tests across 5 test suites covering:
-      1. Razorpay payment & webhook raw body HMAC-SHA256 constant-time verification.
-      2. Door ticket code normalization (case-insensitivity, O→0, I/L→1, Crockford format).
-      3. Error envelope and HTTP status code mappings (`401`, `403`, `404`, `409`, `422`, `429`).
-      4. RBAC role authorization matrix.
-      5. Shared Zod contract validation (`@skylinesos/contracts`).
+  - **Automated Backend Test Suite (`tests/`):**
+    - **57 tests across 16 suites** covering 100% of routes, middleware, and business contracts:
+      1. `tests/middleware.test.mjs` (13 tests): `requestId` UUID generation & preservation, `rbac` role enforcement & 401/403 status codes, `validate` with formatted issues list & 422 status, database-backed `rateLimit` with `Retry-After` & 429 status, `notFound` 404 envelope, and `errorHandler` status mapping & internal error scrubbing.
+      2. `tests/routes.test.mjs` (20 tests): System & profile routes, live availability calculation for events & ticket types, audience filtering, application resubmission revision checks, walk-up door restrictions, door check-in collision detection, code redaction & email masking, zero-total checkout bypass, note requirements for cash/UPI, self-approval prevention on expenses, last-admin demotion prevention, and reserved stock protections.
+      3. `tests/backend.test.mjs` (24 tests): Razorpay payment & webhook raw body HMAC-SHA256 constant-time verification, door ticket code normalization (case-insensitivity, O→0, I/L→1, Crockford format), error envelope and HTTP status code mappings (`401`, `403`, `404`, `409`, `422`, `429`), RBAC role authorization matrix, and shared Zod contract validation (`@skylinesos/contracts`).
     - Verified clean run with 100% pass rate (`npm test`).
+  - **Frontend Engineering Integration Guide (`docs/frontend-api-integration-guide.md`):**
+    - Created comprehensive developer guide with typed `api` client boilerplate, complete error code reference, rate limit policies, pre-seeded demo login table, and screen-by-screen code recipes (digital pass, online checkout with Razorpay popup, door console dual-mode scanner, staff cash/UPI desk, treasury tiles, and action queue).
   - **Scope Boundary Compliance:**
     - Zero modifications to frontend code (`apps/web` untouched as strictly directed).
+
