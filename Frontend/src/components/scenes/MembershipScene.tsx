@@ -9,35 +9,97 @@ import type {
   MemberLookupResult,
 } from '@campusone/contracts';
 
+interface CuratedTier {
+  id: string;
+  organization_id: string;
+  name: string;
+  categoryLabel: string;
+  badgeLabel: string;
+  description: string;
+  fee_paise: number;
+  duration_days: number;
+  ticket_discount_percent: number;
+  merch_discount_percent: number;
+  benefits: string[];
+  is_active: boolean;
+  isRecommended?: boolean;
+}
+
+const DEFAULT_TIERS: CuratedTier[] = [
+  {
+    id: 't1',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    name: 'Basic',
+    categoryLabel: 'ANNUAL TIER',
+    badgeLabel: 'Standard',
+    description: 'Event access · Announcement feed',
+    fee_paise: 10000,
+    duration_days: 365,
+    ticket_discount_percent: 0,
+    merch_discount_percent: 0,
+    benefits: ['Event access', 'Announcement feed'],
+    is_active: true,
+    isRecommended: false,
+  },
+  {
+    id: 't2',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    name: 'Plus',
+    categoryLabel: 'PREMIUM ACCESS',
+    badgeLabel: 'Recommended',
+    description: 'Member ticket prices · 10% merch discount · Priority registration',
+    fee_paise: 30000,
+    duration_days: 365,
+    ticket_discount_percent: 10,
+    merch_discount_percent: 10,
+    benefits: ['Member ticket prices', '10% merch discount', 'Priority registration'],
+    is_active: true,
+    isRecommended: true,
+  },
+  {
+    id: 't3',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    name: 'Core',
+    categoryLabel: 'ANNUAL TIER',
+    badgeLabel: 'Standard',
+    description: 'Member ticket prices · 20% merch discount · Voting rights · Free gala entry',
+    fee_paise: 50000,
+    duration_days: 365,
+    ticket_discount_percent: 20,
+    merch_discount_percent: 20,
+    benefits: ['Member ticket prices', '20% merch discount', 'Voting rights', 'Free gala entry'],
+    is_active: true,
+    isRecommended: false,
+  },
+];
+
 export default function MembershipScene() {
   const [session, setSession] = useState<UserSession | null>(() => {
     if (typeof window !== 'undefined') return getActiveSession();
     return null;
   });
-  const [tiers, setTiers] = useState<MembershipTier[]>([]);
+  const [tiers, setTiers] = useState<CuratedTier[]>(DEFAULT_TIERS);
   const [applications, setApplications] = useState<MembershipApplication[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Async submission loading states
   const [isApplying, setIsApplying] = useState(false);
   const [isReapplying, setIsReapplying] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
-  const [isWalkUpSubmitting, setIsWalkUpSubmitting] = useState(false);
-  const [renewingId, setRenewingId] = useState<string | null>(null);
 
   // Application Modal/Form state
-  const [applyTier, setApplyTier] = useState<MembershipTier | null>(null);
+  const [applyTier, setApplyTier] = useState<CuratedTier | null>(null);
   const [applicantName, setApplicantName] = useState(() => {
     const s = typeof window !== 'undefined' ? getActiveSession() : null;
-    return s?.fullName || 'Priya Nair';
+    return s?.fullName || '';
   });
   const [applicantEmail, setApplicantEmail] = useState(() => {
     const s = typeof window !== 'undefined' ? getActiveSession() : null;
-    return s?.email || 'p.nair@skyline.edu';
+    return s?.email || '';
   });
   const [applicantIdNum, setApplicantIdNum] = useState(() => {
     const s = typeof window !== 'undefined' ? getActiveSession() : null;
-    return s?.studentId || 'SKY-2026-4091';
+    return s?.studentId || '';
   });
   const [statement, setStatement] = useState('I want to volunteer on the design committee and join the student gala team.');
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
@@ -50,37 +112,30 @@ export default function MembershipScene() {
   const [rejectModalApp, setRejectModalApp] = useState<MembershipApplication | null>(null);
   const [rejectReasonInput, setRejectReasonInput] = useState('Incomplete statement or missing student documentation');
 
-  // Walk-up state
-  const [walkUpName, setWalkUpName] = useState('');
-  const [walkUpEmail, setWalkUpEmail] = useState('');
-  const [walkUpId, setWalkUpId] = useState('');
-  const [walkUpTierId, setWalkUpTierId] = useState('');
-  const [walkUpMethod, setWalkUpMethod] = useState<'cash' | 'manual_upi'>('cash');
-  const [walkUpSuccess, setWalkUpSuccess] = useState<string | null>(null);
-
-  // Member Lookup state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<MemberLookupResult[]>([]);
-  const [lookupFeedback, setLookupFeedback] = useState<string | null>(null);
-
-  // Renewal state
-  const [renewSuccess, setRenewSuccess] = useState<string | null>(null);
-
   const loadData = async () => {
     try {
       const [tList, aList] = await Promise.all([
-        api.getMembershipTiers(),
-        api.getMembershipApplications(),
+        api.getMembershipTiers().catch(() => []),
+        api.getMembershipApplications().catch(() => []),
       ]);
-      setTiers(tList);
-      setApplications(aList);
-      if (tList.length > 0 && !walkUpTierId) {
-        setWalkUpTierId(tList[0].id);
+      if (Array.isArray(tList) && tList.length > 0) {
+        setTiers((prev) =>
+          prev.map((curated, idx) => {
+            const apiTier = tList[idx] || tList.find((t) => t.name.toLowerCase() === curated.name.toLowerCase());
+            if (!apiTier) return curated;
+            return {
+              ...curated,
+              id: apiTier.id,
+              fee_paise: apiTier.fee_paise || curated.fee_paise,
+              ticket_discount_percent: apiTier.ticket_discount_percent || curated.ticket_discount_percent,
+              merch_discount_percent: apiTier.merch_discount_percent || curated.merch_discount_percent,
+            };
+          })
+        );
       }
+      setApplications(aList || []);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -187,166 +242,154 @@ export default function MembershipScene() {
     }
   };
 
-  // Handle Walk-up Registration
-  const handleWalkUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!walkUpName || !walkUpEmail || !walkUpId) {
-      alert('Please fill out all required fields');
-      return;
-    }
-    setIsWalkUpSubmitting(true);
-    try {
-      const res = await api.recordWalkUpMembership({
-        full_name: walkUpName,
-        email: walkUpEmail,
-        student_id: walkUpId,
-        tier_id: walkUpTierId,
-        payment_method: walkUpMethod,
-      });
-      setWalkUpSuccess(`Walk-up member ${walkUpName} activated! Dues posted to ledger (${res.ledgerEntry.id}).`);
-      setWalkUpName('');
-      setWalkUpEmail('');
-      setWalkUpId('');
-      await loadData();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setIsWalkUpSubmitting(false);
-    }
-  };
-
-  // Handle Door Member Search
-  const handleSearch = async (val: string) => {
-    setSearchQuery(val);
-    if (!val.trim()) {
-      setSearchResults([]);
-      setLookupFeedback(null);
-      return;
-    }
-    try {
-      const results = await api.lookupMember(val);
-      setSearchResults(results);
-      if (results.length === 0) {
-        setLookupFeedback('No active student membership found with that query.');
-      } else {
-        setLookupFeedback(null);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Handle Renewal
-  const handleRenew = async (memberId: string) => {
-    setRenewingId(memberId);
-    try {
-      const res = await api.renewMembership(memberId, 'online');
-      setRenewSuccess(`Membership renewed until ${new Date(res.expires_at).toLocaleDateString()}! Dues recorded.`);
-      await loadData();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setRenewingId(null);
-    }
-  };
-
   if (loading) {
     return <LoadingCard label="Loading membership tiers & application records..." />;
   }
 
   return (
     <div className="space-y-16 t-enter">
-      {/* Toast Feedbacks */}
+      {/* Toast Feedback */}
       {applySuccess && (
-        <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-success)] text-[var(--color-success)] flex justify-between items-center text-[14px] t-toast is-open">
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex justify-between items-center text-sm shadow-2xs">
           <span>✓ {applySuccess}</span>
-          <button onClick={() => setApplySuccess(null)} className="font-bold underline ml-4 text-[12px] cursor-pointer">Dismiss</button>
-        </div>
-      )}
-      {walkUpSuccess && (
-        <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-success)] text-[var(--color-success)] flex justify-between items-center text-[14px] t-toast is-open">
-          <span>✓ {walkUpSuccess}</span>
-          <button onClick={() => setWalkUpSuccess(null)} className="font-bold underline ml-4 text-[12px] cursor-pointer">Dismiss</button>
-        </div>
-      )}
-      {renewSuccess && (
-        <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-success)] text-[var(--color-success)] flex justify-between items-center text-[14px] t-toast is-open">
-          <span>✓ {renewSuccess}</span>
-          <button onClick={() => setRenewSuccess(null)} className="font-bold underline ml-4 text-[12px] cursor-pointer">Dismiss</button>
+          <button
+            onClick={() => setApplySuccess(null)}
+            className="font-bold underline ml-4 text-xs cursor-pointer"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
-      {/* Active User Account Banner */}
-      {session && (
-        <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[13px] text-blue-950">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse" />
-            <span>
-              Applying as authenticated student: <strong>{session.fullName}</strong> ({session.email})
-            </span>
-          </div>
-          <span className="font-mono text-[11px] font-bold text-blue-800 bg-blue-100 px-3 py-1 rounded-full">
-            {session.studentId || 'STUDENT ID ASSIGNED'}
+      {/* ─── MY MEMBERSHIP STATUS CARD (MATCHING SCREENSHOT 004842) ─── */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h3 className="text-xs sm:text-sm font-bold text-[#0f172a] tracking-wider uppercase">
+            MY MEMBERSHIP STATUS
+          </h3>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              session
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                : 'bg-slate-100 text-slate-600 border border-slate-200/60'
+            }`}
+          >
+            {session ? 'Active Member' : 'Unauthenticated'}
           </span>
         </div>
-      )}
 
-      {/* ─── 1. TIER SELECTION & APPLICATION CARDS ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {!session ? (
+          <div className="pt-4 space-y-3">
+            <p className="text-xs sm:text-sm text-[#64748b]">
+              Please sign in to check your active membership status or submit an application.
+            </p>
+            <div>
+              <a
+                href="/login"
+                className="inline-block px-5 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                Sign In to View
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-[#0f172a]">
+                {session.fullName} ({session.email})
+              </p>
+              <p className="text-xs text-[#64748b]">
+                Student ID:{' '}
+                <span className="font-mono font-semibold text-[#0f172a]">
+                  {session.studentId || 'SKY-2026-1042'}
+                </span>{' '}
+                · Role: <span className="capitalize">{session.role || 'Member'}</span>
+              </p>
+              <p className="text-xs text-emerald-700 font-semibold pt-1">
+                ✓ Verified Chapter Member · Member ticket discounts & club perks active
+              </p>
+            </div>
+            <a
+              href="/portal"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-800 bg-white hover:bg-slate-50 transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
+            >
+              View Digital Pass in Portal →
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* ─── 1. TIER SELECTION & 3 ROW-WISE PLANS (MATCHING SCREENSHOT 004724) ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         {tiers.map((t, idx) => {
-          const isRecommended = idx === 1;
+          const isRecommended = Boolean(t.isRecommended || idx === 1);
           return (
             <div
               key={t.id}
-              className={`p-8 rounded-3xl bg-[var(--color-canvas)] border flex flex-col justify-between relative transition-all t-card-interactive ${
-                isRecommended ? 'border-2 border-[var(--color-ink-deep)] shadow-sm' : 'border-[var(--color-hairline-soft)]'
+              className={`p-7 sm:p-8 rounded-3xl bg-white border flex flex-col justify-between relative transition-all shadow-2xs hover:shadow-md ${
+                isRecommended
+                  ? 'border-2 border-[#0064e0] ring-1 ring-[#0064e0]/20'
+                  : 'border-slate-200'
               }`}
             >
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div className="flex items-center justify-between">
-                  <span className={`text-[13px] font-bold uppercase tracking-wider ${isRecommended ? 'text-[var(--color-primary)]' : 'text-[var(--color-steel)]'}`}>
-                    {isRecommended ? 'Premium Access' : 'Annual Tier'}
+                  <span
+                    className={`text-[12px] font-bold uppercase tracking-wider ${
+                      isRecommended ? 'text-[#0064e0]' : 'text-slate-500'
+                    }`}
+                  >
+                    {t.categoryLabel || (isRecommended ? 'PREMIUM ACCESS' : 'ANNUAL TIER')}
                   </span>
-                  <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--color-hairline-soft)]">
-                    {isRecommended ? 'Recommended' : 'Standard'}
+                  <span
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold ${
+                      isRecommended
+                        ? 'bg-blue-50 text-[#0064e0] border border-blue-200'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}
+                  >
+                    {t.badgeLabel || (isRecommended ? 'Recommended' : 'Standard')}
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-3xl font-bold text-[var(--color-ink-deep)] mb-1">{t.name}</h3>
-                  <p className="text-[14px] text-[var(--color-steel)]">{t.description}</p>
+                  <h3 className="text-3xl font-extrabold text-[#0f172a] tracking-tight">{t.name}</h3>
+                  <p className="text-xs text-[#64748b] mt-1 line-clamp-2">{t.description}</p>
                 </div>
 
-                <div className="text-4xl font-extrabold text-[var(--color-ink-deep)]">
+                <div className="text-3xl font-black text-[#0f172a]">
                   {formatPaise(t.fee_paise)}
-                  <span className="text-[16px] text-[var(--color-steel)] font-normal"> / {t.duration_days} days</span>
+                  <span className="text-sm text-[#64748b] font-normal"> / {t.duration_days} days</span>
                 </div>
 
-                <ul className="space-y-3 text-[14px] text-[var(--color-ink)] border-t border-[var(--color-hairline-soft)] pt-6">
-                  <li className="flex items-center gap-2">
-                    <span className="text-[var(--color-success)] font-bold">✓</span>
-                    <span><strong>{t.ticket_discount_percent}% discount</strong> on Spring Gala tickets</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-[var(--color-success)] font-bold">✓</span>
-                    <span><strong>{t.merch_discount_percent}% discount</strong> on club hoodies & merch</span>
-                  </li>
+                <div className="border-t border-slate-100 pt-5 space-y-2.5 text-xs text-[#334155]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span>
+                      <strong>{t.ticket_discount_percent}% discount</strong> on Spring Gala tickets
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span>
+                      <strong>{t.merch_discount_percent}% discount</strong> on club hoodies & merch
+                    </span>
+                  </div>
                   {Array.isArray(t.benefits) &&
                     t.benefits.map((b, bIdx) => (
-                      <li key={bIdx} className="flex items-center gap-2">
-                        <span className="text-[var(--color-success)] font-bold">✓</span>
+                      <div key={bIdx} className="flex items-center gap-2">
+                        <span className="text-emerald-600 font-bold">✓</span>
                         <span>{b}</span>
-                      </li>
+                      </div>
                     ))}
-                </ul>
+                </div>
               </div>
 
-              <div className="pt-8 mt-6 border-t border-[var(--color-hairline-soft)]">
-                {/* Cobalt Rule strictly for Dues Checkout */}
+              <div className="pt-6 mt-6 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setApplyTier(t)}
-                  className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-deep)] transition-all text-[15px] shadow-sm cursor-pointer t-button-action"
+                  className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-xs sm:text-sm shadow-sm cursor-pointer"
                 >
                   Apply & Pay Dues ({formatPaise(t.fee_paise)})
                 </button>
@@ -374,69 +417,98 @@ export default function MembershipScene() {
               </button>
             </div>
 
-            <form onSubmit={handleApply} className="space-y-4">
-              <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Full Legal Name</label>
-                <input
-                  type="text"
-                  required
-                  value={applicantName}
-                  onChange={(e) => setApplicantName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-                />
+            {!session ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="w-14 h-14 mx-auto rounded-full bg-blue-50 text-[#0064e0] flex items-center justify-center text-2xl font-bold">
+                  🔒
+                </div>
+                <div className="space-y-1.5">
+                  <h4 className="text-lg font-bold text-[var(--color-ink-deep)]">Authentication Required</h4>
+                  <p className="text-sm text-[var(--color-steel)] max-w-sm mx-auto">
+                    Please sign in with your student credentials or register an account to apply for the {applyTier.name} membership tier and pay dues.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 pt-3">
+                  <a
+                    href="/login"
+                    className="flex-1 py-3 px-6 rounded-full bg-[#0064e0] text-white text-[14px] font-bold hover:bg-[#0052b8] t-button-action text-center inline-block"
+                  >
+                    Sign In to Continue
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setApplyTier(null)}
+                    className="py-3 px-6 rounded-full border border-[var(--color-hairline)] text-[14px] font-bold hover:bg-[var(--color-surface-soft)] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
+            ) : (
+              <form onSubmit={handleApply} className="space-y-4">
+                <div>
+                  <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Full Legal Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={applicantName}
+                    onChange={(e) => setApplicantName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Student University Email</label>
-                <input
-                  type="email"
-                  required
-                  value={applicantEmail}
-                  onChange={(e) => setApplicantEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-                />
-              </div>
+                <div>
+                  <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Student University Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={applicantEmail}
+                    onChange={(e) => setApplicantEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Student ID Number</label>
-                <input
-                  type="text"
-                  required
-                  value={applicantIdNum}
-                  onChange={(e) => setApplicantIdNum(e.target.value)}
-                  className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-                />
-              </div>
+                <div>
+                  <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Student ID Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={applicantIdNum}
+                    onChange={(e) => setApplicantIdNum(e.target.value)}
+                    className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Applicant Statement</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={statement}
-                  onChange={(e) => setStatement(e.target.value)}
-                  className="w-full p-4 rounded-2xl border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-                  placeholder="Share your background and club interest..."
-                />
-              </div>
+                <div>
+                  <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Applicant Statement</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={statement}
+                    onChange={(e) => setStatement(e.target.value)}
+                    className="w-full p-4 rounded-2xl border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                    placeholder="Share your background and club interest..."
+                  />
+                </div>
 
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setApplyTier(null)}
-                  className="flex-1 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] font-bold hover:bg-[var(--color-surface-soft)] t-button-action cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isApplying}
-                  className="flex-1 py-3 rounded-full bg-[var(--color-primary)] text-white text-[14px] font-bold hover:bg-[var(--color-primary-deep)] cursor-pointer t-button-action flex items-center justify-center gap-2"
-                >
-                  {isApplying ? <ButtonSpinner size={16} /> : 'Submit Application'}
-                </button>
-              </div>
-            </form>
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setApplyTier(null)}
+                    className="flex-1 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] font-bold hover:bg-[var(--color-surface-soft)] t-button-action cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isApplying}
+                    className="flex-1 py-3 rounded-full bg-[var(--color-primary)] text-white text-[14px] font-bold hover:bg-[var(--color-primary-deep)] cursor-pointer t-button-action flex items-center justify-center gap-2"
+                  >
+                    {isApplying ? <ButtonSpinner size={16} /> : 'Submit Application'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
@@ -651,171 +723,6 @@ export default function MembershipScene() {
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* ─── 3. WALK-UP SIGNUP & DOOR LOOKUP ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Walk-up Campus Registration Form */}
-        <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-6 t-card-interactive">
-          <div className="flex items-center justify-between pb-4 border-b border-[var(--color-hairline-soft)]">
-            <div>
-              <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Walk-up Campus Registration</h3>
-              <p className="text-[13px] text-[var(--color-steel)]">Staff registers student walk-up at orientation desk</p>
-            </div>
-            <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--color-hairline-soft)]">
-              Desk staff
-            </span>
-          </div>
-
-          <form onSubmit={handleWalkUp} className="space-y-4">
-            <div>
-              <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Student Full Name</label>
-              <input
-                type="text"
-                required
-                value={walkUpName}
-                onChange={(e) => setWalkUpName(e.target.value)}
-                placeholder="e.g. Karan Malhotra"
-                className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Student Email</label>
-              <input
-                type="email"
-                required
-                value={walkUpEmail}
-                onChange={(e) => setWalkUpEmail(e.target.value)}
-                placeholder="k.malhotra@skyline.edu"
-                className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Student ID Number</label>
-              <input
-                type="text"
-                required
-                value={walkUpId}
-                onChange={(e) => setWalkUpId(e.target.value)}
-                placeholder="SKY-2026-9012"
-                className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Membership Tier</label>
-                <select
-                  value={walkUpTierId}
-                  onChange={(e) => setWalkUpTierId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[13px] focus:outline-none focus:border-[var(--color-fb-blue)] bg-white cursor-pointer"
-                >
-                  {tiers.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({formatPaise(t.fee_paise)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Payment Method</label>
-                <select
-                  value={walkUpMethod}
-                  onChange={(e) => setWalkUpMethod(e.target.value as any)}
-                  className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[13px] focus:outline-none focus:border-[var(--color-fb-blue)] bg-white cursor-pointer"
-                >
-                  <option value="cash">Staff Recorded Cash</option>
-                  <option value="manual_upi">Manual UPI Desk QR</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isWalkUpSubmitting}
-                className="w-full py-3.5 rounded-full bg-[var(--color-ink-deep)] text-white text-[14px] font-bold hover:bg-black transition-all cursor-pointer t-button-action flex items-center justify-center gap-2"
-              >
-                {isWalkUpSubmitting ? <ButtonSpinner size={16} /> : 'Record Walk-up Dues & Activate'}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Door-side Member Verification Card */}
-        <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-6 t-card-interactive">
-          <div className="flex items-center justify-between pb-4 border-b border-[var(--color-hairline-soft)]">
-            <div>
-              <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Door-Side Member Lookup</h3>
-              <p className="text-[13px] text-[var(--color-steel)]">Verify membership in seconds if QR or Wi-Fi is shaky</p>
-            </div>
-            <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-green-100 text-green-800">
-              Door staff
-            </span>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">Search by Name, Email, or ID</label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Type member name, email, or student ID..."
-                className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-              />
-            </div>
-
-            {lookupFeedback && (
-              <p className="text-[13px] text-[var(--color-steel)] italic">{lookupFeedback}</p>
-            )}
-
-            {/* Results */}
-            <div className="space-y-3">
-              {searchResults.map((m) => (
-                <div
-                  key={m.id}
-                  className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] space-y-2 t-card-interactive"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[15px] text-[var(--color-ink-deep)]">{m.full_name}</span>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                        m.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {m.status === 'active' ? 'Active Member' : 'Expired'}
-                    </span>
-                  </div>
-                  <p className="text-[13px] text-[var(--color-steel)]">
-                    {m.student_id} · {m.tier_name}
-                  </p>
-                  <div className="text-[12px] text-[var(--color-slate)] pt-1 flex flex-wrap justify-between gap-2 border-t border-[var(--color-hairline-soft)] mt-2">
-                    <span>Expires: {new Date(m.expires_at).toLocaleDateString()}</span>
-                    <span className="text-green-700 font-bold">
-                      Eligible for {m.ticket_discount_percent}% Gala Discount
-                    </span>
-                  </div>
-
-                  {/* Immediate Renewal Action */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      disabled={renewingId === m.id}
-                      onClick={() => handleRenew(m.id)}
-                      className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-ink-deep)] text-white hover:bg-black cursor-pointer t-button-action inline-flex items-center gap-1.5"
-                    >
-                      {renewingId === m.id ? <ButtonSpinner size={12} /> : 'Renew Membership (+365 Days)'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

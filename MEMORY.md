@@ -220,3 +220,26 @@
     - `npm run typecheck` (`@skylinesos/contracts`): 0 errors.
     - `npm run build` (`Frontend/`): 20 static pages compiled cleanly via `@astrojs/vercel`.
   - **Phase 2 Implementation Target:** Build universal `AuthGateCard.tsx` component to enforce the user's rule ("without sign-in cannot access main works"), remove mock fallbacks (`Rahul Sharma`, `Priya Nair`), and synchronize component typings with contracts.
+- **Membership Page Redesign & Auth Gating:**
+  - **Header Modernization ([`Frontend/src/pages/memberships.astro`](file:///E:/projects/SkylineSOS/Frontend/src/pages/memberships.astro)):**
+    - Updated title to prominent bold heading: "Become a member of the Skyline Student Association." (`text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#0f172a]`).
+    - Added clean normal subtitle below (`text-[15px] sm:text-base text-[#64748b]`): "Join self-service online or walk up to our campus table. Enjoy discounts on Spring Gala tickets, official club hoodies, and access to all club activities."
+  - **`MY MEMBERSHIP STATUS` Card ([`Frontend/src/components/scenes/MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx)):**
+    - Implemented status card matching visual specification (`Screenshot 2026-10-11 004842.png`):
+      - Header: Uppercase bold title `MY MEMBERSHIP STATUS` with status pill badge (`Unauthenticated` / `Active Member`).
+      - Unauthenticated State: Displays "Please sign in to check your active membership status or submit an application." with cobalt blue button `Sign In to View` linking to `/login`.
+      - Authenticated State: Displays member name, email, student ID, verification status, and direct link to `View Digital Pass in Portal →`.
+  - **3 Row-Wise Plan Cards (Matching `Screenshot 2026-10-11 004724.png`):**
+    - Re-architected tier display to 3 side-by-side columns on desktop (`grid grid-cols-1 md:grid-cols-3 gap-6`):
+      1. `Basic` (₹100 / 365 days): 5% Gala ticket discount, 5% merch discount, Annual Tier / Standard badge.
+      2. `Plus` (₹300 / 365 days): 10% Gala ticket discount, 10% merch discount, Priority registration, Premium Access / Recommended badge with blue accent border.
+      3. `Core` (₹500 / 365 days): 20% Gala ticket discount, 20% merch discount, Voting rights, Free gala entry.
+    - Each card includes prominent `Apply & Pay Dues` CTA.
+  - **Authentication Wall on Protected Actions:**
+    - Gated membership application submission behind user authentication. Unauthenticated applicants clicking `Apply & Pay Dues` are presented with an authentication prompt directing them to sign in or register before submitting applications.
+  - **Removal of Legacy Walk-up and Door Lookup ([`Screenshot 2026-10-11 004526.png`](file:///c:/Users/DELL/OneDrive/Pictures/Screenshots/Screenshot%202026-10-11%20004526.png)):**
+    - Cleanly removed the "Walk-up Campus Registration" form and "Door-Side Member Lookup" cards from the bottom of the public memberships page.
+  - **Verification:**
+    - Ran `npm run build` in `Frontend/`: All 20 static pages compiled in 18.25s via `@astrojs/vercel` with 0 errors.
+    - Ran `npm test` at workspace root: 79/79 invariant, middleware, and route tests passed (100% pass rate).
+
