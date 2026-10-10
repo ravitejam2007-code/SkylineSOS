@@ -36,3 +36,7 @@
     - Implemented Web Crypto constant-time HMAC-SHA256 signature verification in `lib/hmac.ts`.
     - Implemented modular route handlers: `/health`, `/me`, `/public`, `/announcements`, `/membership`, `/door`, `/checkout` (Razorpay order/verify + staff cash/UPI), `/admin/events`, `/admin/merch`, `/fundraisers`, and `/treasurer`.
   - **CI/CD & Repository Hygiene:** Added `.gitignore`, root `.env.example`, and `.github/workflows/ci.yml`.
+- **Supabase Cloud Project Connection & MCP Integration:**
+  - Configured project ref `xwwkpwzartndbjlzpttc` across `.env` and `supabase/.env.local`.
+  - Added Supabase MCP HTTP server via Claude CLI (`.mcp.json`).
+  - Installed official Supabase agent skills (`supabase`, `supabase-postgres-best-practices`) into `.agents/skills/`.
