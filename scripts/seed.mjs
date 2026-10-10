@@ -76,6 +76,7 @@ async function main() {
     ticketTypes: {},
     products: {},
     variants: {},
+    applications: {},
     fundraisers: {}
   };
 
@@ -83,7 +84,6 @@ async function main() {
   console.log("\n[1/9] Seeding Profiles & Staff Roles...");
   for (const prof of seedData.profiles) {
     try {
-      // Check if user already exists
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id")
@@ -115,7 +115,7 @@ async function main() {
       if (userId) {
         idMap.users[prof.ref] = userId;
 
-        // Set role in user_roles
+        // Ensure user_roles has the right role
         await supabase
           .from("user_roles")
           .upsert({ user_id: userId, role: prof.role || "member" });
@@ -145,6 +145,10 @@ async function main() {
   } else {
     idMap.users["guest"] = guestUser.id;
   }
+
+  const adminId = idMap.users["u001"];
+  const treasurerId = idMap.users["u002"] || adminId;
+  const doorStaffId = idMap.users["u003"] || adminId;
 
   // 2. Membership Tiers
   console.log("\n[2/9] Seeding Membership Tiers...");
@@ -180,7 +184,6 @@ async function main() {
 
   // 3. Events & Ticket Types
   console.log("\n[3/9] Seeding Events & Ticket Types...");
-  const adminId = idMap.users["u001"];
   for (const ev of seedData.events) {
     const { data: existingEv } = await supabase
       .from("events")
@@ -192,28 +195,36 @@ async function main() {
     if (existingEv) {
       eventId = existingEv.id;
     } else {
-      const { data: newEv } = await supabase
+      const startsAt = ev.starts_at || (ev.starts ? new Date(ev.starts).toISOString() : new Date().toISOString());
+      const endsAt = ev.ends_at || (ev.ends ? new Date(ev.ends).toISOString() : new Date(new Date(startsAt).getTime() + 4 * 3600 * 1000).toISOString());
+
+      const { data: newEv, error: evErr } = await supabase
         .from("events")
         .insert({
           slug: ev.slug,
           title: ev.title,
-          description: ev.description,
-          venue: ev.venue,
-          starts_at: ev.starts_at,
-          ends_at: ev.ends_at,
-          capacity: ev.capacity,
-          status: ev.status,
+          description: ev.description || ev.title,
+          venue: ev.venue || "Campus Hall",
+          starts_at: startsAt,
+          ends_at: endsAt,
+          capacity: ev.capacity || 100,
+          status: "published", // Start as published so ticket checkout RPC allows orders
           created_by: adminId
         })
         .select()
         .single();
+
+      if (evErr) {
+        console.warn(`  ⚠️ Could not insert event ${ev.slug}:`, evErr.message);
+      }
       eventId = newEv?.id;
     }
     if (eventId) idMap.events[ev.ref] = eventId;
   }
 
   for (const tt of seedData.ticket_types) {
-    const eventId = idMap.events[tt.event_ref];
+    const eventRef = tt.event || tt.event_ref;
+    const eventId = idMap.events[eventRef];
     if (!eventId) continue;
 
     const { data: existingTT } = await supabase
@@ -226,20 +237,22 @@ async function main() {
     if (existingTT) {
       idMap.ticketTypes[tt.ref] = existingTT.id;
     } else {
-      const { data: newTT } = await supabase
+      const { data: newTT, error: ttErr } = await supabase
         .from("ticket_types")
         .insert({
           event_id: eventId,
           name: tt.name,
-          price_paise: tt.price_paise,
-          member_price_paise: tt.member_price_paise,
+          price_paise: tt.price_paise || 0,
+          member_price_paise: tt.member_price_paise ?? null,
           member_only: tt.member_only ?? false,
-          quantity_limit: tt.quantity_limit,
-          sales_start: tt.sales_start,
-          sales_end: tt.sales_end
+          quantity_limit: tt.quantity_limit || 100
         })
         .select()
         .single();
+
+      if (ttErr) {
+        console.warn(`  ⚠️ Could not insert ticket type ${tt.name}:`, ttErr.message);
+      }
       if (newTT) idMap.ticketTypes[tt.ref] = newTT.id;
     }
   }
@@ -258,22 +271,25 @@ async function main() {
     if (existingProd) {
       prodId = existingProd.id;
     } else {
-      const { data: newProd } = await supabase
+      const { data: newProd, error: pErr } = await supabase
         .from("products")
         .insert({
           name: prod.name,
-          description: prod.description,
+          description: prod.description || "",
           status: prod.status || "active"
         })
         .select()
         .single();
+
+      if (pErr) console.warn(`  ⚠️ Could not insert product ${prod.name}:`, pErr.message);
       prodId = newProd?.id;
     }
     if (prodId) idMap.products[prod.ref] = prodId;
   }
 
   for (const v of seedData.product_variants) {
-    const prodId = idMap.products[v.product_ref];
+    const prodRef = v.product || v.product_ref;
+    const prodId = idMap.products[prodRef];
     if (!prodId) continue;
 
     const { data: existingVar } = await supabase
@@ -285,18 +301,20 @@ async function main() {
     if (existingVar) {
       idMap.variants[v.ref] = existingVar.id;
     } else {
-      const { data: newVar } = await supabase
+      const { data: newVar, error: vErr } = await supabase
         .from("product_variants")
         .insert({
           product_id: prodId,
           sku: v.sku,
           label: v.label,
           price_paise: v.price_paise,
-          stock_on_hand: v.stock_on_hand,
+          stock_on_hand: v.stock_on_hand || 10,
           reserved: 0
         })
         .select()
         .single();
+
+      if (vErr) console.warn(`  ⚠️ Could not insert variant ${v.sku}:`, vErr.message);
       if (newVar) idMap.variants[v.ref] = newVar.id;
     }
   }
@@ -306,45 +324,67 @@ async function main() {
   console.log("\n[5/9] Processing Membership Applications & Dues...");
   if (seedData.membership_applications) {
     for (const app of seedData.membership_applications) {
-      const userId = idMap.users[app.user_ref];
-      const tierId = idMap.tiers[app.tier_ref];
+      const userRef = app.user || app.user_ref;
+      const tierRef = app.tier || app.tier_ref;
+      const userId = idMap.users[userRef];
+      const tierId = idMap.tiers[tierRef];
       if (!userId || !tierId) continue;
 
       const { data: existingApp } = await supabase
         .from("membership_applications")
-        .select("id")
+        .select("id, status")
         .eq("user_id", userId)
         .eq("tier_id", tierId)
         .maybeSingle();
 
+      let appId;
       if (!existingApp) {
-        await supabase.from("membership_applications").insert({
-          user_id: userId,
-          tier_id: tierId,
-          status: app.status || "pending",
-          revision: app.revision || 1,
-          answers: app.answers || {},
-          submitted_at: app.submitted_at || new Date().toISOString(),
-          reviewed_by: app.status !== "pending" ? adminId : null,
-          reviewed_at: app.status !== "pending" ? new Date().toISOString() : null,
-          rejection_reason: app.rejection_reason || null
-        });
+        const { data: newApp, error: appErr } = await supabase
+          .from("membership_applications")
+          .insert({
+            user_id: userId,
+            tier_id: tierId,
+            status: "pending",
+            revision: app.revision || 1,
+            answers: app.answers || {},
+            submitted_at: app.submitted_at || new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (appErr) console.warn(`  ⚠️ Error creating application for ${userRef}:`, appErr.message);
+        appId = newApp?.id;
+
+        if (appId && app.status && app.status !== "pending") {
+          await supabase.rpc("fn_review_application", {
+            p_application_id: appId,
+            p_reviewer_id: adminId,
+            p_decision: app.status,
+            p_reason: app.rejection_reason || null
+          });
+        }
+      } else {
+        appId = existingApp.id;
       }
+      if (appId) idMap.applications[app.ref] = appId;
     }
   }
 
   if (seedData.membership_purchases) {
     let duesPaid = 0;
     for (const pur of seedData.membership_purchases) {
-      const userId = idMap.users[pur.user_ref];
-      const tierId = idMap.tiers[pur.tier_ref];
+      const app = seedData.membership_applications?.find((a) => a.ref === pur.application);
+      const userRef = app?.user || pur.user_ref;
+      const tierRef = app?.tier || pur.tier_ref;
+      const userId = idMap.users[userRef];
+      const tierId = idMap.tiers[tierRef];
       if (!userId || !tierId) continue;
 
-      const idemKey = `seed_dues_${pur.user_ref}_${pur.tier_ref}`;
+      const idemKey = `seed_dues_${pur.ref || `${userRef}_${tierRef}`}`;
       const { error } = await supabase.rpc("fn_record_staff_checkout", {
         p_buyer_id: userId,
-        p_items: JSON.stringify([{ itemType: "membership", refId: tierId, quantity: 1 }]),
-        p_method: pur.payment_method || "cash",
+        p_items: [{ itemType: "membership", refId: tierId, quantity: 1 }],
+        p_method: pur.method || pur.payment_method || "cash",
         p_recorded_by: adminId,
         p_note: "Seed: dues payment",
         p_idem_key: idemKey
@@ -359,18 +399,19 @@ async function main() {
   console.log("\n[6/9] Processing Ticket Purchases & Check-ins...");
   if (seedData.ticket_purchases) {
     let ticketsIssued = 0;
-    const doorStaffId = idMap.users["u003"] || adminId;
 
     for (const tp of seedData.ticket_purchases) {
-      const userId = idMap.users[tp.user_ref] || idMap.users["guest"];
-      const ttId = idMap.ticketTypes[tp.ticket_type_ref];
+      const buyerRef = tp.buyer || tp.user_ref || "guest";
+      const ttRef = tp.ticket_type || tp.ticket_type_ref;
+      const userId = idMap.users[buyerRef] || idMap.users["guest"];
+      const ttId = idMap.ticketTypes[ttRef];
       if (!userId || !ttId) continue;
 
-      const idemKey = `seed_ticket_${tp.user_ref || "guest"}_${tp.ticket_type_ref}_${ticketsIssued}`;
-      const { error } = await supabase.rpc("fn_record_staff_checkout", {
+      const idemKey = `seed_ticket_${tp.ref || `${buyerRef}_${ttRef}_${ticketsIssued}`}`;
+      const { data: checkoutRes, error } = await supabase.rpc("fn_record_staff_checkout", {
         p_buyer_id: userId,
-        p_items: JSON.stringify([{ itemType: "ticket", refId: ttId, quantity: 1 }]),
-        p_method: tp.payment_method || "cash",
+        p_items: [{ itemType: "ticket", refId: ttId, quantity: tp.qty || 1 }],
+        p_method: tp.method || tp.payment_method || "cash",
         p_recorded_by: doorStaffId,
         p_note: "Seed: ticket sale",
         p_idem_key: idemKey
@@ -378,8 +419,7 @@ async function main() {
 
       if (!error) {
         ticketsIssued++;
-        // If marked checked_in in seed, check in immediately
-        if (tp.checked_in) {
+        if (tp.check_in || tp.checked_in) {
           const { data: ticket } = await supabase
             .from("tickets")
             .select("code")
@@ -403,26 +443,43 @@ async function main() {
     console.log(`✓ Processed ${ticketsIssued} ticket checkouts & door check-ins via RPC`);
   }
 
+  // Update past events to 'completed'
+  for (const ev of seedData.events) {
+    if (ev.status === "past" && idMap.events[ev.ref]) {
+      await supabase.from("events").update({ status: "completed" }).eq("id", idMap.events[ev.ref]);
+    }
+  }
+
   // 7. Merchandise Orders
   console.log("\n[7/9] Processing Merch Purchases via RPC...");
   if (seedData.merch_orders) {
     let merchCount = 0;
     for (const mo of seedData.merch_orders) {
-      const userId = idMap.users[mo.user_ref];
-      const variantId = idMap.variants[mo.variant_ref];
+      const buyerRef = mo.buyer || mo.user_ref;
+      const varRef = mo.variant || mo.variant_ref;
+      const userId = idMap.users[buyerRef];
+      const variantId = idMap.variants[varRef];
       if (!userId || !variantId) continue;
 
-      const idemKey = `seed_merch_${mo.user_ref}_${mo.variant_ref}_${merchCount}`;
-      const { error } = await supabase.rpc("fn_record_staff_checkout", {
+      const idemKey = `seed_merch_${mo.ref || `${buyerRef}_${varRef}_${merchCount}`}`;
+      const { data: merchRes, error } = await supabase.rpc("fn_record_staff_checkout", {
         p_buyer_id: userId,
-        p_items: JSON.stringify([{ itemType: "merch", refId: variantId, quantity: mo.quantity || 1 }]),
-        p_method: mo.payment_method || "cash",
+        p_items: [{ itemType: "merch", refId: variantId, quantity: mo.qty || 1 }],
+        p_method: mo.method || mo.payment_method || "cash",
         p_recorded_by: adminId,
         p_note: "Seed: merchandise order",
         p_idem_key: idemKey
       });
 
-      if (!error) merchCount++;
+      if (!error) {
+        merchCount++;
+        if (mo.fulfilment && mo.fulfilment !== "pending" && merchRes?.id) {
+          await supabase
+            .from("checkout_items")
+            .update({ fulfilment_status: mo.fulfilment })
+            .eq("checkout_id", merchRes.id);
+        }
+      }
     }
     console.log(`✓ Processed ${merchCount} merch checkouts via RPC`);
   }
@@ -446,8 +503,8 @@ async function main() {
           .insert({
             name: f.name,
             goal_paise: f.goal_paise,
-            starts_on: f.starts_on,
-            ends_on: f.ends_on,
+            starts_on: f.starts_on || "2026-08-01",
+            ends_on: f.ends_on || "2026-11-01",
             status: f.status || "active",
             owner_id: adminId
           })
@@ -461,32 +518,44 @@ async function main() {
 
   if (seedData.tasks) {
     for (const t of seedData.tasks) {
-      const fId = idMap.fundraisers[t.fundraiser_ref];
-      const assigneeId = idMap.users[t.assignee_ref];
+      const fRef = t.fundraiser || t.fundraiser_ref;
+      const aRef = t.assignee || t.assignee_ref;
+      const fId = idMap.fundraisers[fRef];
+      const assigneeId = idMap.users[aRef];
       if (!fId) continue;
 
-      await supabase.from("tasks").insert({
-        fundraiser_id: fId,
-        title: t.title,
-        assignee_id: assigneeId || null,
-        due_on: t.due_on,
-        priority: t.priority || "medium",
-        status: t.status || "todo",
-        created_by: adminId
-      });
+      const { data: existingTask } = await supabase
+        .from("tasks")
+        .select("id")
+        .eq("fundraiser_id", fId)
+        .eq("title", t.title)
+        .maybeSingle();
+
+      if (!existingTask) {
+        await supabase.from("tasks").insert({
+          fundraiser_id: fId,
+          title: t.title,
+          assignee_id: assigneeId || null,
+          due_on: t.due_on,
+          priority: t.priority || "medium",
+          status: t.status || "todo",
+          created_by: adminId
+        });
+      }
     }
   }
 
   if (seedData.contributions) {
     let contribCount = 0;
     for (const c of seedData.contributions) {
-      const fId = idMap.fundraisers[c.fundraiser_ref];
+      const fRef = c.fundraiser || c.fundraiser_ref;
+      const fId = idMap.fundraisers[fRef];
       if (!fId) continue;
 
       const { error } = await supabase.rpc("fn_record_contribution", {
         p_fundraiser_id: fId,
         p_amount_paise: c.amount_paise,
-        p_method: c.method || "cash",
+        p_method: c.method || c.payment_method || "cash",
         p_note: c.note || "Seed contribution",
         p_actor_id: adminId
       });
@@ -500,40 +569,84 @@ async function main() {
   console.log("\n[9/9] Seeding Expenses & Announcements...");
   if (seedData.announcements) {
     for (const a of seedData.announcements) {
-      await supabase.from("announcements").insert({
-        title: a.title,
-        body: a.body,
-        audience: a.audience || "public",
-        status: a.status || "published",
-        author_id: adminId,
-        published_at: a.published_at || new Date().toISOString()
-      });
+      const { data: existingA } = await supabase
+        .from("announcements")
+        .select("id")
+        .eq("title", a.title)
+        .maybeSingle();
+
+      if (!existingA) {
+        await supabase.from("announcements").insert({
+          title: a.title,
+          body: a.body,
+          audience: a.audience || "public",
+          status: a.status || "published",
+          author_id: adminId,
+          published_at: a.published_at || new Date().toISOString()
+        });
+      }
     }
   }
 
   if (seedData.expenses) {
-    const treasurerId = idMap.users["u002"] || adminId;
     for (const e of seedData.expenses) {
-      const submitterId = idMap.users[e.submitted_by_ref] || adminId;
-      const { data: newExpense } = await supabase
-        .from("expenses")
-        .insert({
-          amount_paise: e.amount_paise,
-          category: e.category,
-          description: e.description,
-          submitted_by: submitterId,
-          status: "submitted"
-        })
-        .select()
-        .single();
+      const subRef = e.submitted_by || e.submitted_by_ref;
+      const submitterId = idMap.users[subRef] || adminId;
 
-      if (newExpense && e.status !== "submitted") {
-        await supabase.rpc("fn_set_expense_status", {
-          p_expense_id: newExpense.id,
-          p_actor_id: treasurerId !== submitterId ? treasurerId : adminId,
-          p_status: e.status,
-          p_reason: e.reject_reason || null
-        });
+      const { data: existingExp } = await supabase
+        .from("expenses")
+        .select("id")
+        .eq("description", e.description)
+        .eq("amount_paise", e.amount_paise)
+        .maybeSingle();
+
+      let expId;
+      if (!existingExp) {
+        const { data: newExpense } = await supabase
+          .from("expenses")
+          .insert({
+            amount_paise: e.amount_paise,
+            category: e.category,
+            description: e.description,
+            submitted_by: submitterId,
+            status: "submitted"
+          })
+          .select()
+          .single();
+
+        expId = newExpense?.id;
+
+        if (expId && e.status && e.status !== "submitted") {
+          const actorId = treasurerId !== submitterId ? treasurerId : adminId;
+          if (e.status === "approved") {
+            await supabase.rpc("fn_set_expense_status", {
+              p_expense_id: expId,
+              p_actor_id: actorId,
+              p_status: "approved",
+              p_reason: null
+            });
+          } else if (e.status === "paid") {
+            await supabase.rpc("fn_set_expense_status", {
+              p_expense_id: expId,
+              p_actor_id: actorId,
+              p_status: "approved",
+              p_reason: null
+            });
+            await supabase.rpc("fn_set_expense_status", {
+              p_expense_id: expId,
+              p_actor_id: actorId,
+              p_status: "paid",
+              p_reason: null
+            });
+          } else if (e.status === "rejected") {
+            await supabase.rpc("fn_set_expense_status", {
+              p_expense_id: expId,
+              p_actor_id: actorId,
+              p_status: "rejected",
+              p_reason: e.reject_reason || "Policy mismatch"
+            });
+          }
+        }
       }
     }
   }

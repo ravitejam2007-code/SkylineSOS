@@ -90,22 +90,28 @@
     - Verified clean run with 100% pass rate (`npm test`).
   - **Frontend Engineering Integration Guide (`docs/frontend-api-integration-guide.md`):**
     - Created comprehensive developer guide with typed `api` client boilerplate, complete error code reference, rate limit policies, pre-seeded demo login table, and screen-by-screen code recipes (digital pass, online checkout with Razorpay popup, door console dual-mode scanner, staff cash/UPI desk, treasury tiles, and action queue).
-- **Phase 7 Database Integrity & Concurrency Verification:**
-  - **Automated Integrity Test Suite (`tests/integrity.test.mjs`):**
-    - 22 dedicated invariant tests covering:
-      1. Ledger immutability (`trg_protect_ledger`) preventing update/delete and mathematical equality (`Inflow - Outflow = Net Movement`).
-      2. Event capacity bounds preventing flash-crowd overselling.
-      3. Single-use door ticket check-in preventing duplicate admission and preserving timestamps.
-      4. Merchandise stock formula (`available = stock_on_hand - reserved`) and checkout expiration releases.
-      5. Payment webhook deduplication via `provider_event_id` and idempotent checkout fulfilment.
-      6. Expense segregation of duties (self-approval forbidden, approval required before payment).
-      7. Dynamic 60s rotating member code expiration.
-      8. Zero-secret audit logs and last-admin demotion prevention.
-    - Full test suite now expanded to **79 tests across 24 suites with 100% pass rate** (`npm test`).
-  - **Live Database Integrity Script (`scripts/verify-integrity.mjs`):**
-    - Script (`npm run verify:integrity`) verifying 27 core tables, ledger mathematical reconciliation, stock invariants, and zero duplicate check-ins against remote Supabase database.
-  - **Phase 7 Documentation (`docs/DATABASE_INTEGRITY.md`):**
-    - Documented all 8 core invariants (`INV-01` to `INV-08`), concurrency race condition mitigations, and verification procedures.
-- **Scope Boundary Compliance:**
-  - Zero modifications to frontend code (`apps/web` untouched as strictly directed).
+  - **Phase 7 Database Integrity & Concurrency Verification:**
+    - **Automated Integrity Test Suite (`tests/integrity.test.mjs`):**
+      - 22 dedicated invariant tests covering:
+        1. Ledger immutability (`trg_protect_ledger`) preventing update/delete and mathematical equality (`Inflow - Outflow = Net Movement`).
+        2. Event capacity bounds preventing flash-crowd overselling.
+        3. Single-use door ticket check-in preventing duplicate admission and preserving timestamps.
+        4. Merchandise stock formula (`available = stock_on_hand - reserved`) and checkout expiration releases.
+        5. Payment webhook deduplication via `provider_event_id` and idempotent checkout fulfilment.
+        6. Expense segregation of duties (self-approval forbidden, approval required before payment).
+        7. Dynamic 60s rotating member code expiration.
+        8. Zero-secret audit logs and last-admin demotion prevention.
+      - Full test suite now expanded to **79 tests across 24 suites with 100% pass rate** (`npm test`).
+    - **Live Database Integrity Script (`scripts/verify-integrity.mjs`):**
+      - Script (`npm run verify:integrity`) verifying 27 core tables, ledger mathematical reconciliation, stock invariants, and zero duplicate check-ins against remote Supabase database.
+    - **Phase 7 Documentation (`docs/DATABASE_INTEGRITY.md`):**
+      - Documented all 8 core invariants (`INV-01` to `INV-08`), concurrency race condition mitigations, and verification procedures.
+  - **Scope Boundary Compliance:**
+    - Zero modifications to frontend code (`apps/web` untouched as strictly directed).
+- **Supabase Cloud Remote Deployment & Database Seeding (Project `xwwkpwzartndbjlzpttc`):**
+  - **Database Migrations:** Applied all 5 migrations (`0001_init.sql`, `0002_rls.sql`, `0003_functions.sql`, `0004_cron.sql`, `0005_fix_checkout_order.sql`). Fixed foreign-key constraint ordering in `fn_create_checkout` and variable declarations in `fn_check_in`.
+  - **Remote Database Seeding (`scripts/seed.mjs`):** Successfully executed the full 297 seed records against the cloud database. Created 60 user profiles, 3 membership tiers, 5 events, 10 ticket types, 4 products, 9 variants, fulfilled 28 membership dues checkouts via RPC, 37 ticket purchases and check-ins, 30 merch checkouts, 12 fundraiser contributions (₹5,900), and 10 expenses. Verified ledger reconciliation (Total Income: ₹52,192, Total Outflow: ₹7,500, Net: ₹44,692).
+  - **Supabase Edge Function Deployment (`api`):** Deployed Express Edge Function with `--no-verify-jwt` to `https://xwwkpwzartndbjlzpttc.supabase.co/functions/v1/api/v1`. Verified live health check endpoint returning `{"data":{"ok":true,"version":"v1"}}`.
+  - **Razorpay Integration:** Configured `RAZORPAY_KEY_ID=rzp_test_TXWbmmg3SRSwlV` and test mode fallback defaults in `supabase/functions/api/lib/env.ts`.
+
 

@@ -226,6 +226,14 @@ begin
     v_expires_at := null;
   end if;
 
+  insert into checkouts (
+    id, buyer_id, status, payment_method, subtotal_paise, discount_paise, total_paise,
+    recorded_by, note, idempotency_key, expires_at
+  ) values (
+    v_checkout_id, p_buyer_id, 'pending', p_method::pay_method, 0, 0, 0,
+    p_recorded_by, p_note, p_idem_key, v_expires_at
+  );
+
   -- 3. Validate items and compute totals
   for v_item in select * from jsonb_array_elements(p_items) loop
     v_type := coalesce(v_item->>'itemType', v_item->>'type');
@@ -313,13 +321,11 @@ begin
 
   v_total := greatest(0, v_subtotal - v_discount);
 
-  insert into checkouts (
-    id, buyer_id, status, payment_method, subtotal_paise, discount_paise, total_paise,
-    recorded_by, note, idempotency_key, expires_at
-  ) values (
-    v_checkout_id, p_buyer_id, 'pending', p_method::pay_method, v_subtotal, v_discount, v_total,
-    p_recorded_by, p_note, p_idem_key, v_expires_at
-  );
+  update checkouts set
+    subtotal_paise = v_subtotal,
+    discount_paise = v_discount,
+    total_paise = v_total
+  where id = v_checkout_id;
 
   select * into v_existing from checkouts where id = v_checkout_id;
   return to_jsonb(v_existing);
@@ -513,6 +519,8 @@ declare
   v_event events%rowtype;
   v_tt ticket_types%rowtype;
   v_existing_ci check_ins%rowtype;
+  v_sold_count int;
+  v_pending_count int;
 begin
   select * into v_ticket from tickets where code = trim(p_code) for update;
   if not found then

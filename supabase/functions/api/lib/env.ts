@@ -5,7 +5,7 @@ const EnvSchema = z.object({
   SUPABASE_ANON_KEY: z.string().default("mock-anon-key"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().default("mock-service-role-key"),
   APP_ORIGIN: z.string().default("*"),
-  RAZORPAY_KEY_ID: z.string().default("rzp_test_mock"),
+  RAZORPAY_KEY_ID: z.string().default("rzp_test_TXWbmmg3SRSwlV"),
   RAZORPAY_KEY_SECRET: z.string().default("mock_secret"),
   RAZORPAY_WEBHOOK_SECRET: z.string().default("mock_webhook_secret"),
   RAZORPAY_MODE: z.enum(["test", "live"]).default("test"),
