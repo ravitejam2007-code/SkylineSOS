@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getActiveSession, logoutUser, loginAsPersona, AUTH_PERSONAS, type UserSession } from '../../lib/auth';
+import { getActiveSession, logoutUser, type UserSession } from '../../lib/auth';
 
 export default function UserNavMenu() {
   const [session, setSession] = useState<UserSession | null>(() => {
@@ -43,13 +43,6 @@ export default function UserNavMenu() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
-
-  const handleSelectPersona = (id: 'student' | 'volunteer' | 'admin' | 'treasurer') => {
-    const newSession = loginAsPersona(id);
-    setSession(newSession);
-    setDropdownOpen(false);
-    window.location.href = newSession.destination || '/portal';
-  };
 
   const handleLogout = () => {
     logoutUser();
@@ -169,34 +162,6 @@ export default function UserNavMenu() {
             <span>Go to {destinationLabel}</span>
             <span className="text-xs">→</span>
           </a>
-
-          {/* Switch Persona Section */}
-          <div className="pt-2 border-t border-[var(--color-hairline-soft)]">
-            <p className="text-[10px] font-bold text-[var(--color-steel)] uppercase tracking-wider px-3 mb-1">
-              Switch Persona (Test Roles)
-            </p>
-            <div className="space-y-0.5">
-              {(Object.keys(AUTH_PERSONAS) as Array<keyof typeof AUTH_PERSONAS>).map((pKey) => {
-                const p = AUTH_PERSONAS[pKey];
-                const isActive = session.role === p.role;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleSelectPersona(p.id)}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-left text-[12px] font-semibold transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-[var(--color-surface-soft)] text-[var(--color-primary)] font-bold'
-                        : 'text-[var(--color-ink)] hover:bg-black/5'
-                    }`}
-                  >
-                    <span>{p.title}</span>
-                    {isActive && <span className="text-[10px] font-bold">● Active</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {/* Sign Out */}
           <div className="pt-2 border-t border-[var(--color-hairline-soft)]">

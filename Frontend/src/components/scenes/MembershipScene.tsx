@@ -129,7 +129,7 @@ const DEFAULT_APPLICATIONS: RichMembershipApplication[] = [
     student_id: 'SKY-2026-1190',
     requested_tier_id: 't1',
     statement: 'Applying for standard club membership for gala tickets and hackathon workshops.',
-    status: 'approved',
+    status: 'submitted',
     revision: 1,
     rejection_reason: null,
     submitted_at: '2026-10-09T11:15:00Z',
@@ -391,9 +391,8 @@ export default function MembershipScene() {
             )
           : null;
 
-        const isStaff = Boolean(session && ['admin', 'treasurer', 'volunteer', 'door_staff'].includes(session.role));
-        const isDemoMember = Boolean(session?.email?.toLowerCase() === 'member@skylinesos.demo');
-        const isApprovedMember = Boolean(userApp?.status === 'approved' || isStaff || isDemoMember);
+        const isAdmin = Boolean(session && session.role === 'admin');
+        const isApprovedMember = Boolean(userApp?.status === 'approved' || isAdmin);
         const isPendingMember = Boolean(userApp?.status === 'submitted');
         const isRejectedMember = Boolean(userApp?.status === 'rejected');
 

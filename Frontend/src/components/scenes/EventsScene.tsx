@@ -195,6 +195,25 @@ export default function EventsScene() {
   const [otpInputs, setOtpInputs] = useState<Record<string, string>>({});
   const [approvalFeedback, setApprovalFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Dynamic Seats Decrement Calculations
+  const getEventBookedCount = (eventId: string): number => {
+    return ticketApplications.filter((t) => t.event_id === eventId).length;
+  };
+
+  const getEventRemainingSeats = (evt: CuratedEvent): number => {
+    return Math.max(0, evt.seatsLeft - getEventBookedCount(evt.id));
+  };
+
+  const getCategoryBookedCount = (eventId: string, catName: string): number => {
+    return ticketApplications.filter(
+      (t) => t.event_id === eventId && t.tier_name?.trim().toLowerCase() === catName.trim().toLowerCase()
+    ).length;
+  };
+
+  const getCategoryRemaining = (eventId: string, cat: { name: string; available: number }): number => {
+    return Math.max(0, cat.available - getCategoryBookedCount(eventId, cat.name));
+  };
+
   // Helper to load tickets strictly for the authenticated session
   const loadTicketsForSession = (currSession: UserSession | null) => {
     if (!currSession?.email) {
@@ -376,6 +395,19 @@ export default function EventsScene() {
       return;
     }
 
+    // Constraint: Check if event is completely sold out
+    const remainingSeats = getEventRemainingSeats(event);
+    if (remainingSeats <= 0) {
+      alert(`Sorry! "${event.title}" is completely full (0 seats remaining). Passes can no longer be reserved.`);
+      return;
+    }
+
+    // If specific category requested, check its availability
+    if (category && getCategoryRemaining(event.id, category) <= 0) {
+      alert(`Sorry! The tier "${category.name}" is completely full.`);
+      return;
+    }
+
     // Constraint: 1 ticket per event per student account
     const alreadyReserved = myTicketPasses.find((p) => p.event_id === event.id);
     if (alreadyReserved) {
@@ -394,6 +426,21 @@ export default function EventsScene() {
     if (!selectedEvent || !selectedTicketCategory) return;
     if (!session) {
       window.location.href = '/login';
+      return;
+    }
+
+    // Check overall seats
+    const remainingSeats = getEventRemainingSeats(selectedEvent);
+    if (remainingSeats <= 0) {
+      alert(`Sorry! Seats for "${selectedEvent.title}" are full. Ticket cannot be generated.`);
+      setSelectedEvent(null);
+      return;
+    }
+
+    // Check category seats
+    const catRemaining = getCategoryRemaining(selectedEvent.id, selectedTicketCategory);
+    if (catRemaining <= 0) {
+      alert(`Sorry! The selected category "${selectedTicketCategory.name}" is sold out.`);
       return;
     }
 
@@ -598,126 +645,168 @@ export default function EventsScene() {
 
       {/* ─── 2-COLUMN EVENT CARDS GRID ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {curatedEvents.map((evt) => (
-          <div
-            key={evt.id}
-            className="bg-white rounded-[28px] border border-[#e2e8f0] shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col justify-between"
-          >
-            {/* Top Media Banner */}
-            <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-900">
-              <img
-                src={evt.imageUrl}
-                alt={evt.title}
-                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700 ease-out"
-                loading="lazy"
-              />
+        {curatedEvents.map((evt) => {
+          const bookedCount = getEventBookedCount(evt.id);
+          const remainingSeats = getEventRemainingSeats(evt);
+          const isSoldOut = remainingSeats <= 0;
 
-              {/* Date Pill (Top Left) */}
-              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-xs text-[#0f172a] text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
-                {evt.dateStr}
-              </div>
+          return (
+            <div
+              key={evt.id}
+              className="bg-white rounded-[28px] border border-[#e2e8f0] shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col justify-between"
+            >
+              {/* Top Media Banner */}
+              <div className="relative h-64 sm:h-72 w-full overflow-hidden bg-slate-900">
+                <img
+                  src={evt.imageUrl}
+                  alt={evt.title}
+                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700 ease-out"
+                  loading="lazy"
+                />
 
-              {/* Seats Left Pill (Top Right, Vibrant Cobalt) */}
-              <div className="absolute top-4 right-4 bg-[#0064e0] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
-                {evt.seatsLeft} Seats Left
-              </div>
-
-              {/* Sparkle Icon */}
-              {evt.id === 'e3' && (
-                <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white p-1.5 rounded-full text-xs flex items-center justify-center">
-                  ✨
+                {/* Date Pill (Top Left) */}
+                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-xs text-[#0f172a] text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm">
+                  {evt.dateStr}
                 </div>
-              )}
-            </div>
 
-            {/* Event Content Body */}
-            <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between">
-              <div>
-                {/* Title */}
-                <h2
-                  className={`text-xl sm:text-2xl font-bold tracking-tight cursor-pointer hover:underline transition-colors ${
-                    evt.titleColor || 'text-[#0f172a]'
+                {/* Seats Left Pill (Top Right, Vibrant Cobalt or Sold Out Red) */}
+                <div
+                  className={`absolute top-4 right-4 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 ${
+                    isSoldOut ? 'bg-rose-600' : 'bg-[#0064e0]'
                   }`}
-                  onClick={() => openReservationModal(evt)}
                 >
-                  {evt.title}
-                </h2>
-
-                {/* Venue & Time with Coral Location Pin */}
-                <div className="flex items-center gap-1.5 text-xs text-[#64748b] font-medium mt-1.5">
-                  <span className="text-[#f43f5e]">📍</span>
-                  <span>
-                    {evt.venue} • {evt.timeStr}
-                  </span>
+                  {isSoldOut ? (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      <span>Seats Full · Sold Out</span>
+                    </>
+                  ) : (
+                    <span>{remainingSeats} Seats Left</span>
+                  )}
                 </div>
 
-                {/* Description */}
-                <p className="text-sm text-[#475569] mt-3 leading-relaxed">
-                  {evt.description}
-                </p>
-
-                {/* Divider Line */}
-                <div className="border-t border-[#f1f5f9] my-5" />
-
-                {/* Ticket Categories Header */}
-                <div className="text-[11px] font-bold tracking-wider text-[#94a3b8] uppercase mb-3">
-                  TICKET CATEGORIES
-                </div>
-
-                {/* Ticket Category Items */}
-                <div className="space-y-2 mb-6">
-                  {evt.ticketCategories.map((category) => (
-                    <div
-                      key={category.id}
-                      onClick={() => openReservationModal(evt, category)}
-                      className="p-3.5 rounded-xl border border-[#e2e8f0]/80 bg-[#f8fafc] hover:bg-[#f1f5f9] hover:border-[#cbd5e1] transition-all cursor-pointer flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="text-[13px] font-semibold text-[#0f172a]">
-                          {category.name}
-                        </div>
-                        <div className="text-[11px] text-[#94a3b8] font-medium">
-                          {category.available} available
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-[14px] font-bold text-[#0064e0]">
-                          ₹{category.memberPricePaise / 100}{' '}
-                          <span className="text-[11px] font-medium text-[#64748b]">(Member)</span>
-                        </div>
-                        <div className="text-[11px] text-[#94a3b8] line-through">
-                          ₹{category.nonMemberPricePaise / 100} (Non-member)
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Full-width Cobalt CTA Button + Admin Delete */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openReservationModal(evt)}
-                  className="flex-1 py-3.5 px-6 rounded-full font-semibold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  Reserve Event Passes →
-                </button>
-                {session?.role === 'admin' && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteEvent(evt.id, evt.title)}
-                    className="p-3.5 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors shadow-2xs flex items-center justify-center cursor-pointer shrink-0"
-                    title="Delete Event (Admin Only)"
-                  >
-                    🗑️
-                  </button>
+                {/* Sparkle Icon */}
+                {evt.id === 'e3' && (
+                  <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white p-1.5 rounded-full text-xs flex items-center justify-center">
+                    ✨
+                  </div>
                 )}
               </div>
+
+              {/* Event Content Body */}
+              <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Title */}
+                  <h2
+                    className={`text-xl sm:text-2xl font-bold tracking-tight cursor-pointer hover:underline transition-colors ${
+                      evt.titleColor || 'text-[#0f172a]'
+                    }`}
+                    onClick={() => !isSoldOut && openReservationModal(evt)}
+                  >
+                    {evt.title}
+                  </h2>
+
+                  {/* Venue & Time with Coral Location Pin */}
+                  <div className="flex items-center gap-1.5 text-xs text-[#64748b] font-medium mt-1.5">
+                    <span className="text-[#f43f5e]">📍</span>
+                    <span>
+                      {evt.venue} • {evt.timeStr}
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-sm text-[#475569] mt-3 leading-relaxed">
+                    {evt.description}
+                  </p>
+
+                  {/* Divider Line */}
+                  <div className="border-t border-[#f1f5f9] my-5" />
+
+                  {/* Ticket Categories Header */}
+                  <div className="text-[11px] font-bold tracking-wider text-[#94a3b8] uppercase mb-3">
+                    TICKET CATEGORIES
+                  </div>
+
+                  {/* Ticket Category Items */}
+                  <div className="space-y-2 mb-6">
+                    {evt.ticketCategories.map((category) => {
+                      const catRemaining = getCategoryRemaining(evt.id, category);
+                      const isCatFull = catRemaining <= 0 || isSoldOut;
+
+                      return (
+                        <div
+                          key={category.id}
+                          onClick={() => {
+                            if (!isCatFull) openReservationModal(evt, category);
+                          }}
+                          className={`p-3.5 rounded-xl border transition-all flex items-center justify-between ${
+                            isCatFull
+                              ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
+                              : 'border-[#e2e8f0]/80 bg-[#f8fafc] hover:bg-[#f1f5f9] hover:border-[#cbd5e1] cursor-pointer'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-[13px] font-semibold text-[#0f172a]">
+                              {category.name}
+                            </div>
+                            <div className="text-[11px] font-medium">
+                              {isCatFull ? (
+                                <span className="text-rose-500 font-bold">Seats full · Sold out</span>
+                              ) : (
+                                <span className="text-[#94a3b8]">{catRemaining} available</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="text-[14px] font-bold text-[#0064e0]">
+                              ₹{category.memberPricePaise / 100}{' '}
+                              <span className="text-[11px] font-medium text-[#64748b]">(Member)</span>
+                            </div>
+                            <div className="text-[11px] text-[#94a3b8] line-through">
+                              ₹{category.nonMemberPricePaise / 100} (Non-member)
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Full-width Cobalt CTA Button + Admin Delete */}
+                <div className="flex items-center gap-2">
+                  {isSoldOut ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex-1 py-3.5 px-6 rounded-full font-semibold text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                    >
+                      🚫 Seats Full · Ticket Sold Out
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openReservationModal(evt)}
+                      className="flex-1 py-3.5 px-6 rounded-full font-semibold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      Reserve Event Passes →
+                    </button>
+                  )}
+                  {session?.role === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteEvent(evt.id, evt.title)}
+                      className="p-3.5 rounded-full border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors shadow-2xs flex items-center justify-center cursor-pointer shrink-0"
+                      title="Delete Event (Admin Only)"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ─── MODAL: CONDUCT & POST NEW EVENT (ADMIN ONLY - SCREENSHOTS 011352 & 011447) ─── */}
@@ -1006,30 +1095,45 @@ export default function EventsScene() {
                   Select Ticket Type
                 </label>
                 <div className="space-y-2">
-                  {selectedEvent.ticketCategories.map((cat) => (
-                    <div
-                      key={cat.id}
-                      onClick={() => setSelectedTicketCategory(cat)}
-                      className={`p-3 rounded-xl border flex justify-between items-center cursor-pointer transition-all ${
-                        selectedTicketCategory.id === cat.id
-                          ? 'border-[#0064e0] bg-blue-50/50 ring-1 ring-[#0064e0]'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div>
-                        <div className="text-sm font-bold text-[#0f172a]">{cat.name}</div>
-                        <div className="text-xs text-[#64748b]">{cat.available} passes remaining</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-[#0064e0]">
-                          ₹{isMember ? cat.memberPricePaise / 100 : cat.nonMemberPricePaise / 100}
+                  {selectedEvent.ticketCategories.map((cat) => {
+                    const catRemaining = getCategoryRemaining(selectedEvent.id, cat);
+                    const isCatFull = catRemaining <= 0;
+
+                    return (
+                      <div
+                        key={cat.id}
+                        onClick={() => {
+                          if (!isCatFull) setSelectedTicketCategory(cat);
+                        }}
+                        className={`p-3 rounded-xl border flex justify-between items-center transition-all ${
+                          isCatFull
+                            ? 'border-slate-200 bg-slate-50 opacity-50 cursor-not-allowed'
+                            : selectedTicketCategory.id === cat.id
+                            ? 'border-[#0064e0] bg-blue-50/50 ring-1 ring-[#0064e0] cursor-pointer'
+                            : 'border-slate-200 hover:border-slate-300 bg-white cursor-pointer'
+                        }`}
+                      >
+                        <div>
+                          <div className="text-sm font-bold text-[#0f172a]">{cat.name}</div>
+                          <div className="text-xs text-[#64748b]">
+                            {isCatFull ? (
+                              <span className="text-rose-500 font-semibold">Seats full · Sold out</span>
+                            ) : (
+                              `${catRemaining} passes remaining`
+                            )}
+                          </div>
                         </div>
-                        <div className="text-[11px] text-slate-400">
-                          {isMember ? 'Member Rate' : 'Standard Rate'}
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-[#0064e0]">
+                            ₹{isMember ? cat.memberPricePaise / 100 : cat.nonMemberPricePaise / 100}
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            {isMember ? 'Member Rate' : 'Standard Rate'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1062,14 +1166,32 @@ export default function EventsScene() {
               </div>
 
               {/* Confirm Checkout Button */}
-              <button
-                type="button"
-                disabled={isBuying}
-                onClick={handleBuyPass}
-                className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] transition-all text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {isBuying ? <ButtonSpinner size={16} /> : `Confirm & Reserve Pass →`}
-              </button>
+              {(() => {
+                const isSelectedCatFull = getCategoryRemaining(selectedEvent.id, selectedTicketCategory) <= 0;
+                const isEventFull = getEventRemainingSeats(selectedEvent) <= 0;
+                const isDisabled = isBuying || isSelectedCatFull || isEventFull;
+
+                return (
+                  <button
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={handleBuyPass}
+                    className={`w-full py-3.5 px-6 rounded-full font-bold text-white transition-all text-sm shadow-sm flex items-center justify-center gap-2 ${
+                      isDisabled
+                        ? 'bg-slate-400 cursor-not-allowed opacity-60'
+                        : 'bg-[#0064e0] hover:bg-[#0052b8] active:scale-[0.99] cursor-pointer'
+                    }`}
+                  >
+                    {isBuying ? (
+                      <ButtonSpinner size={16} />
+                    ) : isEventFull || isSelectedCatFull ? (
+                      '🚫 Seats Full · Pass Unavailable'
+                    ) : (
+                      'Confirm & Reserve Pass →'
+                    )}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>

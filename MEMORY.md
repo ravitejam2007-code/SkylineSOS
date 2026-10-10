@@ -321,10 +321,24 @@
     - Redesigned search bar to display only the compact "q"-type magnifying glass symbol (`w-[38px] h-[38px] rounded-full`) when idle.
     - Smoothly expands in width on cursor hover (`hover:w-[220px] sm:hover:w-[260px]`) and focus (`focus-within:w-[220px] sm:focus-within:w-[260px]`) with CSS transition animations (`transition-all duration-300 ease-in-out`).
     - Reveals the text input and placeholder smoothly while keeping the navbar clean and uncluttered.
+- **Dynamic Seats Decrement, Task Count Synchronization, Membership Approval Integrity & Persona Switch Removal:**
+  - **Dynamic Seats Decrement & Sold-Out Enforcement ([`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Dynamic seats left counter: Decrements automatically on each ticket reservation (`Math.max(0, evt.seatsLeft - bookedCount)`).
+    - Top-right banner pill dynamically updates: Displays `{remainingSeats} Seats Left` in cobalt when seats are open, or transitions to an alert badge `Seats Full · Sold Out` in rose-600 when capacity is reached.
+    - Category-level availability tracking: Each tier displays live remaining passes or `Seats full · Sold out` when exhausted.
+    - Sold-out reservation prevention: Event card CTA button switches to disabled `🚫 Seats Full · Ticket Sold Out`. Modal checkout button and reservation entry points validate capacity and reject reservations if sold out.
+  - **No Automatic Membership Approval ([`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx), [`StudentPortalScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx)):**
+    - Enforced strict approval policy: Membership is NEVER automatically approved upon registration or sign-in.
+    - New accounts start in `NEW ACCOUNT · NOT JOINED` state.
+    - Submitted applications remain in `submitted` (Pending Review ⏳) until an executive administrator reviews the application on the review board and approves or rejects it.
+    - Digital membership passes and dynamic door gate codes remain strictly locked until an application is manually approved.
+  - **Operations Task Count vs Task List Synchronization ([`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx)):**
+    - Fixed discrepancy shown in Screenshot `024715.png` where the top stats card showed "4 total tasks (1 Done, 3 Pending)" but the lower section showed "0 Assigned" and an empty board.
+    - Added tabbed filtering: `All Tasks (4)` (active by default) and `Assigned to Me`.
+    - Both top summary card and lower task list now display matching task counts (4 operations tasks with progress bars, status controls, and update message log).
+  - **Removed Switch Persona (Test Roles) ([`UserNavMenu.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/layout/UserNavMenu.tsx)):**
+    - Completely removed the "SWITCH PERSONA (TEST ROLES)" section from the user navigation menu dropdown as requested in Screenshot `024653.png`.
+    - Cleaned up unused demo switcher states and imports.
   - **Verification:**
     - Ran `npm test` at workspace root: 79 tests passed across 24 suites with 100% pass rate.
     - Ran `npm --prefix Frontend run build`: 20 static pages compiled cleanly via `@astrojs/vercel` with zero errors.
-
-
-
-

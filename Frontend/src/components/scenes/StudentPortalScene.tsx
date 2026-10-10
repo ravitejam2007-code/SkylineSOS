@@ -164,10 +164,9 @@ export default function StudentPortalScene() {
   const displayEmail = session.email;
   const displayStudentId = session.studentId || `SKY-2026-${session.userId?.slice(0, 4) || 'NEW'}`;
 
-  // Check if user has an approved membership or is staff
-  const isStaff = Boolean(session.role && ['admin', 'treasurer', 'volunteer', 'door_staff'].includes(session.role));
-  const isDemoMember = Boolean(session.email?.toLowerCase() === 'member@skylinesos.demo');
-  let isApprovedMember = isStaff || isDemoMember;
+  // Check if user has an approved membership application or is executive admin
+  const isAdmin = Boolean(session.role && session.role === 'admin');
+  let isApprovedMember = isAdmin;
   if (!isApprovedMember && typeof window !== 'undefined') {
     try {
       const rawApps = localStorage.getItem('skylinesos:membership_applications');

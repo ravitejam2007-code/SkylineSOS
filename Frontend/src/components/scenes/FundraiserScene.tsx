@@ -135,6 +135,7 @@ export default function FundraiserScene() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('high');
   const [newTaskAssignee, setNewTaskAssignee] = useState<string>(REGISTERED_PERSONNEL[0].name);
+  const [taskViewFilter, setTaskViewFilter] = useState<'all' | 'mine'>('all');
 
   const loadData = async () => {
     try {
@@ -787,55 +788,119 @@ export default function FundraiserScene() {
           </div>
         </div>
       ) : (
-        /* Member / Student View: "go task him account show not others" & Send messages */
+        /* Member / Student View: Display operations tasks with filter tabs so tasks list matches total tasks count */
         <div className="space-y-8">
           {session ? (
             <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-blue-100 text-[#0064e0]">
-                    Personal Task Portal
+                    Operations Task Board
                   </span>
                   <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a] mt-1">
-                    My Assigned Operations Tasks
+                    Volunteer & Chapter Operations Tasks
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Tasks assigned specifically to {session.fullName} ({session.email}). Update your work progress and send live notes to chapter leaders.
+                    Live operational duties for {fundraiser?.title || 'Chapter Campaign'}. Review tasks, update work progress, and send live notes.
                   </p>
                 </div>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 self-start sm:self-auto border border-slate-200">
-                  {tasks.filter((t) => t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase())).length} Assigned
-                </span>
+
+                {/* Filter Tabs: All Tasks vs Assigned to Me */}
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-full border border-slate-200 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setTaskViewFilter('all')}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                      taskViewFilter === 'all'
+                        ? 'bg-[#0064e0] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    All Tasks ({tasks.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTaskViewFilter('mine')}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                      taskViewFilter === 'mine'
+                        ? 'bg-[#0064e0] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Assigned to Me ({
+                      tasks.filter(
+                        (t) =>
+                          session?.fullName &&
+                          t.assignee_name &&
+                          (t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
+                            session.fullName.toLowerCase().includes(t.assignee_name.toLowerCase()))
+                      ).length
+                    })
+                  </button>
+                </div>
               </div>
 
-              {/* Filter tasks assigned strictly to this student */}
-              {tasks.filter((t) => t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase())).length === 0 ? (
-                <div className="py-10 text-center space-y-2">
-                  <div className="text-3xl">📋</div>
-                  <p className="text-sm font-semibold text-slate-800">No operations tasks assigned to your account yet</p>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    When organization administrators assign you volunteer tasks (e.g. quad table setup, cookie packaging), they will appear directly in your account here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {tasks
-                    .filter((t) => t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()))
-                    .map((task) => {
+              {/* Tasks List */}
+              {(() => {
+                const myAssignedTasks = tasks.filter(
+                  (t) =>
+                    session?.fullName &&
+                    t.assignee_name &&
+                    (t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
+                      session.fullName.toLowerCase().includes(t.assignee_name.toLowerCase()))
+                );
+                const displayedTasks = taskViewFilter === 'mine' ? myAssignedTasks : tasks;
+
+                if (displayedTasks.length === 0) {
+                  return (
+                    <div className="py-10 text-center space-y-2">
+                      <div className="text-3xl">📋</div>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {taskViewFilter === 'mine'
+                          ? 'No operations tasks assigned to your account yet'
+                          : 'No active operations tasks'}
+                      </p>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        {taskViewFilter === 'mine'
+                          ? 'Click "All Tasks" above to review all active operations duties for this chapter fundraiser.'
+                          : 'Tasks will appear here once added by administrators.'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {displayedTasks.map((task) => {
                       const percent =
                         task.progressPercent ??
                         (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
+                      const isAssignedToMe = Boolean(
+                        session?.fullName &&
+                        task.assignee_name &&
+                        (task.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
+                          session.fullName.toLowerCase().includes(task.assignee_name.toLowerCase()))
+                      );
 
                       return (
                         <div
                           key={task.id}
-                          className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-4 hover:shadow-xs transition-shadow"
+                          className={`p-5 rounded-2xl border bg-slate-50/50 space-y-4 hover:shadow-xs transition-shadow ${
+                            isAssignedToMe ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200'
+                          }`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
-                              <h4 className="font-bold text-sm sm:text-base text-[#0f172a]">{task.title}</h4>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-sm sm:text-base text-[#0f172a]">{task.title}</h4>
+                                {isAssignedToMe && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-[#0064e0] uppercase">
+                                    Assigned to You
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-slate-500 font-mono mt-0.5">
-                                Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Today'} · Priority:{' '}
+                                Assignee: <strong className="text-slate-800">{task.assignee_name || 'Unassigned'}</strong> · Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Today'} · Priority:{' '}
                                 <span className="font-bold uppercase text-slate-700">{task.priority}</span>
                               </p>
                             </div>
@@ -954,8 +1019,9 @@ export default function FundraiserScene() {
                         </div>
                       );
                     })}
-                </div>
-              )}
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-3 shadow-2xs">
