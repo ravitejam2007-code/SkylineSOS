@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../lib/api';
 import { getCurrentUserSession } from '../../lib/auth';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
@@ -33,45 +33,29 @@ export default function StudentPortalScene() {
   const [isRenewing, setIsRenewing] = useState(false);
   const [renewSuccess, setRenewSuccess] = useState<string | null>(null);
 
-  // 6-digit dynamic verification pass state
-  const [sixDigitCode, setSixDigitCode] = useState<string>('482915');
-  const [countdown, setCountdown] = useState<number>(60);
-  const [isRefreshingCode, setIsRefreshingCode] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
-
-  const fetchRotatingCode = async () => {
-    if (!checkIsMember(session, pass?.payload)) return;
-    try {
-      setIsRefreshingCode(true);
-      const codeRes = await api.getRotatingDoorPass();
-      if (codeRes?.code) {
-        setSixDigitCode(String(codeRes.code));
-        setCountdown(codeRes.ttlSeconds || 60);
-      }
-    } catch (e) {
-      console.warn('Could not refresh 6-digit code:', e);
-    } finally {
-      setIsRefreshingCode(false);
-    }
-  };
+  // Student Profile Photo state with user input & presets
+  const [studentPhoto, setStudentPhoto] = useState<string>('/avatars/student-academic.jpg');
+  const [photoToast, setPhotoToast] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     try {
       const currentSession = await getCurrentUserSession();
       setSession(currentSession);
-      const isMember = checkIsMember(currentSession);
-      const [passRes, annList, codeRes] = await Promise.all([
+      const [passRes, annList] = await Promise.all([
         api.generateAllInOnePass(currentSession?.userId),
         api.getAnnouncements('all_members'),
-        isMember ? api.getRotatingDoorPass().catch(() => null) : Promise.resolve(null),
       ]);
       setPass(passRes);
       setAnnouncements(annList);
-      if (codeRes?.code) {
-        setSixDigitCode(String(codeRes.code));
-        setCountdown(codeRes.ttlSeconds || 60);
-      } else if (passRes?.payload?.door_verification_code) {
-        setSixDigitCode(String(passRes.payload.door_verification_code));
+
+      // Load persisted student photo for current user
+      if (currentSession && typeof window !== 'undefined') {
+        const userKey = currentSession.userId || currentSession.email || 'default';
+        const savedPhoto = localStorage.getItem('skylinesos_student_photo_' + userKey);
+        if (savedPhoto) {
+          setStudentPhoto(savedPhoto);
+        }
       }
     } catch (err) {
       console.error('Error loading student portal data:', err);
@@ -80,31 +64,40 @@ export default function StudentPortalScene() {
     }
   };
 
-  // 1-second countdown interval with automatic rotation
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          if (checkIsMember(session, pass?.payload)) {
-            fetchRotatingCode();
-          }
-          return 60;
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Please select an image smaller than 5MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setStudentPhoto(result);
+        const userKey = session?.userId || session?.email || 'default';
+        try {
+          localStorage.setItem('skylinesos_student_photo_' + userKey, result);
+          setPhotoToast('Student photo updated successfully!');
+          setTimeout(() => setPhotoToast(null), 3000);
+        } catch (err) {
+          console.warn('Could not save photo to storage:', err);
         }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [session, pass]);
-
-  const handleRefreshCode = () => {
-    fetchRotatingCode();
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleCopyCode = () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(sixDigitCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleSelectPreset = (presetUrl: string) => {
+    setStudentPhoto(presetUrl);
+    const userKey = session?.userId || session?.email || 'default';
+    try {
+      localStorage.setItem('skylinesos_student_photo_' + userKey, presetUrl);
+      setPhotoToast('Profile photo updated!');
+      setTimeout(() => setPhotoToast(null), 3000);
+    } catch (err) {
+      console.warn('Could not save photo to storage:', err);
     }
   };
 
@@ -116,8 +109,10 @@ export default function StudentPortalScene() {
       if (updated?.userId) {
         const passRes = await api.generateAllInOnePass(updated.userId);
         setPass(passRes);
-        if (checkIsMember(updated, passRes?.payload)) {
-          fetchRotatingCode();
+        if (typeof window !== 'undefined') {
+          const userKey = updated.userId || updated.email || 'default';
+          const savedPhoto = localStorage.getItem('skylinesos_student_photo_' + userKey);
+          if (savedPhoto) setStudentPhoto(savedPhoto);
         }
       }
     };
@@ -258,18 +253,18 @@ export default function StudentPortalScene() {
         </div>
       )}
 
-      {/* Hero Section: All-in-One Digital Student Pass */}
+      {/* Hero Section: All-in-One Digital Student Pass with Photo ID */}
       <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--color-hairline-soft)]">
           <div>
             <span className="text-[11px] font-mono font-bold text-[var(--color-steel)] uppercase">
-              ALL-IN-ONE DIGITAL CREDENTIAL · DYNAMIC IDENTITY CODE
+              ALL-IN-ONE DIGITAL CREDENTIAL · VERIFIED STUDENT IDENTITY CARD
             </span>
             <h2 className="text-2xl font-bold text-[var(--color-ink-deep)] mt-1">
-              Official Digital Student Pass & 6-Digit Verification Code
+              Official Digital Student Identity Pass
             </h2>
             <p className="text-[13px] text-[var(--color-steel)]">
-              High-speed rotating 6-digit pass consolidating annual membership, gala admissions, and campus privileges.
+              Verified campus identity card consolidating student portrait badge, annual membership, gala admissions, and privileges.
             </p>
           </div>
           <span
@@ -284,64 +279,123 @@ export default function StudentPortalScene() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-          {/* 6-Digit Rotating Identity Pass Column */}
-          <div className="flex flex-col items-center justify-between p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-zinc-950 text-white border border-slate-800 shadow-xl space-y-5 text-center">
+          {/* Official Digital Student Identity Pass Column with Decent Photo */}
+          <div className="flex flex-col items-center justify-between p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-zinc-950 text-white border border-slate-800 shadow-xl space-y-4 text-center relative overflow-hidden">
             {isApprovedMember ? (
               <>
                 <div className="w-full flex items-center justify-between pb-3 border-b border-slate-800/80">
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    Live Identity Pass
+                    Verified Student Pass
                   </span>
-                  <span className="text-[11px] font-mono text-slate-400">
-                    TTL: <span className="font-bold text-white">{countdown}s</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800/80 text-slate-300 border border-slate-700/60">
+                    {displayStudentId}
                   </span>
                 </div>
 
-                <div className="space-y-2 py-2">
-                  <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                    6-Digit Door Verification Code
+                {/* Student Photo Card Frame with Change Option */}
+                <div className="space-y-3 py-1 w-full flex flex-col items-center">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative group cursor-pointer"
+                    title="Click to choose or upload your photo"
+                  >
+                    <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-emerald-500 via-slate-700 to-emerald-400 shadow-[0_0_24px_rgba(16,185,129,0.25)] border-2 border-slate-700/80 group-hover:border-emerald-400 transition-all duration-300">
+                      <img
+                        src={studentPhoto}
+                        alt={displayName}
+                        className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                    {/* Hover Camera Overlay */}
+                    <div className="absolute inset-0 rounded-2xl bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-white text-[11px] font-bold gap-1 backdrop-blur-xs">
+                      <span className="text-xl">📷</span>
+                      <span>Change Photo</span>
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500 text-black border border-emerald-400 shadow-xs font-mono">
+                      ACTIVE
+                    </span>
                   </div>
-                  <div className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-emerald-400 py-2 select-all drop-shadow-[0_0_16px_rgba(52,211,153,0.35)]">
-                    {String(sixDigitCode || '482915').slice(0, 3)} {String(sixDigitCode || '482915').slice(3, 6)}
+
+                  {/* Student Credentials */}
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-white tracking-tight truncate max-w-[220px]">
+                      {displayName}
+                    </h3>
+                    <p className="text-[11px] font-mono text-emerald-400 truncate max-w-[220px]">
+                      {displayEmail || 'student@skyline.edu'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                      Skyline Student Association · 2026-27
+                    </p>
                   </div>
-                  <p className="text-[11px] text-slate-400 max-w-[210px] mx-auto">
-                    Read or present this 6-digit code at event gates & club desks.
-                  </p>
                 </div>
 
-                {/* Countdown Progress Bar */}
-                <div className="w-full space-y-1.5">
-                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-linear"
-                      style={{ width: `${(countdown / 60) * 100}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] font-mono text-slate-500">
-                    <span>Auto-rotates</span>
-                    <span>{countdown}s remaining</span>
-                  </div>
-                </div>
+                {/* Hidden File Input for User Choosing Photo */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
 
-                {/* Action buttons */}
-                <div className="w-full flex items-center gap-2 pt-1">
+                {/* Photo Selector Controls (User Input Upload & Him/Her Presets) */}
+                <div className="w-full space-y-2 pt-1 border-t border-slate-800/80">
                   <button
                     type="button"
-                    onClick={handleCopyCode}
-                    className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-2 border border-slate-700/80 hover:border-slate-600 shadow-xs"
                   >
-                    {copied ? '✓ Copied' : '📋 Copy Code'}
+                    <span>📷</span>
+                    <span>Choose / Upload Photo</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleRefreshCode}
-                    disabled={isRefreshingCode}
-                    className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50"
-                    title="Refresh 6-digit code"
-                  >
-                    {isRefreshingCode ? '...' : '↻'}
-                  </button>
+
+                  {/* Quick Preset Buttons: Him, Her, Academic */}
+                  <div className="flex items-center gap-1.5 w-full">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPreset('/avatars/student-academic.jpg')}
+                      className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                        studentPhoto === '/avatars/student-academic.jpg'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60'
+                          : 'bg-slate-800/60 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+                      }`}
+                      title="Set Him (Academic Portrait)"
+                    >
+                      👨 Him
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPreset('/avatars/student-female.jpg')}
+                      className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                        studentPhoto === '/avatars/student-female.jpg'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60'
+                          : 'bg-slate-800/60 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+                      }`}
+                      title="Set Her (Student Portrait)"
+                    >
+                      👩 Her
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPreset('/avatars/student-male.jpg')}
+                      className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                        studentPhoto === '/avatars/student-male.jpg'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60'
+                          : 'bg-slate-800/60 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
+                      }`}
+                      title="Set Fellow (Campus Portrait)"
+                    >
+                      🎓 Fellow
+                    </button>
+                  </div>
+
+                  {photoToast && (
+                    <div className="text-[10px] font-bold text-emerald-400 animate-pulse">
+                      ✓ {photoToast}
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
@@ -352,7 +406,7 @@ export default function StudentPortalScene() {
                 <div className="space-y-1">
                   <div className="text-sm font-bold text-white">Digital Pass Inactive</div>
                   <p className="text-xs text-slate-400 max-w-[210px] mx-auto">
-                    Dynamic 6-digit door verification code is activated once you join an annual chapter membership.
+                    Verified student identity photo pass is activated once you join an annual chapter membership.
                   </p>
                 </div>
                 <a

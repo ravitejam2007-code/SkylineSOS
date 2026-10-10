@@ -443,4 +443,20 @@
   - **Verification:**
     - Executed `npm test`: 79/79 invariant tests passed across 24 test suites with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
+- **Student Identity Pass Design Upgrade — Photo Badge with User Upload:**
+  - **Removed OTP / 6-Digit Verification Code:**
+    - Per user request, removed the 6-digit door verification code, countdown progress bar, auto-rotation timer, and copy buttons from the primary credential card in [`StudentPortalScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx).
+  - **Added Decent Student Photo Portrait & Quick Presets:**
+    - Added high-resolution decent student portraits into `Frontend/public/avatars/`:
+      - `student-academic.jpg` ("👨 Him" preset)
+      - `student-female.jpg` ("👩 Her" preset)
+      - `student-male.jpg` ("🎓 Fellow" preset)
+    - Designed a modern dark identity pass card with verified badge, student name, email, student ID, and association affiliation.
+  - **Added User Input for Photo Upload:**
+    - Integrated `<input type="file" accept="image/*" />` with an interactive "📷 Choose / Upload Photo" CTA button and click-to-upload on the photo avatar itself.
+    - Added instant base64 preview via `FileReader` with local storage persistence (`skylinesos_student_photo_${userKey}`) so custom student photos persist permanently across page refreshes.
+  - **Verification:**
+    - Executed `npm test`: 79/79 invariant tests passed across 24 test suites with 100% pass rate.
+    - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
+
 
