@@ -414,3 +414,12 @@
   - **Verification:**
     - Executed `npm test`: 79/79 invariant tests passed across 24 suites with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: 20/20 static routes compiled cleanly with zero errors.
+- **Authorization Error Resolution & Full Stack Runtime Launch:**
+  - **Issue Resolved (`api.ts:875 Missing or invalid authorization token`):**
+    - The backend router [`supabase/functions/api/routes/fundraisers.ts`](file:///E:/projects/SkylineSOS/supabase/functions/api/routes/fundraisers.ts) originally had `fundraisersRouter.use(authenticate)` applied globally, rejecting public read access to `GET /fundraisers` with 401 when visitors or unauthenticated students loaded the Fundraiser scene.
+    - Made `GET /fundraisers` publicly accessible before `authenticate` so students and prospective members can view campaigns without authentication barriers.
+    - Enhanced [`Frontend/src/lib/api.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/api.ts) with multi-storage token resolution (`supabase.auth.getSession()`, `auth_token`, `campusone_access_token`, `campusone_auth_session`).
+    - Implemented graceful default data fallbacks in `getActiveFundraisers()` and `getFundraiserTasks()` so that unauthenticated or offline views render seamlessly without throwing exceptions.
+  - **Servers Active & Running:**
+    - **Frontend:** Astro 5 dev server active at `http://localhost:4321/` with live HMR and updated Razorpay test mode key (`rzp_test_T8GBnZ6P23gRoO`).
+    - **Backend:** Live Supabase Cloud API active at `https://xwwkpwzartndbjlzpttc.supabase.co/functions/v1/api/v1` (`/health` responding with 200 OK).

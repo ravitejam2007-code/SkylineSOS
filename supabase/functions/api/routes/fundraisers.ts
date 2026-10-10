@@ -8,8 +8,6 @@ import { z } from "npm:zod@3.24.2";
 
 export const fundraisersRouter = Router();
 
-fundraisersRouter.use(authenticate);
-
 const CreateFundraiserSchema = z.object({
   name: z.string().min(1),
   goalPaise: z.number().int().positive(),
@@ -39,7 +37,7 @@ const CreateContributionSchema = z.object({
   note: z.string().min(2, "Note required for contribution")
 });
 
-// GET /fundraisers
+// GET /fundraisers (Public: Students, guests, and organizers can browse campaigns)
 fundraisersRouter.get("/fundraisers", async (_req, res, next) => {
   try {
     const { data, error } = await supabaseAdmin
@@ -72,6 +70,9 @@ fundraisersRouter.get("/fundraisers", async (_req, res, next) => {
     next(err);
   }
 });
+
+// All mutating and management routes require authentication
+fundraisersRouter.use(authenticate);
 
 // POST /fundraisers (Admin)
 fundraisersRouter.post(
