@@ -49,7 +49,48 @@ publicRouter.get("/public/events/:slug", async (req, res, next) => {
       return next(new ApiError(404, "NOT_FOUND", `Event with slug '${slug}' not found`));
     }
 
-    res.json({ data: event });
+    // Query sold tickets for this event
+    const { data: tickets } = await supabaseAdmin
+      .from("tickets")
+      .select("id, ticket_type_id")
+      .eq("event_id", event.id)
+      .neq("status", "cancelled");
+
+    const soldCount = tickets?.length || 0;
+    const soldByTicketType: Record<string, number> = {};
+    (tickets || []).forEach((t: any) => {
+      soldByTicketType[t.ticket_type_id] = (soldByTicketType[t.ticket_type_id] || 0) + 1;
+    });
+
+    const eventAvailable = Math.max(0, event.capacity - soldCount);
+
+    const ticketTypes = (event.ticket_types || []).map((tt: any) => {
+      const ttSold = soldByTicketType[tt.id] || 0;
+      const ttAvailable = Math.max(0, tt.quantity_limit - ttSold);
+      return {
+        id: tt.id,
+        name: tt.name,
+        pricePaise: tt.price_paise,
+        memberPricePaise: tt.member_price_paise !== null ? tt.member_price_paise : tt.price_paise,
+        memberOnly: tt.member_only,
+        available: Math.min(ttAvailable, eventAvailable)
+      };
+    });
+
+    res.json({
+      data: {
+        id: event.id,
+        slug: event.slug,
+        title: event.title,
+        description: event.description,
+        venue: event.venue,
+        startsAt: event.starts_at,
+        endsAt: event.ends_at,
+        capacity: event.capacity,
+        available: eventAvailable,
+        ticketTypes
+      }
+    });
   } catch (err) {
     next(err);
   }

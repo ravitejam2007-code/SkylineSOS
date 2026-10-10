@@ -130,10 +130,14 @@ begin
   end if;
 
   select jsonb_build_object(
+    'valid', true,
+    'fullName', p.full_name,
     'name', p.full_name,
     'tier', t.name,
     'status', m.status,
+    'expiresOn', m.expires_on,
     'expires_on', m.expires_on,
+    'discountPercent', t.discount_percent,
     'discount_percent', t.discount_percent
   ) into v_result
   from memberships m
@@ -224,8 +228,8 @@ begin
 
   -- 3. Validate items and compute totals
   for v_item in select * from jsonb_array_elements(p_items) loop
-    v_type := v_item->>'itemType';
-    v_ref_id := (v_item->>'refId')::uuid;
+    v_type := coalesce(v_item->>'itemType', v_item->>'type');
+    v_ref_id := (coalesce(v_item->>'refId', v_item->>'ref_id'))::uuid;
     v_qty := (v_item->>'quantity')::int;
 
     if v_qty <= 0 then
@@ -395,7 +399,7 @@ begin
           direction, amount_paise, category, method, source_type, source_id, memo, effective_on, created_by
         ) values (
           'in', (v_item.unit_price_paise * v_item.quantity - v_item.discount_paise),
-          'tickets', v_ledger_method::pay_method_mapped, 'checkout_item', v_item.id,
+          'tickets', v_ledger_method, 'checkout_item', v_item.id,
           'Ticket purchase: ' || v_tt.name, p_effective_on, coalesce(p_actor, v_checkout.recorded_by, v_checkout.buyer_id)
         ) on conflict (source_type, source_id) do nothing;
       end if;
@@ -413,7 +417,7 @@ begin
           direction, amount_paise, category, method, source_type, source_id, memo, effective_on, created_by
         ) values (
           'in', (v_item.unit_price_paise * v_item.quantity - v_item.discount_paise),
-          'merch', v_ledger_method::pay_method_mapped, 'checkout_item', v_item.id,
+          'merch', v_ledger_method, 'checkout_item', v_item.id,
           'Merchandise purchase', p_effective_on, coalesce(p_actor, v_checkout.recorded_by, v_checkout.buyer_id)
         ) on conflict (source_type, source_id) do nothing;
       end if;
@@ -443,7 +447,7 @@ begin
           direction, amount_paise, category, method, source_type, source_id, memo, effective_on, created_by
         ) values (
           'in', (v_item.unit_price_paise * v_item.quantity - v_item.discount_paise),
-          'dues', v_ledger_method::pay_method_mapped, 'checkout_item', v_item.id,
+          'dues', v_ledger_method, 'checkout_item', v_item.id,
           'Membership dues: ' || v_tier.name, p_effective_on, coalesce(p_actor, v_checkout.recorded_by, v_checkout.buyer_id)
         ) on conflict (source_type, source_id) do nothing;
       end if;
@@ -524,8 +528,8 @@ begin
   end if;
 
   if v_ticket.status = 'checked_in' then
-    select * into v_existing_ci from check_ins where ticket_id = v_ticket.id;
-    raise exception 'TICKET_ALREADY_CHECKED_IN: checked in at %', v_existing_ci.checked_in_at;
+    select ci.* into v_existing_ci from check_ins ci where ci.ticket_id = v_ticket.id;
+    raise exception 'TICKET_ALREADY_CHECKED_IN: Already checked in at %', v_existing_ci.checked_in_at;
   end if;
 
   insert into check_ins (ticket_id, staff_id, checked_in_at)
@@ -536,6 +540,9 @@ begin
   select * into v_event from events where id = v_ticket.event_id;
   select * into v_tt from ticket_types where id = v_ticket.ticket_type_id;
 
+  select count(*) into v_sold_count from tickets where event_id = v_ticket.event_id and status != 'cancelled';
+  select count(*) into v_pending_count from tickets where event_id = v_ticket.event_id and status = 'checked_in';
+
   -- Audit log
   insert into audit_logs (actor_id, action, entity_type, entity_id, meta)
   values (
@@ -545,10 +552,20 @@ begin
 
   return jsonb_build_object(
     'ticket_id', v_ticket.id,
+    'ticketId', v_ticket.id,
     'holder_name', v_ticket.holder_name,
+    'holderName', v_ticket.holder_name,
     'ticket_type', v_tt.name,
+    'ticketType', v_tt.name,
     'event_title', v_event.title,
-    'checked_in_at', clock_timestamp()
+    'eventTitle', v_event.title,
+    'checked_in_at', clock_timestamp(),
+    'checkedInAt', clock_timestamp(),
+    'counters', jsonb_build_object(
+      'sold', v_sold_count,
+      'checkedIn', v_pending_count,
+      'capacity', v_event.capacity
+    )
   );
 end;
 $$;

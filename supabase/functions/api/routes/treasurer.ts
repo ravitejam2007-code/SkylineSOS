@@ -212,6 +212,88 @@ treasurerRouter.get(
   }
 );
 
+// GET /admin/overview (Admin only)
+treasurerRouter.get(
+  "/admin/overview",
+  requireRole("admin"),
+  async (_req, res, next) => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const [
+        membersRes,
+        pendingAppsRes,
+        eventsRes,
+        tasksRes,
+        expensesRes,
+        variantsRes
+      ] = await Promise.all([
+        supabaseAdmin.from("memberships").select("id", { count: "exact", head: true }).eq("status", "active").gte("expires_on", today),
+        supabaseAdmin.from("membership_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabaseAdmin.from("events").select("id", { count: "exact", head: true }).eq("status", "published"),
+        supabaseAdmin.from("tasks").select("id", { count: "exact", head: true }).in("status", ["todo", "in_progress"]),
+        supabaseAdmin.from("expenses").select("id", { count: "exact", head: true }).eq("status", "submitted"),
+        supabaseAdmin.from("product_variants").select("id, stock_on_hand, reserved")
+      ]);
+
+      const lowStockCount = (variantsRes.data || []).filter(
+        (v: any) => (v.stock_on_hand - v.reserved) <= 3
+      ).length;
+
+      res.json({
+        data: {
+          activeMembers: membersRes.count || 0,
+          pendingApplications: pendingAppsRes.count || 0,
+          publishedEvents: eventsRes.count || 0,
+          openTasks: tasksRes.count || 0,
+          submittedExpenses: expensesRes.count || 0,
+          lowStockVariants: lowStockCount
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /admin/users?q= (Admin only)
+treasurerRouter.get(
+  "/admin/users",
+  requireRole("admin"),
+  async (req, res, next) => {
+    const q = req.query.q as string | undefined;
+
+    try {
+      let query = supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, email, student_id, is_demo, created_at, user_roles(role)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (q && q.trim().length > 0) {
+        const term = `%${q.trim()}%`;
+        query = query.or(`full_name.ilike.${term},email.ilike.${term},student_id.ilike.${term}`);
+      }
+
+      const { data, error } = await query;
+      if (error) return next(error);
+
+      const formatted = (data || []).map((p: any) => ({
+        id: p.id,
+        fullName: p.full_name,
+        email: p.email,
+        studentId: p.student_id,
+        isDemo: p.is_demo,
+        role: p.user_roles?.role || "member",
+        createdAt: p.created_at
+      }));
+
+      res.json({ data: formatted });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // PATCH /admin/users/:id/role (Admin only)
 treasurerRouter.patch(
   "/admin/users/:id/role",
@@ -223,6 +305,27 @@ treasurerRouter.patch(
     const { role } = req.body;
 
     try {
+      // Fetch target's current role
+      const { data: currentRoleRow } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", id)
+        .maybeSingle();
+
+      const previousRole = currentRoleRow?.role || "member";
+
+      // If demoting an admin, ensure they are not the last remaining admin
+      if (previousRole === "admin" && role !== "admin") {
+        const { count } = await supabaseAdmin
+          .from("user_roles")
+          .select("user_id", { count: "exact", head: true })
+          .eq("role", "admin");
+
+        if ((count || 0) <= 1) {
+          return next(new ApiError(409, "CONFLICT", "Cannot demote the last remaining admin"));
+        }
+      }
+
       const { data, error } = await supabaseAdmin
         .from("user_roles")
         .upsert({
@@ -236,13 +339,13 @@ treasurerRouter.patch(
 
       if (error) return next(error);
 
-      // Audit log
+      // Audit log as role.grant with before and after
       await supabaseAdmin.from("audit_logs").insert({
         actor_id: admin.id,
-        action: "role_granted",
+        action: "role.grant",
         entity_type: "user",
         entity_id: id,
-        meta: { grantedRole: role }
+        meta: { before: previousRole, after: role }
       });
 
       res.json({ data });

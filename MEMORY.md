@@ -46,6 +46,17 @@
   - **`supabase/migrations/0003_functions.sql`**: Implemented all atomic business logic RPCs (`gen_ticket_code`, `fn_rate_limit`, `fn_issue_member_code`, `fn_verify_member_code`, `fn_create_checkout`, `fn_fulfil_checkout`, `fn_record_staff_checkout`, `fn_check_in`, `fn_expire_checkouts`, `fn_review_application`, `fn_set_expense_status`, `fn_record_contribution`, `fn_treasurer_overview`, `fn_event_summary`, `fn_fundraiser_progress`, `fn_action_queue`, `fn_renewal_reminders`).
   - **`supabase/migrations/0004_cron.sql`**: Background scheduling via `pg_cron` for expiring checkouts every minute and sending daily renewal reminders.
   - **Seed Loader (`scripts/seed.mjs` & `seed/demo-data.json`)**: End-to-end data loader replaying 297 seed records through the real RPCs, creating 5 staff demo accounts and students, and verifying mathematical reconciliation between ledger and source transactions.
+- **Frontend Architecture & Web Application (`apps/web`):**
+  - **Core Setup:** Astro 5 static output (`output: 'static'`) with React islands (`@astrojs/react`) and Tailwind CSS v4 (`@tailwindcss/vite`).
+  - **Design System Tokens (`apps/web/src/styles/global.css`):** Configured `@theme` with Meta commerce tokens, Montserrat typography, cobalt `#0064e0` reserved strictly for buy/pay CTAs, and pill-shaped component primitives.
+  - **Client Utilities (`apps/web/src/lib/`):** Currency formatter (`money.ts`), Supabase Auth browser client (`auth.ts`), API fetch wrapper handling the error envelope (`api.ts`), and client-side role guards (`guards.ts`).
+  - **Interactive React Islands (`apps/web/src/islands/`):**
+    - `DoorConsole.tsx`: High-speed door gate console auto-detecting 6-digit member codes vs 8-char ticket codes, visual result cards, and attendee lookup.
+    - `MemberCard.tsx`: Digital student pass with real-time 60-second countdown and dynamic code rotation.
+    - `LoginPanel.tsx`: Authentication screen with 1-click role switcher for demo accounts (`Admin`, `Treasurer`, `Door`, `Volunteer`, `Member`).
+  - **Application Routes (`apps/web/src/pages/`):**
+    - Public: `/` (Landing/Hero), `/events`, `/membership`, `/announcements`, `/merch`, `/login`.
+    - Operations & Member: `/door`, `/membership/card`, `/admin`, `/treasurer`, `/403`, `/404`.
 - **Frontend Web Application (`apps/web`):**
   - **Tech Stack & Tokens:** Astro 5 static site with Tailwind CSS v4 design tokens from `docs/TRD.md §5.5` in `src/styles/global.css` and `@fontsource-variable/montserrat`.
   - **Client Infrastructure:** `lib/money.ts` (paise currency formatter), `lib/auth.ts` (Supabase browser auth), `lib/api.ts` (authenticated API client with error envelope handling), and `lib/guards.ts` (client role guards).
@@ -55,4 +66,28 @@
     - `CheckoutPanel.tsx`: Ticket & merchandise purchase drawer supporting online Razorpay payments and staff cash/UPI checkouts with audit notes.
     - `TreasurerLedger.tsx`: Real-time financial statistics (Net Movement, Inflow, Outflow) and immutable source-linked ledger table with category filters.
     - `LoginPanel.tsx`: Authentication screen featuring 1-click quick sign-in for all 5 demo role accounts (`admin`, `treasurer`, `door`, `volunteer`, `member`).
-  - **Pages & Routes:** `index.astro` (Landing & value proposition), `login.astro`, `door.astro` (Gate operations), `treasurer.astro` (Treasury console), `events.astro` (Events directory), `membership.astro` (Tiers & application), `announcements.astro` (Broadcast feed), `merch.astro` (Club store), `admin.astro` (Staff command center), `membership/card.astro` (Member pass), `403.astro`, `404.astro`.
+- **Full Backend API Completion (100% Coverage of `docs/api-docs.md`):**
+  - **45+ Endpoints Implemented:**
+    - **System & Profile (`/me`, `/health`):** `GET /health`, `GET /me`, `PATCH /me`, `GET /me/notifications`, `POST /me/notifications/:id/read`, `GET /me/preferences`, `PUT /me/preferences`, `GET /me/membership`, `GET /me/membership/history`, `POST /me/verify-code` (with `expiresAt` & `ttlSeconds`), `GET /me/tickets`, `GET /me/orders`.
+    - **Public Content (`/public`, `/announcements`):** `GET /public/events`, `GET /public/events/:slug` (with real-time capacity and ticket availability computation), `GET /public/tiers`, `GET /public/merch`, `GET /public/merch/:id`, `GET /announcements` (role-filtered visibility).
+    - **Membership Management:** `POST /membership/applications`, `PUT /membership/applications/:id` (resubmit rejected applications incrementing revision), `GET /admin/membership/applications`, `POST /admin/membership/applications/:id/review`, `POST /admin/members/walk-up` (with door staff restriction & temporary password generation), `GET /admin/tiers`, `POST /admin/tiers`, `PATCH /admin/tiers/:id`.
+    - **Identity & Door Operations:** `POST /staff/verify/member`, `GET /staff/members?q=` (profile search with minimal fields for door/treasurer and full for admin), `GET /door/tickets` (with rate limiting, attendee search, email masking, ticket code redaction), `POST /door/check-in` (with real-time sold/checked-in counters and checked-in staff details in conflict response).
+    - **Events & Ticketing:** `GET /admin/events`, `POST /admin/events`, `PATCH /admin/events/:id`, `POST /admin/events/:id/ticket-types`, `PATCH /admin/ticket-types/:id`, `GET /admin/events/:id/summary`.
+    - **Checkout & Payments:** `POST /checkout` (handles free checkouts, computes Razorpay order, maps `type`/`itemType` and `refId`/`ref_id`), `GET /checkout/:id`, `POST /checkout/:id/verify` (returns issued tickets), `POST /checkout/:id/cancel` (releases reservations), `POST /staff/checkout` (supports guest/walk-in buyer, notes, ticket restrictions for door staff), `POST /webhooks/razorpay` (raw body constant-time HMAC-SHA256 signature verification).
+    - **Announcements Admin:** `GET /admin/announcements`, `POST /admin/announcements`, `PATCH /admin/announcements/:id`, `POST /admin/announcements/:id/publish`, `POST /admin/announcements/:id/archive`.
+    - **Merchandise Admin:** `GET /admin/products`, `POST /admin/products`, `PATCH /admin/products/:id`, `POST /admin/products/:id/variants`, `PATCH /admin/variants/:id` (audited stock delta), `GET /admin/orders`, `PATCH /admin/orders/:itemId/fulfilment`.
+    - **Fundraising & Tasks:** `GET /fundraisers`, `POST /fundraisers`, `GET /fundraisers/:id/progress`, `GET /tasks`, `POST /tasks`, `PATCH /tasks/:id` (volunteer status-only restriction), `POST /fundraisers/:id/contributions`.
+    - **Treasury, Audit & Platform Admin:** `GET /treasurer/overview`, `GET /treasurer/ledger`, `POST /expenses`, `GET /expenses`, `POST /expenses/:id/status` (self-approval guard), `GET /audit`, `GET /actions` (dynamic action queue), `GET /admin/overview` (aggregate counts for admin home), `GET /admin/users?q=` (user search), `PATCH /admin/users/:id/role` (last-admin demotion protection with `role.grant` audit log).
+  - **Database RPC & Middleware Enhancements:**
+    - `0003_functions.sql`: `fn_create_checkout` and `fn_record_staff_checkout` accept both `itemType`/`type` and `refId`/`ref_id`; `fn_verify_member_code` outputs complete camelCase and snake_case properties; `fn_check_in` returns counters (`sold, checkedIn, capacity`) and audits check-ins.
+    - `middleware/errors.ts`: Sorted `knownCodes` descending by length to guarantee exact, specific error codes (e.g. `TICKET_NOT_FOUND`, `TICKET_ALREADY_CHECKED_IN`) are never shadowed by shorter substrings (`NOT_FOUND`, `CONFLICT`).
+  - **Automated Backend Test Suite (`tests/backend.test.mjs`):**
+    - 24 tests across 5 test suites covering:
+      1. Razorpay payment & webhook raw body HMAC-SHA256 constant-time verification.
+      2. Door ticket code normalization (case-insensitivity, O→0, I/L→1, Crockford format).
+      3. Error envelope and HTTP status code mappings (`401`, `403`, `404`, `409`, `422`, `429`).
+      4. RBAC role authorization matrix.
+      5. Shared Zod contract validation (`@skylinesos/contracts`).
+    - Verified clean run with 100% pass rate (`npm test`).
+  - **Scope Boundary Compliance:**
+    - Zero modifications to frontend code (`apps/web` untouched as strictly directed).

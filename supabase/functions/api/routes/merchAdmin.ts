@@ -68,6 +68,41 @@ merchAdminRouter.post(
   }
 );
 
+const UpdateProductSchema = CreateProductSchema.partial();
+
+// PATCH /admin/products/:id (A)
+merchAdminRouter.patch(
+  "/admin/products/:id",
+  requireRole("admin"),
+  validate(UpdateProductSchema),
+  async (req, res, next) => {
+    const { id } = req.params;
+    const body = req.body;
+
+    try {
+      const updates: Record<string, unknown> = {};
+      if (body.name !== undefined) updates.name = body.name;
+      if (body.description !== undefined) updates.description = body.description;
+      if (body.status !== undefined) updates.status = body.status;
+
+      const { data, error } = await supabaseAdmin
+        .from("products")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error || !data) {
+        return next(new ApiError(404, "NOT_FOUND", "Product not found"));
+      }
+
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // POST /admin/products/:id/variants
 merchAdminRouter.post(
   "/admin/products/:id/variants",

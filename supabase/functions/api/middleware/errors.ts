@@ -63,7 +63,7 @@ export function errorHandler(
       "INVALID_SIGNATURE",
       "RATE_LIMITED",
       "PAYMENT_PROVIDER_ERROR"
-    ];
+    ].sort((a, b) => b.length - a.length);
 
     for (const kc of knownCodes) {
       if (err.message.includes(kc)) {

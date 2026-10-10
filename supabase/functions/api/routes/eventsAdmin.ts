@@ -167,3 +167,39 @@ eventsAdminRouter.get(
     }
   }
 );
+
+const UpdateTicketTypeSchema = CreateTicketTypeSchema.partial();
+
+// PATCH /admin/ticket-types/:id (A)
+eventsAdminRouter.patch(
+  "/admin/ticket-types/:id",
+  requireRole("admin"),
+  validate(UpdateTicketTypeSchema),
+  async (req, res, next) => {
+    const { id } = req.params;
+    const body = req.body;
+    const updates: Record<string, unknown> = {};
+
+    if (body.name !== undefined) updates.name = body.name;
+    if (body.pricePaise !== undefined) updates.price_paise = body.pricePaise;
+    if (body.memberPricePaise !== undefined) updates.member_price_paise = body.memberPricePaise;
+    if (body.memberOnly !== undefined) updates.member_only = body.memberOnly;
+    if (body.quantityLimit !== undefined) updates.quantity_limit = body.quantityLimit;
+    if (body.salesStart !== undefined) updates.sales_start = body.salesStart;
+    if (body.salesEnd !== undefined) updates.sales_end = body.salesEnd;
+
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("ticket_types")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) return next(error);
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
