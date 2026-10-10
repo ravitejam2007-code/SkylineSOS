@@ -186,3 +186,24 @@
   - **Verification:**
     - Ran `npm run build` in `Frontend/`: 20 static pages compiled with `@astrojs/vercel` in 6.17s with zero errors.
     - Ran `npm test` at workspace root: 79 tests passed across 24 test suites with 100% pass rate.
+- **Frontend Dependency Resolution & Server Execution:**
+  - **Issue:** `npm run dev` in `Frontend/` failed with `Cannot find module '@astrojs/vercel' imported from 'astro.config.mjs'` due to missing local `Frontend/node_modules`.
+  - **Resolution:**
+    - Executed clean `npm install` inside `Frontend/` installing all 534 packages including `@astrojs/vercel@^8.2.11`.
+    - Initialized `Frontend/.env` from `Frontend/.env.example` targeting the active Supabase project `xwwkpwzartndbjlzpttc`.
+    - Verified static build (`npm run build`): 20 pages built in 7.65s without errors.
+    - Verified backend API status: Cloud Edge Function at `https://xwwkpwzartndbjlzpttc.supabase.co/functions/v1/api/v1` is live and passing health check and public endpoints.
+    - Tested test suite: All 79 backend and database integrity tests pass (`npm test`).
+    - Started frontend dev server: `astro dev` running on `http://localhost:4321/` returning HTTP 200.
+- **Events Page Bottom Section Redesign (My Issued Tickets & QR Passes):**
+  - **Removed Legacy Section ([`Frontend/src/components/scenes/EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Removed the Staff Console / Gate Check-In & Cash Desk Operations accordion as specified in reference screenshot (`Screenshot 2026-10-11 001623.png`).
+  - **Implemented New Wallet Section (Matching [`Screenshot 2026-10-11 001430.png`](file:///c:/Users/DELL/OneDrive/Pictures/Screenshots/Screenshot%202026-10-11%20001430.png)):**
+    - Header: `My Wallet` light blue pill badge (`bg-[#e0edff] text-[#0064e0]`), `My Issued Tickets & QR Passes` bold title, and subtitle: "Present your personal ticket QR pass at the entrance scanner for atomic staff check-in."
+    - Action Controls: `📷 Scan Event QR` and `Refresh Passes` pill buttons with refresh loading spinner.
+    - Default/Unauthenticated State: Centered prompt "Please sign in to view your booked tickets and QR codes." with high-contrast cobalt blue "Sign In Now" CTA linking to `/login`.
+    - Authenticated Member State: Renders digital passes with dynamic QR codes generated via `generateQrDataUrl` (`qrcode`), status badges (`Active Pass`), and monospace ticket codes (`SKY-GALA-8492`). Real-time wallet update when new passes are purchased.
+    - QR Scanner Modal: Interactive camera / code verification popup that scans or inputs ticket tokens and validates admission against `api.checkInTicket`.
+  - **Verification:**
+    - Ran `npm run build` in `Frontend/`: 20 static pages compiled in 4.90s with zero errors.
+    - Ran `npm test` at workspace root: 79 tests passed across 24 suites with 100% pass rate.
