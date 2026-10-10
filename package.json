@@ -12,6 +12,7 @@
     "typecheck": "npm run --workspaces --if-present typecheck",
     "lint": "npm run --workspaces --if-present lint",
     "test": "node --test tests/*.test.mjs",
+    "verify:integrity": "node scripts/verify-integrity.mjs",
     "seed": "node scripts/seed.mjs"
   },
   "devDependencies": {
