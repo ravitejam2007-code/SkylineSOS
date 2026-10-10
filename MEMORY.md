@@ -40,3 +40,9 @@
   - Configured project ref `xwwkpwzartndbjlzpttc` across `.env` and `supabase/.env.local`.
   - Added Supabase MCP HTTP server via Claude CLI (`.mcp.json`).
   - Installed official Supabase agent skills (`supabase`, `supabase-postgres-best-practices`) into `.agents/skills/`.
+- **Database Architecture & Seed Implementation (Phase 1 & Backup R2 Deliverables):**
+  - **`supabase/migrations/0001_init.sql`**: Full DDL for all 18 tables, custom enums (`app_role`, `pay_method`, `item_type`), check constraints, foreign key indexes, trigger on `auth.users` for auto-profile creation, and trigger on `ledger_entries` ensuring append-only immutability.
+  - **`supabase/migrations/0002_rls.sql`**: RLS deny-all configuration revoking all permissions from `anon` and `authenticated` browser roles, and granting complete access to `service_role`.
+  - **`supabase/migrations/0003_functions.sql`**: Implemented all atomic business logic RPCs (`gen_ticket_code`, `fn_rate_limit`, `fn_issue_member_code`, `fn_verify_member_code`, `fn_create_checkout`, `fn_fulfil_checkout`, `fn_record_staff_checkout`, `fn_check_in`, `fn_expire_checkouts`, `fn_review_application`, `fn_set_expense_status`, `fn_record_contribution`, `fn_treasurer_overview`, `fn_event_summary`, `fn_fundraiser_progress`, `fn_action_queue`, `fn_renewal_reminders`).
+  - **`supabase/migrations/0004_cron.sql`**: Background scheduling via `pg_cron` for expiring checkouts every minute and sending daily renewal reminders.
+  - **Seed Loader (`scripts/seed.mjs` & `seed/demo-data.json`)**: End-to-end data loader replaying 297 seed records through the real RPCs, creating 5 staff demo accounts and students, and verifying mathematical reconciliation between ledger and source transactions.
