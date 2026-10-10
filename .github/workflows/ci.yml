@@ -29,10 +29,11 @@ jobs:
       - name: Typecheck shared contracts
         run: npm run --workspace=@skylinesos/contracts typecheck
 
+      - name: Run Tests
+        run: npm test
+
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
+        uses: denoland/setup-deno@v2
 
       - name: Check Supabase Edge Function API
-        run: deno check supabase/functions/api/index.ts
+        run: deno check --config supabase/functions/api/deno.json supabase/functions/api/index.ts

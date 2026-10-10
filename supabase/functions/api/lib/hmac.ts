@@ -26,7 +26,7 @@ export async function computeHmacSha256(secret: string, message: string | Uint8A
     ["sign"]
   );
 
-  const signature = await crypto.subtle.sign("HMAC", cryptoKey, msgData);
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, msgData as any);
   const hashArray = Array.from(new Uint8Array(signature));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }

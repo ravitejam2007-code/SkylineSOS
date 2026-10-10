@@ -1,6 +1,8 @@
 {
+  "nodeModulesDir": "auto",
   "compilerOptions": {
-    "strict": true
+    "noImplicitAny": false,
+    "strict": false
   },
   "imports": {
     "express": "npm:express@4.18.2",
