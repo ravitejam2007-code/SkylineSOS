@@ -623,108 +623,115 @@ export default function MembershipScene() {
         </div>
       )}
 
-      {/* ─── 2. SUBMITTED APPLICATIONS & REVIEW BOARD ─── */}
-      <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--color-hairline-soft)]">
-          <div>
-            <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Membership Applications & Review Board</h3>
-            <p className="text-[13px] text-[var(--color-steel)]">Review decisions, audit history, and re-submission workflows</p>
-          </div>
-          <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--color-hairline-soft)]">
-            {applications.length} on file
-          </span>
-        </div>
-
-        <div className="divide-y divide-[var(--color-hairline-soft)]">
-          {applications.map((app) => {
-            const requestedTier = tiers.find((t) => t.id === app.requested_tier_id);
-            return (
-              <div key={app.id} className="py-4 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-[16px] text-[var(--color-ink-deep)]">
-                      Application {app.id} · Revision #{app.revision}
-                    </span>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                        app.status === 'approved'
-                          ? 'bg-green-100 text-green-800'
-                          : app.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {app.status}
-                    </span>
-                  </div>
-                  <span className="text-[12px] text-[var(--color-steel)] font-mono">
-                    {app.submitted_at ? formatDateTime(app.submitted_at) : 'Draft'}
-                  </span>
-                </div>
-
-                <p className="text-[14px] text-[var(--color-ink)]">
-                  <strong>Requested Tier:</strong> {requestedTier?.name || 'General Student Member'}
-                </p>
-                <p className="text-[14px] text-[var(--color-steel)] italic bg-[var(--color-surface-soft)] p-3 rounded-xl border border-[var(--color-hairline-soft)]">
-                  "{app.statement}"
-                </p>
-
-                {app.rejection_reason && (
-                  <div className="text-[13px] text-red-700 bg-red-50 p-3 rounded-xl border border-red-200">
-                    <strong>Rejection Reason:</strong> {app.rejection_reason}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex items-center gap-3 pt-2">
-                  {app.status === 'submitted' && (
-                    <>
-                      <button
-                        type="button"
-                        disabled={reviewingId === app.id}
-                        onClick={() => handleReview(app.id, 'approved')}
-                        className="px-4 py-1.5 rounded-full bg-[var(--color-ink-deep)] text-white text-[12px] font-bold hover:bg-black cursor-pointer t-button-action inline-flex items-center gap-1.5"
-                      >
-                        {reviewingId === app.id ? <ButtonSpinner size={12} /> : 'Approve Membership'}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={reviewingId === app.id}
-                        onClick={() => {
-                          setRejectModalApp(app);
-                          setRejectReasonInput('Incomplete applicant statement or missing documentation');
-                        }}
-                        className="px-4 py-1.5 rounded-full border border-red-300 text-red-600 text-[12px] font-bold hover:bg-red-50 cursor-pointer t-button-action inline-flex items-center gap-1.5"
-                      >
-                        {reviewingId === app.id ? <ButtonSpinner size={12} color="#dc2626" /> : 'Reject with Reason'}
-                      </button>
-                    </>
-                  )}
-
-                  {app.status === 'rejected' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReapplyApp(app);
-                        setUpdatedStatement(app.statement || '');
-                      }}
-                      className="px-4 py-1.5 rounded-full bg-[var(--color-ink-deep)] text-white text-[12px] font-bold hover:bg-black cursor-pointer t-button-action"
-                    >
-                      Correct & Reapply
-                    </button>
-                  )}
-
-                  {app.status === 'approved' && (
-                    <span className="text-[13px] text-green-700 font-bold flex items-center gap-1">
-                      ✓ Membership Active · Dues Verified
-                    </span>
-                  )}
-                </div>
+      {/* ─── 2. SUBMITTED APPLICATIONS & REVIEW BOARD (ADMIN ONLY) ─── */}
+      {session?.role === 'admin' && (
+        <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--color-hairline-soft)]">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-pink-100 text-pink-700">
+                  Admin Only
+                </span>
+                <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Membership Applications & Review Board</h3>
               </div>
-            );
-          })}
+              <p className="text-[13px] text-[var(--color-steel)]">Review decisions, audit history, and re-submission workflows</p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--color-hairline-soft)]">
+              {applications.length} on file
+            </span>
+          </div>
+
+          <div className="divide-y divide-[var(--color-hairline-soft)]">
+            {applications.map((app) => {
+              const requestedTier = tiers.find((t) => t.id === app.requested_tier_id);
+              return (
+                <div key={app.id} className="py-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-[16px] text-[var(--color-ink-deep)]">
+                        Application {app.id} · Revision #{app.revision}
+                      </span>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                          app.status === 'approved'
+                            ? 'bg-green-100 text-green-800'
+                            : app.status === 'rejected'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {app.status}
+                      </span>
+                    </div>
+                    <span className="text-[12px] text-[var(--color-steel)] font-mono">
+                      {app.submitted_at ? formatDateTime(app.submitted_at) : 'Draft'}
+                    </span>
+                  </div>
+
+                  <p className="text-[14px] text-[var(--color-ink)]">
+                    <strong>Requested Tier:</strong> {requestedTier?.name || 'General Student Member'}
+                  </p>
+                  <p className="text-[14px] text-[var(--color-steel)] italic bg-[var(--color-surface-soft)] p-3 rounded-xl border border-[var(--color-hairline-soft)]">
+                    "{app.statement}"
+                  </p>
+
+                  {app.rejection_reason && (
+                    <div className="text-[13px] text-red-700 bg-red-50 p-3 rounded-xl border border-red-200">
+                      <strong>Rejection Reason:</strong> {app.rejection_reason}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-3 pt-2">
+                    {app.status === 'submitted' && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={reviewingId === app.id}
+                          onClick={() => handleReview(app.id, 'approved')}
+                          className="px-4 py-1.5 rounded-full bg-[var(--color-ink-deep)] text-white text-[12px] font-bold hover:bg-black cursor-pointer t-button-action inline-flex items-center gap-1.5"
+                        >
+                          {reviewingId === app.id ? <ButtonSpinner size={12} /> : 'Approve Membership'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={reviewingId === app.id}
+                          onClick={() => {
+                            setRejectModalApp(app);
+                            setRejectReasonInput('Incomplete applicant statement or missing documentation');
+                          }}
+                          className="px-4 py-1.5 rounded-full border border-red-300 text-red-600 text-[12px] font-bold hover:bg-red-50 cursor-pointer t-button-action inline-flex items-center gap-1.5"
+                        >
+                          {reviewingId === app.id ? <ButtonSpinner size={12} color="#dc2626" /> : 'Reject with Reason'}
+                        </button>
+                      </>
+                    )}
+
+                    {app.status === 'rejected' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReapplyApp(app);
+                          setUpdatedStatement(app.statement || '');
+                        }}
+                        className="px-4 py-1.5 rounded-full bg-[var(--color-ink-deep)] text-white text-[12px] font-bold hover:bg-black cursor-pointer t-button-action"
+                      >
+                        Correct & Reapply
+                      </button>
+                    )}
+
+                    {app.status === 'approved' && (
+                      <span className="text-[13px] text-green-700 font-bold flex items-center gap-1">
+                        ✓ Membership Active · Dues Verified
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

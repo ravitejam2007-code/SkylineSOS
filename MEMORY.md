@@ -242,4 +242,30 @@
   - **Verification:**
     - Ran `npm run build` in `Frontend/`: All 20 static pages compiled in 18.25s via `@astrojs/vercel` with 0 errors.
     - Ran `npm test` at workspace root: 79/79 invariant, middleware, and route tests passed (100% pass rate).
+- **Admin-Only Permissions & Full Event Ticketing / Approvals Overhaul:**
+  - **Admin-Only Feature Gating:**
+    - **Membership Applications & Review Board ([`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx)):** Gated review board and applicant approval/rejection tools so they render strictly when `session?.role === 'admin'`. Non-admin members only see the plan selection and their own status pass.
+    - **Fundraiser & Operations Modules ([`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx)):**
+      - Gated "Record Cash Income" collection desk (`Screenshot 010559.png`) to admin only.
+      - Gated "Bake Sale Task Board" & "+ Add Task" drawer (`Screenshot 010849.png`) to admin only.
+      - Implemented "Operations Master Board / All Chapter Operations Tasks" table (`Screenshot 010659.png`) with task & campaign, assignee, priority badge, due date, and clickable status toggle, visible exclusively to admin.
+    - **Announcements Clean-up & Gating ([`AnnouncementsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/AnnouncementsScene.tsx)):**
+      - Completely removed the legacy "Mailing Preferences" sidebar (`Screenshot 011046.png`).
+      - Restricted `+ Publish Notice` button and the broadcast compose form to admin only. Ordinary members view the full-width bulletin feed.
+  - **Events Module: Admin Conduct & Post New Event ([`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Added `+ Post New Event` action button for admins matching `Screenshot 011352.png` & `Screenshot 011447.png`.
+    - Integrated modal dialog featuring event title, description, venue, start/end dates, banner image URL, and dynamic ticket category configuration (with custom quantity, member/non-member rates, and category descriptions).
+    - Submissions immediately publish to the live calendar grid and persist in browser storage.
+  - **Single-Ticket Reservation with OTP & Scannable QR Pass ([`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Enforced rule: Each student account can generate a ticket for each event **only one time**. Duplicate reservations are blocked with notification.
+    - Generates unique ticket code (`TKT-CE7F38-XXXX`), hex seat assignment (`Seat #XXXX`), random 6-digit gate OTP, and encodes full gate validation data into an instant scannable QR code.
+    - Renders official `MY EVENT TICKET STATUS` card (`Screenshot 011914.png`) with `PENDING APPROVAL` amber badge, seat allocation, and mobile camera scannable token.
+  - **Admin "Events Ticket Applications & Approvals Console" ([`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Built console table (`Screenshot 012208.png`) displaying student credentials, event, seat assignment, `PENDING` status badge, and `ENTER OTP` input.
+    - Entering matching student OTP instantly marks ticket `APPROVED`, unlocks admission, and live-updates the student pass to vibrant green with **"🎉 Congratulations! Your ticket has been APPROVED for entry."**
+    - Invalid OTP entries trigger descriptive error warnings.
+  - **Verification:**
+    - Ran `npm run build` in `Frontend/`: All 20 static pages compiled cleanly in 13.03s via `@astrojs/vercel` with 0 errors.
+    - Ran `npm test` at workspace root: 79/79 invariant and route tests passed (100% pass rate).
+
 
