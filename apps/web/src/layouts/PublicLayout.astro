@@ -1,0 +1,107 @@
+---
+import "@/styles/global.css";
+import "@fontsource-variable/montserrat";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "SkylineSOS — Student Organization System",
+  description = "Run your student club from one screen. Memberships, tickets, merch, fundraising, finances and door verification."
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="bg-canvas text-ink min-h-screen flex flex-col font-sans">
+    <!-- Top Demo Chip Bar -->
+    <div class="bg-surface-soft border-b border-hairline py-1.5 px-4 text-xs flex justify-between items-center text-charcoal">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1 font-semibold text-ink px-2 py-0.5 rounded-full bg-white border border-hairline">
+          <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+          Demo Club
+        </span>
+        <span class="hidden sm:inline">Skyline Student Association · Odoo × NMIT 2026</span>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="font-medium text-steel">Test Environment</span>
+      </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-hairline">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-2 font-bold text-xl tracking-tight text-ink-deep">
+          <span class="w-8 h-8 rounded-lg bg-ink-deep text-white flex items-center justify-center text-sm font-black">
+            SS
+          </span>
+          <span>Skyline<span class="text-primary font-black">SOS</span></span>
+        </a>
+
+        <!-- Center Nav Tabs -->
+        <nav class="hidden md:flex items-center gap-1 bg-surface-soft p-1 rounded-full border border-hairline-soft">
+          <a href="/events" class="px-4 py-1.5 text-sm font-semibold rounded-full hover:bg-white text-charcoal hover:text-ink transition-colors">
+            Events
+          </a>
+          <a href="/announcements" class="px-4 py-1.5 text-sm font-semibold rounded-full hover:bg-white text-charcoal hover:text-ink transition-colors">
+            Announcements
+          </a>
+          <a href="/membership" class="px-4 py-1.5 text-sm font-semibold rounded-full hover:bg-white text-charcoal hover:text-ink transition-colors">
+            Membership
+          </a>
+          <a href="/merch" class="px-4 py-1.5 text-sm font-semibold rounded-full hover:bg-white text-charcoal hover:text-ink transition-colors">
+            Merch
+          </a>
+        </nav>
+
+        <!-- Right CTAs -->
+        <div class="flex items-center gap-2.5">
+          <a
+            href="/login"
+            class="px-4 py-2 text-sm font-bold text-ink-deep border-2 border-hairline hover:border-ink-deep rounded-full transition-colors"
+          >
+            Sign in
+          </a>
+          <a
+            href="/membership"
+            class="hidden sm:inline-flex px-5 py-2 text-sm font-bold bg-ink-deep hover:bg-charcoal text-white rounded-full transition-colors shadow-sm"
+          >
+            Join the club
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-surface-soft border-t border-hairline py-12 mt-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-steel">
+        <div class="flex items-center gap-3">
+          <span class="font-bold text-ink-deep">SkylineSOS</span>
+          <span>— One app, one permission model, one ledger.</span>
+        </div>
+        <div class="flex items-center gap-6">
+          <a href="/events" class="hover:text-ink">Events</a>
+          <a href="/membership" class="hover:text-ink">Membership</a>
+          <a href="/announcements" class="hover:text-ink">Announcements</a>
+          <a href="/door" class="hover:text-ink font-medium text-ink">Door Staff</a>
+          <a href="/admin" class="hover:text-ink font-medium text-ink">Staff Console</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

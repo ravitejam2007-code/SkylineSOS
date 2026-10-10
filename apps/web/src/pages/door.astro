@@ -1,0 +1,21 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { DoorConsole } from "@/islands/DoorConsole.tsx";
+---
+
+<PublicLayout title="Door Check-In & Verification Console — SkylineSOS">
+  <div class="py-12 px-4 max-w-4xl mx-auto">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+        Staff Gate Operations
+      </div>
+      <h1 class="text-3xl font-black text-ink-deep">Door Verification Console</h1>
+      <p class="text-sm text-steel mt-1">
+        Type attendee ticket code or member verification code for instant access check.
+      </p>
+    </div>
+
+    <DoorConsole client:load />
+  </div>
+</PublicLayout>

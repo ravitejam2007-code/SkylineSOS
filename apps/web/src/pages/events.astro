@@ -1,0 +1,103 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { CheckoutPanel } from "@/islands/CheckoutPanel.tsx";
+
+// Mock/Default event list fallback for static generation
+const events = [
+  {
+    slug: "gala-night-2026",
+    title: "Skyline Annual Gala Night 2026",
+    venue: "Grand Auditorium",
+    startsAt: "17 Oct 2026, 18:00 IST",
+    status: "published",
+    ticketTypes: [
+      { id: "tt_gala_gen", name: "General Admission", pricePaise: 50000, memberPricePaise: 30000 },
+      { id: "tt_gala_vip", name: "VIP Front Row", pricePaise: 100000, memberPricePaise: 75000 }
+    ]
+  },
+  {
+    slug: "cloud-101-workshop",
+    title: "Cloud Computing 101: Hands-on Workshop",
+    venue: "Lab Block 3, Room 402",
+    startsAt: "24 Oct 2026, 14:00 IST",
+    status: "published",
+    ticketTypes: [
+      { id: "tt_cloud_free", name: "Standard Student Pass", pricePaise: 0, memberPricePaise: 0 }
+    ]
+  },
+  {
+    slug: "freshers-welcome-2026",
+    title: "Freshers Welcome & Orientation",
+    venue: "Main Amphitheatre",
+    startsAt: "05 Oct 2026",
+    status: "completed",
+    ticketTypes: []
+  }
+];
+---
+
+<PublicLayout title="Events — SkylineSOS">
+  <div class="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div class="mb-10 text-center max-w-2xl mx-auto">
+      <h1 class="text-4xl font-black text-ink-deep">Club Events</h1>
+      <p class="text-sm sm:text-base text-steel mt-2">
+        Get tickets for upcoming club hackathons, galas, and technical workshops.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {events.map((ev) => (
+        <div class="bg-surface-soft rounded-3xl p-8 border border-hairline flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-3">
+              <span class={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                ev.status === "completed" ? "bg-hairline text-steel" : "bg-primary/10 text-primary"
+              }`}>
+                {ev.status === "completed" ? "Past Event" : "Upcoming"}
+              </span>
+              <span class="text-xs text-steel font-mono">{ev.startsAt}</span>
+            </div>
+            <h2 class="text-2xl font-black text-ink-deep mb-2">{ev.title}</h2>
+            <div class="text-xs text-charcoal font-medium mb-6">📍 {ev.venue}</div>
+
+            {ev.ticketTypes.length > 0 && (
+              <div class="space-y-2 mb-6">
+                <div class="text-xs font-bold uppercase tracking-wider text-steel">Available Passes:</div>
+                {ev.ticketTypes.map((tt) => (
+                  <div class="p-3 bg-white rounded-2xl border border-hairline flex items-center justify-between text-xs">
+                    <div>
+                      <div class="font-bold text-ink">{tt.name}</div>
+                      {tt.memberPricePaise < tt.pricePaise && (
+                        <div class="text-success font-semibold">
+                          Member price: ₹{tt.memberPricePaise / 100} (Save ₹{(tt.pricePaise - tt.memberPricePaise) / 100})
+                        </div>
+                      )}
+                    </div>
+                    <div class="text-right font-bold text-sm">
+                      {tt.pricePaise === 0 ? "Free" : `₹${tt.pricePaise / 100}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {ev.status !== "completed" && ev.ticketTypes.length > 0 && (
+            <div class="pt-4 border-t border-hairline/60">
+              <CheckoutPanel
+                client:load
+                item={{
+                  itemType: "ticket",
+                  refId: ev.ticketTypes[0].id,
+                  name: `${ev.title} (${ev.ticketTypes[0].name})`,
+                  unitPricePaise: ev.ticketTypes[0].pricePaise,
+                  quantity: 1
+                }}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+</PublicLayout>

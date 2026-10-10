@@ -1,0 +1,98 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+---
+
+<PublicLayout title="SkylineSOS — Student Organization System">
+  <!-- Hero Section -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-soft border border-hairline text-xs font-bold text-charcoal mb-6">
+      <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+      Skyline Student Association Platform
+    </div>
+    <h1 class="text-4xl sm:text-6xl font-black text-ink-deep tracking-tight max-w-4xl mx-auto leading-tight">
+      Run the whole club from one screen — verify at the door with just a code.
+    </h1>
+    <p class="mt-6 text-lg sm:text-xl text-steel max-w-2xl mx-auto font-medium">
+      One app, one permission model, and one ledger. Unify memberships, tickets, merchandise, fundraisers, and club finances.
+    </p>
+
+    <!-- CTAs -->
+    <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
+      <a
+        href="/membership"
+        class="px-8 py-3.5 rounded-full bg-ink-deep hover:bg-charcoal text-white font-bold text-sm transition-all shadow-sm"
+      >
+        Join the club
+      </a>
+      <a
+        href="/events"
+        class="px-8 py-3.5 rounded-full border-2 border-hairline hover:border-ink-deep text-ink-deep font-bold text-sm transition-all bg-white"
+      >
+        Explore Events
+      </a>
+    </div>
+  </section>
+
+  <!-- 3-Up Feature Highlights -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Feature 1 -->
+      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline">
+        <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-primary mb-5 shadow-xs">
+          #
+        </div>
+        <h3 class="text-xl font-bold text-ink-deep mb-2">Code-Based Verification</h3>
+        <p class="text-sm text-steel leading-relaxed">
+          Verify memberships and event tickets instantly with typed numeric & Crockford base32 codes. No camera, glare, or scanner issues at the door.
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline">
+        <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-success mb-5 shadow-xs">
+          ₹
+        </div>
+        <h3 class="text-xl font-bold text-ink-deep mb-2">Immutable Club Ledger</h3>
+        <p class="text-sm text-steel leading-relaxed">
+          Every rupee on the treasurer screen is traceable to an underlying ticket, dues, merch, or contribution record. Fully audit-ready.
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline">
+        <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-ink-deep mb-5 shadow-xs">
+          ⚡
+        </div>
+        <h3 class="text-xl font-bold text-ink-deep mb-2">Oversell-Proof Inventory</h3>
+        <p class="text-sm text-steel leading-relaxed">
+          Atomic database row-locks guarantee zero overbooking for gala tickets and zero negative stock for club hoodies.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Event Section -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="bg-surface-soft rounded-3xl p-8 sm:p-12 border border-hairline flex flex-col md:flex-row items-center justify-between gap-8">
+      <div>
+        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary">
+          Upcoming Flagship Event
+        </span>
+        <h2 class="text-3xl font-black text-ink-deep mt-3">Skyline Annual Gala Night 2026</h2>
+        <p class="text-steel text-sm sm:text-base mt-2 max-w-xl">
+          The biggest evening of the semester with live music, performances, and awards. Member discount rates available!
+        </p>
+        <div class="mt-4 flex items-center gap-4 text-xs font-bold text-charcoal">
+          <span>📅 17 October 2026 · 18:00 IST</span>
+          <span>📍 Grand Auditorium</span>
+        </div>
+      </div>
+      <a
+        href="/events"
+        class="shrink-0 px-8 py-4 rounded-full bg-primary hover:bg-primary-deep text-white font-bold text-sm transition-all shadow-md"
+      >
+        Get Tickets →
+      </a>
+    </div>
+  </section>
+</PublicLayout>

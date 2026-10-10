@@ -1,0 +1,15 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { MemberCard } from "@/islands/MemberCard.tsx";
+---
+
+<PublicLayout title="Digital Member Card — SkylineSOS">
+  <div class="py-12 px-4 max-w-xl mx-auto">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-black text-ink-deep">Club Membership Pass</h1>
+      <p class="text-sm text-steel mt-1">Your verified digital credential with automatic rotating door code.</p>
+    </div>
+
+    <MemberCard client:load />
+  </div>
+</PublicLayout>

@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat Variable", Montserrat, Helvetica, Arial, "Noto Sans", sans-serif;
+
+  --color-primary: #0064e0;        /* buy/pay CTAs ONLY */
+  --color-primary-deep: #0457cb;   /* pressed */
+  --color-primary-soft: #0091ff;
+  --color-focus: #1876f2;
+  --color-ink-deep: #0a1317;
+  --color-ink: #1c1e21;
+  --color-charcoal: #444950;
+  --color-steel: #5d6c7b;
+  --color-stone: #8595a4;
+  --color-canvas: #ffffff;
+  --color-surface-soft: #f1f4f7;
+  --color-hairline: #ced0d4;
+  --color-hairline-soft: #dee3e9;
+  --color-disabled: #bcc0c4;
+  --color-success: #31a24c;
+  --color-attention: #f2a918;
+  --color-warning: #f7b928;
+  --color-critical: #e41e3f;
+  --color-critical-strong: #f0284a;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-feature: 40px;
+  --radius-pill: 100px;
+
+  --shadow-checkout: 0 1px 4px 0 rgb(20 22 26 / 0.3);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}

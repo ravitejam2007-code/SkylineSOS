@@ -46,3 +46,13 @@
   - **`supabase/migrations/0003_functions.sql`**: Implemented all atomic business logic RPCs (`gen_ticket_code`, `fn_rate_limit`, `fn_issue_member_code`, `fn_verify_member_code`, `fn_create_checkout`, `fn_fulfil_checkout`, `fn_record_staff_checkout`, `fn_check_in`, `fn_expire_checkouts`, `fn_review_application`, `fn_set_expense_status`, `fn_record_contribution`, `fn_treasurer_overview`, `fn_event_summary`, `fn_fundraiser_progress`, `fn_action_queue`, `fn_renewal_reminders`).
   - **`supabase/migrations/0004_cron.sql`**: Background scheduling via `pg_cron` for expiring checkouts every minute and sending daily renewal reminders.
   - **Seed Loader (`scripts/seed.mjs` & `seed/demo-data.json`)**: End-to-end data loader replaying 297 seed records through the real RPCs, creating 5 staff demo accounts and students, and verifying mathematical reconciliation between ledger and source transactions.
+- **Frontend Web Application (`apps/web`):**
+  - **Tech Stack & Tokens:** Astro 5 static site with Tailwind CSS v4 design tokens from `docs/TRD.md §5.5` in `src/styles/global.css` and `@fontsource-variable/montserrat`.
+  - **Client Infrastructure:** `lib/money.ts` (paise currency formatter), `lib/auth.ts` (Supabase browser auth), `lib/api.ts` (authenticated API client with error envelope handling), and `lib/guards.ts` (client role guards).
+  - **Interactive React Islands:**
+    - `DoorConsole.tsx`: Gate check-in console with dual-mode detection (6-digit member code and Crockford ticket code), visual outcome cards, and manual attendee search.
+    - `MemberCard.tsx`: Digital membership card with auto-refreshing 60-second dynamic verification code and animated countdown timer.
+    - `CheckoutPanel.tsx`: Ticket & merchandise purchase drawer supporting online Razorpay payments and staff cash/UPI checkouts with audit notes.
+    - `TreasurerLedger.tsx`: Real-time financial statistics (Net Movement, Inflow, Outflow) and immutable source-linked ledger table with category filters.
+    - `LoginPanel.tsx`: Authentication screen featuring 1-click quick sign-in for all 5 demo role accounts (`admin`, `treasurer`, `door`, `volunteer`, `member`).
+  - **Pages & Routes:** `index.astro` (Landing & value proposition), `login.astro`, `door.astro` (Gate operations), `treasurer.astro` (Treasury console), `events.astro` (Events directory), `membership.astro` (Tiers & application), `announcements.astro` (Broadcast feed), `merch.astro` (Club store), `admin.astro` (Staff command center), `membership/card.astro` (Member pass), `403.astro`, `404.astro`.

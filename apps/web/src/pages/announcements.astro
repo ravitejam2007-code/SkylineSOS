@@ -1,0 +1,50 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+
+const announcements = [
+  {
+    title: "Gala Night 2026 Ticket Sales Live!",
+    audience: "public",
+    date: "10 Oct 2026",
+    body: "Tickets for the Skyline Annual Gala Night are now live on the platform. Active association members receive up to 25% off General and VIP admission passes. Door verification will strictly use 8-character codes."
+  },
+  {
+    title: "Exclusive Member Hoodie Pre-orders Open",
+    audience: "members",
+    date: "08 Oct 2026",
+    body: "The official Skyline Embroidered Hoodie in Charcoal Black is now open for pre-orders. Plus and Core tier members receive up to 20% discount applied automatically at checkout."
+  },
+  {
+    title: "New Code-Based Verification System Rollout",
+    audience: "public",
+    date: "05 Oct 2026",
+    body: "We have retired camera-based QR scanning in favor of instantaneous Crockford base32 ticket codes and 60-second dynamic member codes. This ensures zero queues and zero camera glare issues."
+  }
+];
+---
+
+<PublicLayout title="Announcements — SkylineSOS">
+  <div class="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+    <div class="mb-10 text-center">
+      <h1 class="text-4xl font-black text-ink-deep">Club Announcements</h1>
+      <p class="text-sm sm:text-base text-steel mt-2">
+        Official updates, event dispatches, and notices from the executive board.
+      </p>
+    </div>
+
+    <div class="space-y-6">
+      {announcements.map((a) => (
+        <article class="bg-surface-soft p-8 rounded-3xl border border-hairline">
+          <div class="flex items-center justify-between gap-4 mb-3">
+            <span class="px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white border border-hairline text-charcoal">
+              {a.audience}
+            </span>
+            <span class="text-xs text-steel font-mono">{a.date}</span>
+          </div>
+          <h2 class="text-2xl font-black text-ink-deep mb-3">{a.title}</h2>
+          <p class="text-sm text-charcoal leading-relaxed">{a.body}</p>
+        </article>
+      ))}
+    </div>
+  </div>
+</PublicLayout>

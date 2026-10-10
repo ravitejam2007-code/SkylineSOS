@@ -1,0 +1,10 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { LoginPanel } from "@/islands/LoginPanel.tsx";
+---
+
+<PublicLayout title="Sign In — SkylineSOS">
+  <div class="py-16 px-4">
+    <LoginPanel client:load />
+  </div>
+</PublicLayout>

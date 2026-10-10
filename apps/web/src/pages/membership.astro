@@ -1,0 +1,101 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+
+const tiers = [
+  {
+    name: "Basic",
+    fee: "₹100",
+    period: "1 Year",
+    discount: "0%",
+    benefits: ["Voting rights in general elections", "Access to member-only announcements", "Digital member ID card"]
+  },
+  {
+    name: "Plus",
+    fee: "₹300",
+    period: "1 Year",
+    discount: "10% on Merch",
+    popular: true,
+    benefits: [
+      "Everything in Basic",
+      "10% discount on all club hoodies and apparel",
+      "Priority registration for hackathons & gala",
+      "Exclusive community badge"
+    ]
+  },
+  {
+    name: "Core",
+    fee: "₹500",
+    period: "1 Year",
+    discount: "20% on Merch",
+    benefits: [
+      "Everything in Plus",
+      "20% discount on all club merchandise",
+      "VIP seating at the Skyline Annual Gala",
+      "Direct mentorship and team lead eligibility"
+    ]
+  }
+];
+---
+
+<PublicLayout title="Membership Tiers — SkylineSOS">
+  <div class="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
+        Skyline Student Association
+      </div>
+      <h1 class="text-4xl font-black text-ink-deep">Choose Your Membership</h1>
+      <p class="text-sm sm:text-base text-steel mt-2">
+        Become an official member of the association to unlock exclusive ticket discounts, voting rights, and custom apparel perks.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      {tiers.map((t) => (
+        <div class={`rounded-3xl p-8 border flex flex-col justify-between transition-all ${
+          t.popular
+            ? "bg-white border-2 border-primary shadow-lg relative"
+            : "bg-surface-soft border-hairline"
+        }`}>
+          {t.popular && (
+            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-white text-xs font-bold uppercase tracking-wider shadow-sm">
+              Most Popular
+            </div>
+          )}
+
+          <div>
+            <div class="flex justify-between items-baseline mb-4">
+              <h3 class="text-2xl font-black text-ink-deep">{t.name}</h3>
+              <span class="text-xs font-bold text-steel">{t.period}</span>
+            </div>
+
+            <div class="text-4xl font-black text-ink-deep mb-6">
+              {t.fee}
+              <span class="text-xs font-semibold text-steel font-normal"> / year</span>
+            </div>
+
+            <div class="space-y-3 mb-8">
+              <div class="text-xs font-bold uppercase tracking-wider text-steel">Included Benefits:</div>
+              {t.benefits.map((b) => (
+                <div class="flex items-start gap-2.5 text-xs text-charcoal font-medium">
+                  <span class="text-success font-black text-sm">✓</span>
+                  <span>{b}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <a
+            href="/login"
+            class={`w-full py-3.5 rounded-full font-bold text-sm text-center transition-all ${
+              t.popular
+                ? "bg-primary hover:bg-primary-deep text-white shadow-sm"
+                : "bg-ink-deep hover:bg-charcoal text-white"
+            }`}
+          >
+            Apply for {t.name}
+          </a>
+        </div>
+      ))}
+    </div>
+  </div>
+</PublicLayout>

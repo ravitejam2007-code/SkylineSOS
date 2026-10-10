@@ -1,0 +1,77 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { CheckoutPanel } from "@/islands/CheckoutPanel.tsx";
+
+const products = [
+  {
+    id: "prod_hoodie",
+    name: "Skyline Embroidered Hoodie (Charcoal)",
+    description: "Heavyweight 380 GSM fleece with high-density embroidered association crest.",
+    pricePaise: 120000,
+    sku: "HOODIE-M",
+    inStock: true
+  },
+  {
+    id: "prod_tshirt",
+    name: "Classic Association T-Shirt (White)",
+    description: "100% combed cotton with minimalist Skyline screen-print.",
+    pricePaise: 45000,
+    sku: "TSHIRT-L",
+    inStock: true
+  },
+  {
+    id: "prod_cap",
+    name: "Skyline Twill Dad Cap (Navy)",
+    description: "Adjustable brass buckle with embroidered emblem.",
+    pricePaise: 35000,
+    sku: "CAP-NAVY",
+    inStock: true
+  },
+  {
+    id: "prod_stickers",
+    name: "Skyline Holographic Sticker Pack (6x)",
+    description: "Weatherproof vinyl stickers designed for laptops and water bottles.",
+    pricePaise: 10000,
+    sku: "STICKER-PK",
+    inStock: true
+  }
+];
+---
+
+<PublicLayout title="Merchandise — SkylineSOS">
+  <div class="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <h1 class="text-4xl font-black text-ink-deep">Club Merchandise</h1>
+      <p class="text-sm sm:text-base text-steel mt-2">
+        Official apparel and accessories. Plus & Core members receive automatic discounts at checkout.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+      {products.map((p) => (
+        <div class="bg-surface-soft p-8 rounded-3xl border border-hairline flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-baseline mb-2">
+              <h2 class="text-xl font-black text-ink-deep">{p.name}</h2>
+              <span class="text-xl font-black text-primary">₹{p.pricePaise / 100}</span>
+            </div>
+            <p class="text-xs text-steel mb-6 leading-relaxed">{p.description}</p>
+          </div>
+
+          <div class="pt-4 border-t border-hairline/60">
+            <CheckoutPanel
+              client:load
+              item={{
+                itemType: "merch",
+                refId: p.id,
+                name: p.name,
+                unitPricePaise: p.pricePaise,
+                quantity: 1
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</PublicLayout>
