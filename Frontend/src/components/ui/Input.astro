@@ -1,0 +1,62 @@
+---
+interface Props {
+  label?: string;
+  id?: string;
+  name?: string;
+  type?: astroHTML.JSX.HTMLInputTypeAttribute;
+  placeholder?: string;
+  value?: string;
+  error?: string;
+  helperText?: string;
+  required?: boolean;
+  disabled?: boolean;
+  class?: string;
+  [key: string]: any;
+}
+
+const {
+  label,
+  id,
+  name,
+  type = 'text',
+  placeholder,
+  value,
+  error,
+  helperText,
+  required = false,
+  disabled = false,
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const inputId = id || name || `input-${Math.random().toString(36).substring(2, 9)}`;
+
+const inputStyles = `w-full h-[44px] px-3.5 bg-[var(--color-canvas)] text-[var(--color-ink)] text-[16px] tracking-[-0.16px] rounded-lg border transition-colors outline-none ${
+  error
+    ? 'border-[var(--color-critical-strong)] focus:border-[var(--color-critical-strong)] focus:ring-1 focus:ring-[var(--color-critical-strong)]'
+    : 'border-[var(--color-hairline)] focus:border-2 focus:border-[var(--color-fb-blue)]'
+} ${disabled ? 'bg-[var(--color-surface-soft)] text-[var(--color-disabled-text)] cursor-not-allowed' : ''} ${className}`;
+---
+
+<div class="flex flex-col gap-1.5 w-full">
+  {
+    label && (
+      <label for={inputId} class="text-[14px] font-bold text-[var(--color-ink-deep)] flex items-center justify-between">
+        <span>{label} {required && <span class="text-[var(--color-critical)]">*</span>}</span>
+      </label>
+    )
+  }
+  <input
+    id={inputId}
+    name={name}
+    type={type}
+    placeholder={placeholder}
+    value={value}
+    disabled={disabled}
+    required={required}
+    class={inputStyles}
+    {...rest}
+  />
+  {error && <span class="text-[13px] text-[var(--color-critical-strong)] font-medium">{error}</span>}
+  {!error && helperText && <span class="text-[13px] text-[var(--color-steel)]">{helperText}</span>}
+</div>

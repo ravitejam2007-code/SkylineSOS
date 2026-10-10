@@ -1,0 +1,36 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/react": "^4.2.1",
+    "@fontsource/montserrat": "^5.1.1",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.3",
+    "@tailwindcss/vite": "^4.0.9",
+    "@types/qrcode": "^1.5.6",
+    "astro": "^5.4.1",
+    "clsx": "^2.1.1",
+    "html5-qrcode": "^2.3.8",
+    "loading-dev": "^0.3.5",
+    "lucide-react": "^0.475.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2",
+    "tailwindcss": "^4.0.9"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "typescript": "^5.7.3"
+  }
+}

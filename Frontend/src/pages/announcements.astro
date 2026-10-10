@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Badge from '../components/ui/Badge.astro';
+import AnnouncementsScene from '../components/scenes/AnnouncementsScene';
+---
+
+<BaseLayout
+  title="SkylineSOS — Club Announcements & Feed"
+  description="Official Skyline Student Association announcement feed on SkylineSOS. Meeting dates, gala updates, and newsletter preferences."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12">
+    <!-- Header -->
+    <div class="max-w-3xl">
+      <Badge variant="neutral" class="mb-3">Official Bulletin</Badge>
+      <h1 class="text-4xl md:text-5xl font-medium text-[var(--color-ink-deep)] tracking-tight mb-4">
+        Announcements & Meeting Notices
+      </h1>
+      <p class="text-lg text-[var(--color-steel)] font-light leading-relaxed">
+        Stay updated with official Skyline Student Association notices, venue schedules, and volunteer briefings in one place.
+      </p>
+    </div>
+
+    <!-- Interactive Announcements Scene Island -->
+    <AnnouncementsScene client:load />
+  </div>
+</BaseLayout>

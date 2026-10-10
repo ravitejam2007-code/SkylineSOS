@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SignUpScene from '../components/scenes/SignUpScene';
+---
+
+<BaseLayout
+  title="SkylineSOS — Register Student Account"
+  description="Register for a new Skyline Student Association account."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <SignUpScene client:load />
+  </div>
+</BaseLayout>

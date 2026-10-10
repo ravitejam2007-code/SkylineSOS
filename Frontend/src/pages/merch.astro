@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Badge from '../components/ui/Badge.astro';
+import MerchScene from '../components/scenes/MerchScene';
+---
+
+<BaseLayout
+  title="SkylineSOS — Official Club Hoodies & Merch"
+  description="Order official Skyline Student Association apparel on SkylineSOS. Size variants, member discounts, and live inventory."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12">
+    <!-- Header -->
+    <div class="max-w-3xl">
+      <Badge variant="neutral" class="mb-3">Official Club Merch</Badge>
+      <h1 class="text-4xl md:text-5xl font-medium text-[var(--color-ink-deep)] tracking-tight mb-4">
+        Official Skyline Club Apparel.
+      </h1>
+      <p class="text-lg text-[var(--color-steel)] font-light leading-relaxed">
+        Get your official Skyline hoodie. Real-time size availability, exclusive member pricing, and direct pickup at campus events.
+      </p>
+    </div>
+
+    <!-- Interactive Merch Scene Island -->
+    <MerchScene client:load />
+  </div>
+</BaseLayout>

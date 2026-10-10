@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Badge from '../components/ui/Badge.astro';
+import FundraiserScene from '../components/scenes/FundraiserScene';
+---
+
+<BaseLayout
+  title="SkylineSOS — Bake Sale Fundraiser"
+  description="Track fundraiser tasks, volunteer shift coverage, and direct cash income on SkylineSOS."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12">
+    <!-- Header -->
+    <div class="max-w-3xl">
+      <Badge variant="neutral" class="mb-3">Campus Fundraiser</Badge>
+      <h1 class="text-4xl md:text-5xl font-medium text-[var(--color-ink-deep)] tracking-tight mb-4">
+        Spring Semester Bake Sale.
+      </h1>
+      <p class="text-lg text-[var(--color-steel)] font-light leading-relaxed">
+        Coordinate volunteer teams, track campaign goals, and record table cash collections directly into the treasury.
+      </p>
+    </div>
+
+    <!-- Interactive Fundraiser Scene Island -->
+    <FundraiserScene client:load />
+  </div>
+</BaseLayout>

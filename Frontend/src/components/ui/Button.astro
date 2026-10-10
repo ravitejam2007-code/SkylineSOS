@@ -1,0 +1,85 @@
+---
+interface Props {
+  variant?: 'primary' | 'buy-cta' | 'secondary' | 'ghost' | 'pill-tab';
+  size?: 'sm' | 'md' | 'lg';
+  active?: boolean;
+  disabled?: boolean;
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  class?: string;
+  [key: string]: any;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  active = false,
+  disabled = false,
+  href,
+  type = 'button',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+// Base styles strictly enforcing Meta 100px pill radius & typography metrics
+const baseStyles = 'inline-flex items-center justify-center font-bold select-none text-center cursor-pointer rounded-full t-button-action';
+
+const sizeStyles = {
+  sm: 'px-4 py-2 text-[13px] tracking-[-0.12px]',
+  md: 'px-[30px] py-[14px] text-[14px] tracking-[-0.14px]',
+  lg: 'px-[36px] py-[16px] text-[15px] tracking-[-0.15px]',
+}[size];
+
+let variantStyles = '';
+
+switch (variant) {
+  case 'buy-cta':
+    // Saturated Cobalt Blue - STRICTLY FOR CHECKOUT & COMMERCE MOMENTS
+    variantStyles = disabled
+      ? 'bg-[var(--color-disabled-text)] text-white cursor-not-allowed opacity-70'
+      : 'bg-[var(--color-primary)] text-white active:bg-[var(--color-primary-deep)]';
+    break;
+
+  case 'primary':
+    // Black pill for marketing surfaces & general primary actions
+    variantStyles = disabled
+      ? 'bg-[var(--color-disabled-text)] text-white cursor-not-allowed opacity-70'
+      : 'bg-[var(--color-ink-button)] text-[var(--color-on-ink-button)] active:bg-[var(--color-charcoal)]';
+    break;
+
+  case 'secondary':
+    // Outlined ghost button
+    variantStyles = disabled
+      ? 'bg-transparent text-[var(--color-disabled-text)] border-2 border-[var(--color-disabled-text)] cursor-not-allowed'
+      : 'bg-transparent text-[var(--color-ink-deep)] border-2 border-[var(--color-ink-deep)] active:bg-black/5';
+    break;
+
+  case 'ghost':
+    // Subtle hairline outlined CTA
+    variantStyles = disabled
+      ? 'bg-transparent text-[var(--color-disabled-text)] border border-[var(--color-hairline)] cursor-not-allowed'
+      : 'bg-transparent text-[var(--color-ink-deep)] border border-[var(--color-ink-deep)]/20 active:bg-black/5';
+    break;
+
+  case 'pill-tab':
+    // Top nav & category filter chips
+    variantStyles = active
+      ? 'bg-[var(--color-ink-deep)] text-white border border-transparent shadow-sm'
+      : 'bg-[var(--color-canvas)] text-[var(--color-ink)] border border-[var(--color-hairline)] active:bg-[var(--color-surface-soft)]';
+    break;
+}
+
+const classes = `${baseStyles} ${sizeStyles} ${variantStyles} ${className}`.trim();
+---
+
+{
+  href && !disabled ? (
+    <a href={href} class={classes} {...rest}>
+      <slot />
+    </a>
+  ) : (
+    <button type={type} class={classes} disabled={disabled} {...rest}>
+      <slot />
+    </button>
+  )
+}

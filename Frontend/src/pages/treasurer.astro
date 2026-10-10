@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Badge from '../components/ui/Badge.astro';
+import TreasurerScene from '../components/scenes/TreasurerScene';
+---
+
+<BaseLayout
+  title="SkylineSOS — Treasury & Financial Overview"
+  description="Complete financial ledger for the Skyline Student Association on SkylineSOS. Transparent money in, money out, balanced semester accounts, and deterministic action queue."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12">
+    <!-- Header -->
+    <div class="max-w-3xl">
+      <Badge variant="neutral" class="mb-3">Financial Overview</Badge>
+      <h1 class="text-4xl md:text-5xl font-medium text-[var(--color-ink-deep)] tracking-tight mb-4">
+        Club Treasury & Ledger.
+      </h1>
+      <p class="text-lg text-[var(--color-steel)] font-light leading-relaxed">
+        Track where every rupee came from and went. Every dues payment, ticket sale, merch order, and cash collection links to an authoritative ledger entry.
+      </p>
+    </div>
+
+    <!-- Interactive Treasurer Scene Island -->
+    <TreasurerScene client:load />
+  </div>
+</BaseLayout>

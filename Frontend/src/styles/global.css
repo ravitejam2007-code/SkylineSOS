@@ -1,0 +1,82 @@
+@import "tailwindcss";
+@import "@fontsource/montserrat/300.css";
+@import "@fontsource/montserrat/400.css";
+@import "@fontsource/montserrat/500.css";
+@import "@fontsource/montserrat/700.css";
+@import "./transitions.css";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Brand & Accents */
+  --color-primary: #0064e0;
+  --color-primary-deep: #0457cb;
+  --color-primary-soft: #0091ff;
+  --color-ink-button: #000000;
+  --color-on-ink-button: #ffffff;
+  --color-fb-blue: #1876f2;
+  --color-meta-link: #385898;
+  --color-oculus-purple: #a121ce;
+
+  /* Surfaces & Canvas */
+  --color-canvas: #ffffff;
+  --color-surface-soft: #f1f4f7;
+  --color-hairline: #ced0d4;
+  --color-hairline-soft: #dee3e9;
+
+  /* Text & Inks */
+  --color-ink-deep: #0a1317;
+  --color-ink: #1c1e21;
+  --color-charcoal: #444950;
+  --color-slate: #4b4c4f;
+  --color-steel: #5d6c7b;
+  --color-stone: #8595a4;
+  --color-disabled-text: #bcc0c4;
+
+  /* Semantic Alerts */
+  --color-success: #31a24c;
+  --color-attention: #f2a918;
+  --color-warning: #f7b928;
+  --color-critical: #e41e3f;
+  --color-critical-strong: #f0284a;
+
+  /* Typography */
+  --font-display: "Montserrat", "Optimistic VF", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Montserrat", "Optimistic VF", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Radii scale */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-feature: 40px;
+  --radius-full: 100px;
+
+  /* Elevation */
+  --shadow-elevation-1: 1px 1px 0px 0px rgba(0, 0, 0, 0.2);
+  --shadow-elevation-2: 0px 1px 4px 0px rgba(20, 22, 26, 0.3);
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .meta-heading {
+    font-feature-settings: "ss01" on, "ss02" on;
+  }
+  .meta-body {
+    letter-spacing: -0.16px;
+  }
+  .meta-body-sm {
+    letter-spacing: -0.14px;
+  }
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

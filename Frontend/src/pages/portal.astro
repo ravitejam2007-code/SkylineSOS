@@ -1,0 +1,11 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StudentPortalScene from '../components/scenes/StudentPortalScene';
+---
+
+<BaseLayout
+  title="Student Portal — SkylineSOS"
+  description="Personal membership pass, tickets, merchandise orders, and announcements on SkylineSOS."
+>
+  <StudentPortalScene client:load />
+</BaseLayout>

@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Badge from '../components/ui/Badge.astro';
+import MembershipScene from '../components/scenes/MembershipScene';
+---
+
+<BaseLayout
+  title="SkylineSOS — Memberships & Signups"
+  description="Join the Skyline Student Association on SkylineSOS. Explore annual tiers, member benefits, discounts, and walk-up verification."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12">
+    <!-- Header -->
+    <div class="max-w-3xl">
+      <Badge variant="neutral" class="mb-3">Official Membership Tiers</Badge>
+      <h1 class="text-4xl md:text-5xl font-medium text-[var(--color-ink-deep)] tracking-tight mb-4">
+        Become a member of the Skyline Student Association.
+      </h1>
+      <p class="text-lg text-[var(--color-steel)] font-light leading-relaxed">
+        Join self-service online or walk up to our campus table. Enjoy discounts on Spring Gala tickets, official club hoodies, and access to all club activities.
+      </p>
+    </div>
+
+    <!-- Interactive Membership Scene Island -->
+    <MembershipScene client:load />
+  </div>
+</BaseLayout>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+  <!-- SkylineSOS Official Brand Mark: Open Book & Radiant Star -->
+  <g fill="#09122C">
+    <!-- Central Radiant Star / Diamond -->
+    <path d="M250 175 C250 205 235 228 200 240 C235 252 250 275 250 305 C250 275 265 252 300 240 C265 228 250 205 250 175 Z" />
+
+    <!-- Top Vertical Ray -->
+    <path d="M250 130 C248 142 248 158 250 170 C252 158 252 142 250 130 Z" />
+    
+    <!-- Left Diagonal Ray -->
+    <path d="M175 160 C184 170 196 182 205 190 C198 180 188 170 175 160 Z" />
+
+    <!-- Right Diagonal Ray -->
+    <path d="M325 160 C312 170 302 180 295 190 C304 182 316 170 325 160 Z" />
+
+    <!-- Left Horizontal Ray -->
+    <path d="M140 240 C155 238 170 238 180 240 C170 242 155 242 140 240 Z" />
+
+    <!-- Right Horizontal Ray -->
+    <path d="M360 240 C345 238 330 238 320 240 C330 242 345 242 360 240 Z" />
+
+    <!-- Open Book / Ribbon Wings -->
+    <!-- Left Page -->
+    <path d="M250 345 C220 320 180 305 145 315 L135 365 C165 350 210 365 250 380 Z" />
+    <!-- Left Ribbon Fold End -->
+    <path d="M135 365 L155 355 L145 315 Z" opacity="0.85" />
+
+    <!-- Right Page -->
+    <path d="M250 345 C280 320 320 305 355 315 L365 365 C335 350 290 365 250 380 Z" />
+    <!-- Right Ribbon Fold End -->
+    <path d="M365 365 L345 355 L355 315 Z" opacity="0.85" />
+  </g>
+</svg>

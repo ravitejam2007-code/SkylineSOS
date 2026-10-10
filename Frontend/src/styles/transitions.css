@@ -1,0 +1,270 @@
+/* ==============================================================================
+   SkylineSOS — Transitions.dev & Motion Polish Architecture
+   Derived from Jakubantalik/transitions.dev and transitions-polish
+   Clean, minimalist, professional & premium micro-animations
+   ============================================================================== */
+
+:root {
+  /* ─── Motion Tokens Scale ─── */
+  --duration-stagger: 40ms;
+  --duration-micro: 80ms;
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --duration-medium: 350ms;
+  --duration-slow: 400ms;
+  --duration-very-slow: 500ms;
+
+  /* ─── Easing Tokens ─── */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: ease-in-out;
+  --ease-out: ease-out;
+  --ease-linear: linear;
+  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --ease-bounce-strong: cubic-bezier(0.34, 3.85, 0.64, 1);
+
+  /* ─── Distance & Scale Tokens ─── */
+  --distance-micro: 4px;
+  --distance-small: 6px;
+  --distance-base: 8px;
+  --distance-medium: 12px;
+  --distance-large: 24px;
+
+  --scale-large: 0.96;
+  --scale-medium: 0.97;
+  --scale-small: 0.98;
+  --scale-tiny: 0.99;
+
+  --blur-small: 2px;
+  --blur-medium: 3px;
+  --blur-large: 8px;
+
+  /* ─── Specific Component Motion ─── */
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.97;
+  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --toast-open: 300ms;
+  --toast-close: 200ms;
+  --toast-distance: 12px;
+  --toast-scale: 0.98;
+
+  --panel-open-dur: 350ms;
+  --panel-close-dur: 250ms;
+  --panel-translate-y: 16px;
+}
+
+/* ─── 1. MODAL TRANSITIONS (t-modal) ─── */
+.t-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgba(10, 19, 23, 0.48) !important;
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  opacity: 0;
+  transition: opacity var(--modal-open-dur) var(--ease-smooth-out),
+              -webkit-backdrop-filter var(--modal-open-dur) var(--ease-smooth-out),
+              backdrop-filter var(--modal-open-dur) var(--ease-smooth-out);
+}
+.t-modal-backdrop.is-open {
+  opacity: 1;
+  background-color: rgba(10, 19, 23, 0.48) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+.t-modal {
+  transform-origin: center;
+  transform: scale(var(--modal-scale)) translateY(8px);
+  opacity: 0;
+  filter: blur(var(--blur-small));
+  transition: transform var(--modal-open-dur) var(--modal-ease),
+              opacity var(--modal-open-dur) var(--modal-ease),
+              filter var(--modal-open-dur) var(--modal-ease);
+  will-change: transform, opacity, filter;
+}
+.t-modal.is-open {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+  filter: blur(0);
+}
+
+/* ─── 2. TOAST NOTIFICATIONS (t-toast) ─── */
+.t-toast {
+  opacity: 0;
+  transform: translateY(var(--toast-distance)) scale(var(--toast-scale));
+  filter: blur(var(--blur-small));
+  will-change: transform, opacity, filter;
+  transition: opacity var(--toast-close) var(--ease-smooth-out),
+              transform var(--toast-close) var(--ease-smooth-out),
+              filter var(--toast-close) var(--ease-smooth-out);
+}
+.t-toast.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition: opacity var(--toast-open) var(--ease-smooth-out),
+              transform var(--toast-open) var(--ease-smooth-out),
+              filter var(--toast-open) var(--ease-smooth-out);
+}
+
+/* ─── 3. PANEL REVEAL (t-panel-slide) ─── */
+.t-panel-slide {
+  transform: translateY(var(--panel-translate-y));
+  opacity: 0;
+  filter: blur(var(--blur-small));
+  transition: transform var(--panel-close-dur) var(--ease-smooth-out),
+              opacity var(--panel-close-dur) var(--ease-smooth-out),
+              filter var(--panel-close-dur) var(--ease-smooth-out);
+}
+.t-panel-slide[data-open="true"],
+.t-panel-slide.is-open {
+  transform: translateY(0);
+  opacity: 1;
+  filter: blur(0);
+  transition: transform var(--panel-open-dur) var(--ease-smooth-out),
+              opacity var(--panel-open-dur) var(--ease-smooth-out),
+              filter var(--panel-open-dur) var(--ease-smooth-out);
+}
+
+/* ─── 4. CARD HOVER & ACTIVE LIFT (t-card-lift) ─── */
+.t-card-interactive {
+  transition: transform var(--duration-fast) var(--ease-smooth-out),
+              border-color var(--duration-fast) var(--ease-smooth-out),
+              box-shadow var(--duration-fast) var(--ease-smooth-out);
+  will-change: transform, border-color, box-shadow;
+}
+.t-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-hairline);
+  box-shadow: 0 4px 12px rgba(10, 19, 23, 0.04);
+}
+.t-card-interactive:active {
+  transform: translateY(0px) scale(0.995);
+}
+
+/* ─── 5. BUTTON PRESS & HOVER FEEDBACK (t-button-action) ─── */
+.t-button-action {
+  transition: transform var(--duration-quick) var(--ease-smooth-out),
+              opacity var(--duration-quick) var(--ease-smooth-out),
+              background-color var(--duration-quick) var(--ease-smooth-out);
+  will-change: transform, opacity;
+}
+.t-button-action:hover:not(:disabled) {
+  opacity: 0.94;
+}
+.t-button-action:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* ─── 6. SHIMMER & SKELETON REVEAL ─── */
+@keyframes t-shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.t-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface-soft);
+}
+.t-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%
+  );
+  animation: t-shimmer-sweep 1.8s infinite var(--ease-linear);
+}
+
+/* ─── 7. FADE & ENTRANCE ANIMATIONS ─── */
+@keyframes t-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.t-enter {
+  animation: t-fade-in var(--duration-fast) var(--ease-smooth-out) both;
+}
+
+/* ─── 8. MENU DROPDOWN (t-dropdown) — transitions-dev ─── */
+:root {
+  --dropdown-open-dur: 250ms;
+  --dropdown-close-dur: 150ms;
+  --dropdown-pre-scale: 0.97;
+  --dropdown-closing-scale: 0.99;
+  --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-dropdown {
+  transform-origin: top center;
+  transform: scale(var(--dropdown-pre-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dropdown-open-dur) var(--dropdown-ease),
+    opacity   var(--dropdown-open-dur) var(--dropdown-ease);
+  will-change: transform, opacity;
+}
+.t-dropdown[data-origin="top-right"]     { transform-origin: top right; }
+.t-dropdown[data-origin="top-left"]      { transform-origin: top left; }
+.t-dropdown[data-origin="top-center"]    { transform-origin: top center; }
+.t-dropdown[data-origin="bottom-left"]   { transform-origin: bottom left; }
+.t-dropdown[data-origin="bottom-center"] { transform-origin: bottom center; }
+.t-dropdown[data-origin="bottom-right"]  { transform-origin: bottom right; }
+
+.t-dropdown.is-open {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-dropdown.is-closing {
+  transform: scale(var(--dropdown-closing-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dropdown-close-dur) var(--dropdown-ease),
+    opacity   var(--dropdown-close-dur) var(--dropdown-ease);
+}
+
+/* ─── 8. GLASSMORPHIC BLUR UTILITIES ─── */
+.glass-navbar {
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+}
+
+.glass-dropdown {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+}
+
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  .t-modal,
+  .t-modal-backdrop,
+  .t-toast,
+  .t-panel-slide,
+  .t-card-interactive,
+  .t-button-action,
+  .t-enter,
+  .t-dropdown {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

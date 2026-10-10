@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/ui/Button.astro';
+
+const url = Astro.url;
+const reason = url.searchParams.get('reason') || 'Transaction declined by issuer or cancelled by user.';
+const returnUrl = url.searchParams.get('return_url') || '/events';
+---
+
+<BaseLayout
+  title="Payment Not Completed — SkylineSOS"
+  description="Payment could not be processed for Skyline Student Association."
+>
+  <div class="min-h-[calc(85vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-lg w-full space-y-8 t-enter">
+      <!-- Alert Icon & Header -->
+      <div class="text-center space-y-3">
+        <div class="w-16 h-16 mx-auto rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shadow-xs">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[12px] font-bold">
+          <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+          Payment Failed · No Funds Debited
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-[var(--color-ink-deep)]">
+          Payment Not Completed
+        </h1>
+        <p class="text-[14px] text-[var(--color-steel)] max-w-sm mx-auto">
+          We were unable to complete your checkout. Don't worry, your bank account was not charged.
+        </p>
+      </div>
+
+      <!-- Diagnostic Card -->
+      <div class="p-6 sm:p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-md space-y-4">
+        <div class="space-y-1">
+          <span class="text-[11px] font-mono font-bold text-[var(--color-steel)] uppercase">FAILURE REASON</span>
+          <p class="text-[14px] font-bold text-rose-600">
+            {reason}
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] text-[12px] text-[var(--color-steel)] space-y-2">
+          <p class="font-bold text-[var(--color-ink)]">What can you do next?</p>
+          <ul class="list-disc pl-4 space-y-1">
+            <li>Check that your UPI app or payment card has sufficient balance.</li>
+            <li>Verify your campus network or mobile internet connectivity.</li>
+            <li>You can also pay staff via cash or manual UPI at the campus table.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Action Navigation Buttons -->
+      <div class="space-y-3">
+        <Button variant="buy-cta" size="lg" href={returnUrl} class="w-full">
+          Retry Checkout Now
+        </Button>
+        <div class="flex gap-3">
+          <Button variant="secondary" size="md" href="/memberships" class="flex-1">
+            Membership Desk
+          </Button>
+          <Button variant="ghost" size="md" href="/" class="flex-1">
+            Return Home
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,29 @@
+---
+interface Props {
+  variant?: 'promo-yellow' | 'attention' | 'success' | 'critical' | 'neutral';
+  class?: string;
+  [key: string]: any;
+}
+
+const {
+  variant = 'neutral',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const baseStyles = 'inline-flex items-center justify-center font-bold text-[12px] leading-tight px-2.5 py-1 rounded-full select-none';
+
+const variantStyles = {
+  'promo-yellow': 'bg-[var(--color-warning)] text-[var(--color-ink-deep)]',
+  'attention': 'bg-[var(--color-attention)] text-white',
+  'success': 'bg-[var(--color-success)] text-white',
+  'critical': 'bg-[var(--color-critical)] text-white',
+  'neutral': 'bg-[var(--color-surface-soft)] text-[var(--color-slate)] border border-[var(--color-hairline-soft)]',
+}[variant];
+
+const classes = `${baseStyles} ${variantStyles} ${className}`.trim();
+---
+
+<span class={classes} {...rest}>
+  <slot />
+</span>

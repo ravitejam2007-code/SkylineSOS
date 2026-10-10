@@ -1,0 +1,106 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Badge from '../components/ui/Badge.astro';
+---
+
+<BaseLayout
+  title="Terms & Conditions — SkylineSOS"
+  description="Official terms of membership, gala ticketing, merchandise, and student treasury for the Skyline Student Association."
+>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12 t-enter">
+    <!-- Header -->
+    <div class="space-y-4 border-b border-[var(--color-hairline-soft)] pb-8">
+      <Badge variant="neutral">Legal & Operational Policies</Badge>
+      <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--color-ink-deep)]">
+        Terms and Conditions
+      </h1>
+      <p class="text-[14px] text-[var(--color-steel)]">
+        Effective Date: Academic Semester 2026 · Governing Entity: Skyline Student Association Executive Board
+      </p>
+    </div>
+
+    <!-- Editorial Sections -->
+    <div class="space-y-10 text-[15px] text-[var(--color-ink)] leading-relaxed">
+      <!-- Section 1 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          1. Membership Eligibility & Annual Dues
+        </h2>
+        <p>
+          Membership in the Skyline Student Association is open to enrolled students, researchers, and campus affiliates.
+          Payment of annual dues (₹300 standard tier or approved application) confers valid active membership for 365 calendar days from the date of activation.
+        </p>
+        <p>
+          Membership benefits—including but not limited to 15% Spring Gala ticket discounts, official apparel pre-order allocations, and general assembly voting rights—are non-transferable and tied to the member's verified student ID number.
+        </p>
+      </section>
+
+      <!-- Section 2 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          2. Event Ticketing & Door Admission Policy
+        </h2>
+        <p>
+          All ticket purchases for the Spring Gala (Masquerade Night) and campus events are confirmed upon generation of an authoritative cryptographic HMAC QR code.
+          Each ticket grants admission for one attendee.
+        </p>
+        <ul class="list-disc pl-5 space-y-1.5 text-[var(--color-steel)]">
+          <li><strong>Duplicate Scan Protection:</strong> Once a ticket is scanned at the venue entrance, subsequent scan attempts with the same token are automatically locked and flagged as duplicate.</li>
+          <li><strong>Member Verification:</strong> Discounted member tickets require active membership verification at the door. If membership has lapsed, the attendee may renew dues at the walk-up desk.</li>
+          <li><strong>Refunds:</strong> Ticket sales are non-refundable within 48 hours of event commencement, except in cases of official university event cancellation.</li>
+        </ul>
+      </section>
+
+      <!-- Section 3 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          3. Merchandise Orders & Collection
+        </h2>
+        <p>
+          Apparel orders (including the Skyline Classic Pullover Hoodie) are reserved in real-time from physical inventory stock.
+          Members must collect reserved items from the designated campus distribution point (Student Union Room 204 or SAC Foyer) within 14 calendar days of drop notification. Uncollected items may be released back to the general inventory float.
+        </p>
+      </section>
+
+      <!-- Section 4 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          4. Fundraiser Campaigns & Cash Accounting
+        </h2>
+        <p>
+          Volunteers collecting physical cash at bake sales, quad tables, or campus desks are required to record each entry into the SkylineSOS cash ledger.
+          Every rupee collected is cross-verified against volunteer attendance rosters and posted to the immutable club treasury. Misappropriation of club funds is subject to student disciplinary review.
+        </p>
+      </section>
+
+      <!-- Section 5 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          5. Audited Financial Transparency
+        </h2>
+        <p>
+          The association maintains an open, source-linked ledger accessible to all dues-paying members. Every transaction reflects real money movement (membership dues, gala tickets, merch sales, approved quad reimbursements).
+        </p>
+      </section>
+
+      <!-- Section 6 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          6. Code of Conduct & Revisions
+        </h2>
+        <p>
+          All members and event attendees must abide by university community standards and safety protocols.
+          The Executive Board reserves the right to amend these operational terms with notice published to the official club announcements feed.
+        </p>
+      </section>
+    </div>
+
+    <!-- Contact Box -->
+    <div class="p-6 rounded-3xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] space-y-2">
+      <h3 class="text-lg font-bold text-[var(--color-ink-deep)]">Questions regarding these terms?</h3>
+      <p class="text-[13px] text-[var(--color-steel)]">
+        Contact the Skyline Student Association Executive Committee at <span class="font-bold text-[var(--color-ink)]">legal@skyline-sa.org</span> or visit Student Union Office 204.
+      </p>
+    </div>
+  </div>
+</BaseLayout>

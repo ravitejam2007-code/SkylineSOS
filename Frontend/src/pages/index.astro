@@ -1,0 +1,279 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/ui/Button.astro';
+import Card from '../components/ui/Card.astro';
+import Badge from '../components/ui/Badge.astro';
+
+const rolePortals = [
+  {
+    roleNumber: '01',
+    roleTitle: 'Student / Member',
+    personaName: 'Demo Member',
+    goal: 'Self-service join & dues renewal, priority gala tickets, apparel pre-orders, and announcements.',
+    href: '/portal',
+    cta: 'Open Student Portal',
+    badge: 'Member Access',
+    badgeVariant: 'neutral' as const,
+  },
+  {
+    roleNumber: '02',
+    roleTitle: 'Event Volunteer',
+    personaName: 'Demo Volunteer',
+    goal: '2-second door QR scanning, duplicate scan prevention, attendee check-in queue, and bake sale tasks.',
+    href: '/operations',
+    cta: 'Launch Operations',
+    badge: 'Gate Operations',
+    badgeVariant: 'promo-yellow' as const,
+  },
+  {
+    roleNumber: '03',
+    roleTitle: 'Org President / Admin',
+    personaName: 'Demo Admin',
+    goal: 'Member roster approvals, gala capacity controls, urgent bulletin broadcasts, and merch stock.',
+    href: '/admin',
+    cta: 'Open Admin Hub',
+    badge: 'Executive',
+    badgeVariant: 'neutral' as const,
+  },
+  {
+    roleNumber: '04',
+    roleTitle: 'Chief Treasurer',
+    personaName: 'Demo Treasurer',
+    goal: 'Real-time money in, money out, bake sale cash recording, source-linked ledger, and financial balance.',
+    href: '/treasurer',
+    cta: 'View Treasury',
+    badge: 'Audited',
+    badgeVariant: 'attention' as const,
+  },
+];
+
+const clubModules = [
+  {
+    category: 'Membership',
+    title: 'Membership & Dues',
+    desc: 'Self-service signups, annual dues validation, automated benefits, and instant door-side lookup.',
+    href: '/memberships',
+    cta: 'Explore Tiers',
+  },
+  {
+    category: 'Events',
+    title: 'Spring Gala Tickets',
+    desc: 'Tiered tickets for members & guests, real-time seat limits, and 2-second QR door check-in.',
+    href: '/events',
+    cta: 'View Gala Tickets',
+  },
+  {
+    category: 'News',
+    title: 'Club Announcements',
+    desc: 'Central web bulletin feed for assemblies, venue updates, and mailing preferences.',
+    href: '/announcements',
+    cta: 'Read Updates',
+  },
+  {
+    category: 'Store',
+    title: 'Hoodies & Apparel',
+    desc: 'Official Skyline pullovers with live size availability, real-time stock reservations, and discounts.',
+    href: '/merch',
+    cta: 'Browse Merch',
+  },
+  {
+    category: 'Fundraiser',
+    title: 'Bake Sale Campaign',
+    desc: 'Volunteer coordination task board, goal progress tracking, and on-site cash collection.',
+    href: '/fundraiser',
+    cta: 'View Campaign',
+  },
+  {
+    category: 'Transparency',
+    title: 'Financial Overview',
+    desc: 'Transparent money in, money out, and remaining club balance with an audited, source-linked ledger.',
+    href: '/treasurer',
+    cta: 'View Treasury',
+  },
+];
+---
+
+<BaseLayout
+  title="SkylineSOS — Student Organization System"
+  description="SkylineSOS: The unified operating system for student organizations — memberships, gala events, announcements, merch, fundraisers, and club finances."
+>
+  <!-- Hero Section -->
+  <section class="relative min-h-[85vh] flex flex-col justify-center py-20 md:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
+    <div class="relative z-10 max-w-5xl mx-auto space-y-8 t-enter">
+      <!-- Top Tag Badge with Brand Logo -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-[var(--color-hairline-soft)] shadow-xs">
+        <img
+          src="/skylinesos-logo.jpg"
+          alt="SkylineSOS Emblem"
+          class="w-4 h-4 rounded-full object-cover"
+        />
+        <span class="text-[12px] font-bold text-[var(--color-ink-deep)]">
+          SkylineSOS · Student Organization System 2026
+        </span>
+      </div>
+
+      <!-- Hero Headline with Crisp Typography -->
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[var(--color-ink-deep)] leading-[1.08] max-w-4xl mx-auto">
+        The operating system for student organizations.
+      </h1>
+
+      <!-- Balanced Editorial Subhead -->
+      <p class="text-lg sm:text-xl text-[var(--color-steel)] font-normal max-w-2xl mx-auto leading-relaxed">
+        Say goodbye to spreadsheets, lost door cash, and messy group chats. Run memberships, gala ticketing, apparel drops, volunteer desks, and club treasury in SkylineSOS.
+      </p>
+
+      <!-- Dual-CTA Action Pair -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        <Button variant="primary" size="lg" href="/memberships">
+          Join Association (₹300)
+        </Button>
+        <Button variant="secondary" size="lg" href="/login">
+          Sign In to Portal
+        </Button>
+      </div>
+    </div>
+
+    <!-- Glassmorphic Live Bento Preview Strip -->
+    <div class="relative z-10 max-w-5xl mx-auto mt-16 w-full">
+      <div class="rounded-3xl bg-white/80 backdrop-blur-2xl border border-[var(--color-hairline-soft)] shadow-xl p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-left t-card-interactive">
+        <!-- Tile 1 -->
+        <div class="space-y-2 p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)]">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold text-[var(--color-steel)]">MEMBERSHIP PASS</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <p class="text-[15px] font-bold text-[var(--color-ink-deep)]">Rahul Sharma (CS '27)</p>
+          <p class="text-[12px] text-[var(--color-steel)]">Annual Tier · 15% Gala Discount · Valid Dec 2026</p>
+        </div>
+
+        <!-- Tile 2 -->
+        <div class="space-y-2 p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)]">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold text-[var(--color-steel)]">SPRING GALA 2026</span>
+            <span class="text-[11px] font-bold text-[var(--color-primary)]">73% Full</span>
+          </div>
+          <p class="text-[15px] font-bold text-[var(--color-ink-deep)]">182 / 250 Reserved</p>
+          <p class="text-[12px] text-[var(--color-steel)]">2-Second QR Door Check-in · Duplicate Scan Lock</p>
+        </div>
+
+        <!-- Tile 3 -->
+        <div class="space-y-2 p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)]">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono font-bold text-[var(--color-steel)]">AUDITED TREASURY</span>
+            <span class="text-[11px] font-bold text-emerald-600">Balanced</span>
+          </div>
+          <p class="text-[15px] font-bold text-[var(--color-ink-deep)]">₹45,200 Net Balance</p>
+          <p class="text-[12px] text-[var(--color-steel)]">Dues, Tickets, Merch & Bake Sale Cash in One Ledger</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 Role Portals Grid (Tailored Access for Different Personas) -->
+  <section class="py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+    <div class="text-center max-w-2xl mx-auto space-y-2">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-surface-soft)] text-[12px] font-bold text-[var(--color-ink-deep)]">
+        Role-Based Architecture
+      </div>
+      <h2 class="text-3xl sm:text-5xl font-extrabold text-[var(--color-ink-deep)] tracking-tight">
+        Built for every member of the association.
+      </h2>
+      <p class="text-[15px] text-[var(--color-steel)]">
+        Different users receive dedicated dashboards, permissions, and live workflows.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {
+        rolePortals.map((r) => (
+          <div class="p-8 rounded-3xl bg-white/85 backdrop-blur-xl border border-[var(--color-hairline-soft)] shadow-xs flex flex-col justify-between space-y-6 t-card-interactive">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-[12px] font-mono font-bold text-[var(--color-steel)]">
+                  {r.roleNumber} · {r.personaName}
+                </span>
+                <Badge variant={r.badgeVariant}>{r.badge}</Badge>
+              </div>
+              <h3 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+                {r.roleTitle}
+              </h3>
+              <p class="text-[14px] text-[var(--color-steel)] leading-relaxed">
+                {r.goal}
+              </p>
+            </div>
+            <div class="pt-6 border-t border-[var(--color-hairline-soft)] flex items-center justify-between">
+              <a
+                href={r.href}
+                class="inline-flex items-center gap-2 text-[14px] font-bold text-[var(--color-ink-deep)] hover:text-[var(--color-primary)] transition-colors"
+              >
+                <span>{r.cta}</span>
+                <span>→</span>
+              </a>
+              <span class="text-[11px] font-semibold text-[var(--color-steel)]">Instant Access</span>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Six Core Club Modules -->
+  <section class="border-t border-[var(--color-hairline-soft)] bg-[var(--color-surface-soft)]/50 py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto space-y-12">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-[var(--color-ink-deep)] tracking-tight">
+          One Unified Club Suite
+        </h2>
+        <p class="text-[15px] text-[var(--color-steel)]">
+          Real persisted records, honest business constraints, and zero spreadsheet manual entry.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {
+          clubModules.map((m) => (
+            <Card variant="feature" class="flex flex-col justify-between t-card-interactive bg-white/85 backdrop-blur-md">
+              <div class="space-y-3">
+                <span class="text-[11px] font-mono font-bold text-[var(--color-steel)] uppercase">{m.category}</span>
+                <h3 class="text-xl font-bold text-[var(--color-ink-deep)]">
+                  {m.title}
+                </h3>
+                <p class="text-[13px] text-[var(--color-steel)] leading-relaxed">
+                  {m.desc}
+                </p>
+              </div>
+              <div class="pt-6 mt-6 border-t border-[var(--color-hairline-soft)]">
+                <Button variant="ghost" size="sm" href={m.href} class="w-full">
+                  {m.cta} →
+                </Button>
+              </div>
+            </Card>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom CTA -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <div class="rounded-3xl bg-[var(--color-ink-deep)] text-white p-10 md:p-16 text-center space-y-6 shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-24 -right-24 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="relative z-10 max-w-2xl mx-auto space-y-4">
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          Ready for a seamless semester?
+        </h2>
+        <p class="text-white/80 text-[16px] font-normal leading-relaxed">
+          Join the Skyline Student Association today. Get priority tickets to the Masquerade Spring Gala, official apparel, and member privileges.
+        </p>
+        <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Button variant="buy-cta" size="lg" href="/memberships">
+            Join Skyline Club (₹300)
+          </Button>
+          <Button variant="secondary" size="lg" href="/login" class="text-white border-white/30 hover:bg-white/10">
+            Sign In with Role
+          </Button>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

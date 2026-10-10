@@ -1,0 +1,86 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="w-full bg-[var(--color-canvas)] border-t border-[var(--color-hairline-soft)] mt-auto">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+    <div class="flex flex-col lg:flex-row justify-between gap-10 lg:gap-12 mb-12">
+      <!-- Brand & Identity (Left) -->
+      <div class="max-w-sm shrink-0">
+        <div class="flex items-center gap-2.5 mb-3">
+          <img
+            src="/skylinesos-logo.jpg"
+            alt="SkylineSOS Logo"
+            class="w-7 h-7 rounded-full shadow-xs shrink-0 object-cover border border-black/10"
+          />
+          <span class="font-bold text-[18px] text-[var(--color-ink-deep)]">
+            SkylineSOS
+          </span>
+        </div>
+        <p class="text-[14px] text-[var(--color-steel)] mb-4 leading-relaxed">
+          The unified digital backbone for student organizations. Powering memberships, gala events, announcements, hoodies, fundraisers, and club finances in one place.
+        </p>
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] text-[12px] font-bold text-[var(--color-slate)]">
+          <span class="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
+          Skyline Student Association Demo
+        </div>
+      </div>
+
+      <!-- Right: 4 Columns (Activities, Operations, Legal & Trust, Campus Office) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 lg:gap-12 shrink-0">
+        <!-- Col 1: Core Scenes -->
+        <div>
+          <h4 class="text-[14px] font-bold text-[var(--color-ink)] mb-3">Activities</h4>
+          <ul class="space-y-2 text-[14px] text-[var(--color-steel)]">
+            <li><a href="/memberships" class="hover:text-[var(--color-ink-deep)] transition-colors">Join & Tiers</a></li>
+            <li><a href="/events" class="hover:text-[var(--color-ink-deep)] transition-colors">Spring Gala Tickets</a></li>
+            <li><a href="/merch" class="hover:text-[var(--color-ink-deep)] transition-colors">Club Merch & Hoodies</a></li>
+            <li><a href="/fundraiser" class="hover:text-[var(--color-ink-deep)] transition-colors">Bake Sale Fundraiser</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 2: Operations -->
+        <div>
+          <h4 class="text-[14px] font-bold text-[var(--color-ink)] mb-3">Operations</h4>
+          <ul class="space-y-2 text-[14px] text-[var(--color-steel)]">
+            <li><a href="/announcements" class="hover:text-[var(--color-ink-deep)] transition-colors">Announcements</a></li>
+            <li><a href="/treasurer" class="hover:text-[var(--color-ink-deep)] transition-colors">Treasurer Ledger</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Legal & Policies -->
+        <div>
+          <h4 class="text-[14px] font-bold text-[var(--color-ink)] mb-3">Legal & Trust</h4>
+          <ul class="space-y-2 text-[14px] text-[var(--color-steel)]">
+            <li><a href="/terms" class="hover:text-[var(--color-ink-deep)] transition-colors">Terms of Service</a></li>
+            <li><a href="/privacy" class="hover:text-[var(--color-ink-deep)] transition-colors">Privacy Policy</a></li>
+            <li><a href="/payment/success" class="hover:text-[var(--color-ink-deep)] transition-colors">Payment States</a></li>
+            <li><a href="/404" class="hover:text-[var(--color-ink-deep)] transition-colors">404 Error Page</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: Contact & Office (Transferred to the right section) -->
+        <div>
+          <h4 class="text-[14px] font-bold text-[var(--color-ink)] mb-3">Campus Office</h4>
+          <ul class="space-y-2 text-[14px] text-[var(--color-steel)]">
+            <li><span class="text-[var(--color-slate)]">Student Union, Room 204</span></li>
+            <li><span class="text-[var(--color-slate)]">Skyline Campus Center</span></li>
+            <li><span class="text-[var(--color-slate)]">contact@skyline-sa.org</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom region -->
+    <div class="pt-8 border-t border-[var(--color-hairline-soft)] flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[var(--color-stone)]">
+      <p>© {currentYear} Skyline Student Association. All rights reserved.</p>
+      <div class="flex items-center gap-4">
+        <a href="/terms" class="hover:text-[var(--color-ink-deep)] transition-colors">Terms</a>
+        <span>·</span>
+        <a href="/privacy" class="hover:text-[var(--color-ink-deep)] transition-colors">Privacy</a>
+        <span>·</span>
+        <span>Empowering students across campus</span>
+      </div>
+    </div>
+  </div>
+</footer>

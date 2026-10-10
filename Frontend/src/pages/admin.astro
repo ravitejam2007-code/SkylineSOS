@@ -1,0 +1,11 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AdminDashboardScene from '../components/scenes/AdminDashboardScene';
+---
+
+<BaseLayout
+  title="Admin Dashboard — SkylineSOS"
+  description="Executive administration: member management, announcement broadcasts, event capacity, and merch inventory on SkylineSOS."
+>
+  <AdminDashboardScene client:load />
+</BaseLayout>

@@ -1,0 +1,39 @@
+---
+interface Props {
+  variant?: 'feature' | 'photo' | 'icon-tile' | 'checkout' | 'promo-strip';
+  class?: string;
+  [key: string]: any;
+}
+
+const {
+  variant = 'feature',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+let variantStyles = '';
+
+switch (variant) {
+  case 'feature':
+    variantStyles = 'bg-[var(--color-canvas)] rounded-3xl p-8 border border-[var(--color-hairline-soft)]';
+    break;
+  case 'photo':
+    variantStyles = 'bg-[var(--color-canvas)] rounded-3xl overflow-hidden relative';
+    break;
+  case 'icon-tile':
+    variantStyles = 'bg-[var(--color-canvas)] rounded-xl p-6 border border-[var(--color-hairline-soft)]';
+    break;
+  case 'checkout':
+    variantStyles = 'bg-[var(--color-canvas)] rounded-xl p-6 border border-[var(--color-hairline-soft)] shadow-[var(--shadow-elevation-2)]';
+    break;
+  case 'promo-strip':
+    variantStyles = 'bg-[var(--color-ink-deep)] text-white rounded-3xl p-8 md:p-12';
+    break;
+}
+
+const classes = `${variantStyles} ${className}`.trim();
+---
+
+<div class={classes} {...rest}>
+  <slot />
+</div>

@@ -1,0 +1,35 @@
+---
+interface Props {
+  variant?: 'dark' | 'yellow';
+  linkText?: string;
+  linkHref?: string;
+  class?: string;
+}
+
+const {
+  variant = 'dark',
+  linkText,
+  linkHref,
+  class: className = '',
+} = Astro.props;
+
+const bgStyles = variant === 'yellow'
+  ? 'bg-[var(--color-warning)] text-[var(--color-ink-deep)]'
+  : 'bg-[var(--color-ink-deep)] text-white';
+---
+
+<aside class={`w-full py-2.5 px-4 text-center text-[13px] md:text-[14px] font-bold tracking-[-0.14px] ${bgStyles} ${className}`}>
+  <div class="max-w-7xl mx-auto flex items-center justify-center gap-2 flex-wrap">
+    <span><slot /></span>
+    {
+      linkText && linkHref && (
+        <a href={linkHref} class="underline hover:opacity-80 transition-opacity ml-1 inline-flex items-center gap-0.5">
+          {linkText}
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      )
+    }
+  </div>
+</aside>

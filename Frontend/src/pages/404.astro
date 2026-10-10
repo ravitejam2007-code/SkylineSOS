@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/ui/Button.astro';
+---
+
+<BaseLayout
+  title="404 — Page Not Found · SkylineSOS"
+  description="The requested page could not be found on SkylineSOS."
+>
+  <div class="min-h-[calc(80vh-64px)] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-xl w-full text-center space-y-6 t-enter">
+      <!-- Badge -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] text-[12px] font-bold text-[var(--color-steel)]">
+        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+        HTTP 404 · Resource Missing
+      </div>
+
+      <!-- Heading -->
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-[var(--color-ink-deep)]">
+        Page Not Found
+      </h1>
+
+      <!-- Description -->
+      <p class="text-[15px] sm:text-[16px] text-[var(--color-steel)] max-w-md mx-auto leading-relaxed">
+        The page, event pass, or circular you are looking for doesn't exist, has been archived, or was moved to another section.
+      </p>
+
+      <!-- Glassmorphic Preview Info -->
+      <div class="p-6 rounded-3xl glass-card border border-[var(--color-hairline-soft)] text-left space-y-3 shadow-xs">
+        <div class="flex items-center justify-between text-[11px] font-mono font-bold text-[var(--color-steel)]">
+          <span>DIAGNOSTIC STATUS</span>
+          <span class="text-rose-600">ERR_NOT_FOUND</span>
+        </div>
+        <p class="text-[13px] text-[var(--color-ink)]">
+          If you followed a link for a gala ticket or dues verification, check your active dashboard or verify your student ID.
+        </p>
+      </div>
+
+      <!-- Action Navigation Buttons -->
+      <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <Button variant="primary" size="md" href="/">
+          Return to Homepage
+        </Button>
+        <Button variant="secondary" size="md" href="/events">
+          Browse Gala Tickets
+        </Button>
+        <Button variant="ghost" size="md" href="/portal">
+          Student Portal
+        </Button>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

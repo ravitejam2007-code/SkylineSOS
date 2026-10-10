@@ -113,8 +113,54 @@
   - **Pure Dynamic Environment Configuration:** Removed all hardcoded keys and secrets from TypeScript code in `supabase/functions/api/lib/env.ts`. Implemented dynamic multi-path `.env` parser reading from `.env` and `supabase/.env.local`, overlaid with runtime environment variables.
 - **GitHub Actions CI Hardening & Deno Resolution:**
   - Resolved CI workflow failure (red ❌ icon) by adding root `deno.json` with `"nodeModulesDir": "auto"`, configuring `denoland/setup-deno@v2` with explicit `--config supabase/functions/api/deno.json` in `ci.yml`, fixing Web Crypto BufferSource typing in `lib/hmac.ts`, and integrating `npm test` into the CI pipeline.
-- **Scope Boundary Compliance:**
-  - Zero modifications to frontend code (`apps/web` untouched as strictly directed).
+- **Frontend Application Integration & Optimization (`Frontend/`):**
+  - **Target Environment Update:** Configured `Frontend/.env` and `Frontend/.env.example` with the active Supabase project `xwwkpwzartndbjlzpttc` and edge function base URL `https://xwwkpwzartndbjlzpttc.supabase.co/functions/v1/api/v1`.
+  - **Removal of Unnecessary Assets & Route Deduplication:**
+    - Removed 32 legacy documentation markdown files in `Frontend/src/styles/transitions/` and purged the directory.
+    - Converted duplicate route `Frontend/src/pages/finance.astro` into a permanent redirect to `/treasurer` and updated all navigation links across `index.astro`, `500.astro`, and auth utilities.
+    - Added canonical `/membership.astro` redirecting to `/memberships`.
+    - Standardized branding and page titles in `signup.astro` to SkylineSOS.
+  - **Official Typed API Client (`Frontend/src/lib/api.ts`):**
+    - Replaced mock local storage client with the official typed client specified in `docs/frontend-api-integration-guide.md §3`.
+    - Automatic session JWT retrieval via Supabase Auth (`Authorization: Bearer <jwt>`).
+    - Automatic UUID `Idempotency-Key` headers on mutating requests.
+    - Typed `ApiError` class with status codes, error code mapping, and `requestId` tracking.
+    - Implemented `startOnlineCheckout` with Razorpay modal integration and backend signature verification.
+    - Implemented `recordStaffDeskSale` for staff cash and manual UPI checkouts with audit notes.
+    - Added high-level typed service wrappers for public events, memberships, ticket sales, merch, announcements, fundraisers, and treasury.
+  - **End-to-End Scene Integrations:**
+    - `TreasurerScene.tsx`: Connected to `GET /treasurer/overview` and `GET /treasurer/ledger`, supporting both snake_case and camelCase ledger records.
+    - `StudentPortalScene.tsx`: Connected to `POST /me/verify-code` with live 60-second rotating door code countdown.
+    - `MerchScene.tsx`: Integrated multi-product tab pills across all 4 seeded catalog items with real-time stock levels and `/checkout` ordering.
+    - `EventOperationsScene.tsx`: Gate check-in console with dual-mode detection (6-digit numeric pass routes to `POST /staff/verify/member`; Crockford ticket code routes to `POST /door/check-in`).
+    - `EventsScene.tsx`: Integrated ticket purchase flow with `POST /checkout` and staff cash desk sales with `POST /staff/checkout`.
+    - `MembershipScene.tsx`: Connected to `GET /public/tiers`, `POST /membership/applications`, `POST /admin/members/walk-up`, and `POST /admin/membership/applications/:id/review`.
+    - `AdminDashboardScene.tsx`: Connected to `GET /admin/overview`, displaying live active members, pending applications, and low stock variant alerts.
+    - `AnnouncementsScene.tsx`: Connected to `GET /public/announcements`, `POST /admin/announcements`, and `PUT /me/preferences`.
+    - `FundraiserScene.tsx`: Connected to `GET /fundraisers`, `POST /tasks`, and `POST /fundraisers/:id/contributions`.
+  - **Verification:**
+    - `npm run build` in `Frontend/` built all 20 static pages in 5.95s with zero errors.
+    - `npm test` at workspace root executed 79 tests across 24 suites with 100% pass rate.
+- **Troubleshooting & Fix: Supabase Auth DNS Failure (`leifxoxnqnvezbmdtmcr`):**
+  - **Issue:** Browser reported `net::ERR_NAME_NOT_RESOLVED` hitting `https://leifxoxnqnvezbmdtmcr.supabase.co/auth/v1/signup`.
+  - **Root Cause:** The project `leifxoxnqnvezbmdtmcr` is decommissioned/deleted (`DNS_ERROR_RCODE_NAME_ERROR`). An active dev server (PID 29784) was holding onto obsolete credentials from `C:\Users\javal\Videos\CampusOne\frontend\.env`.
+  - **Resolution:**
+    - Verified DNS resolution for active project `xwwkpwzartndbjlzpttc.supabase.co` (`104.18.38.10`, `172.64.149.246`).
+    - Updated both [`Frontend/.env`](file:///c:/Users/javal/Videos/SkylineSOS/Frontend/.env) and [`CampusOne/frontend/.env`](file:///c:/Users/javal/Videos/CampusOne/frontend/.env) to point to the active project `xwwkpwzartndbjlzpttc`.
+- **6-Digit Dynamic Identity Verification (Replacing QR Code as Primary):**
+  - **Student Portal ([`StudentPortalScene.tsx`](file:///c:/Users/javal/Videos/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx)):**
+    - Replaced the large QR code presentation with the prominent **Official 6-Digit Dynamic Door Verification Pass**.
+    - Displays large, high-contrast monospace code (`482 915`) with a live 60-second countdown bar.
+    - Added auto-rotation every 60s via `POST /me/verify-code` (`api.getRotatingDoorPass`), plus manual "Refresh Code" and "Copy Code" actions.
+  - **Gate & Door Operations ([`EventOperationsScene.tsx`](file:///c:/Users/javal/Videos/SkylineSOS/Frontend/src/components/scenes/EventOperationsScene.tsx)):**
+    - Established **`🔢 6-Digit Member Pass`** as the default primary verification mode.
+    - Staff enters attendee's 6-digit dynamic code, which verifies immediately via `POST /staff/verify/member`.
+    - Shows instant green admission card with member name, student ID, tier, and validity.
+  - **Events Scene ([`EventsScene.tsx`](file:///c:/Users/javal/Videos/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx)):**
+    - Converted the Door Check-in terminal into a dedicated 6-digit member code and Crockford ticket code identity verification terminal, removing mock QR graphics.
+  - **API Client ([`Frontend/src/lib/api.ts`](file:///c:/Users/javal/Videos/SkylineSOS/Frontend/src/lib/api.ts)):**
+    - Added `api.getRotatingDoorPass()` (`POST /me/verify-code`) and `api.verifyMemberByCode()` (`POST /staff/verify/member`).
+
 
 
 

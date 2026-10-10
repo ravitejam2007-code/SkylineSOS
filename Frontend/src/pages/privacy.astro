@@ -1,0 +1,95 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Badge from '../components/ui/Badge.astro';
+---
+
+<BaseLayout
+  title="Privacy Policy — SkylineSOS"
+  description="Student data protection, payment handling, and privacy commitments for the Skyline Student Association."
+>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12 t-enter">
+    <!-- Header -->
+    <div class="space-y-4 border-b border-[var(--color-hairline-soft)] pb-8">
+      <Badge variant="neutral">Privacy & Data Governance</Badge>
+      <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--color-ink-deep)]">
+        Privacy Policy & Student Data Protection
+      </h1>
+      <p class="text-[14px] text-[var(--color-steel)]">
+        Effective Date: Spring Semester 2026 · Compliant with Campus Student Privacy Standards
+      </p>
+    </div>
+
+    <!-- Editorial Content -->
+    <div class="space-y-10 text-[15px] text-[var(--color-ink)] leading-relaxed">
+      <!-- Section 1 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          1. Information We Collect
+        </h2>
+        <p>
+          SkylineSOS collects only the minimum necessary information required to operate student organization activities, maintain member rolls, issue event tickets, and deliver merchandise:
+        </p>
+        <ul class="list-disc pl-5 space-y-1.5 text-[var(--color-steel)]">
+          <li><strong>Student Profile:</strong> Legal name, university email address, and student ID number.</li>
+          <li><strong>Event Attendance:</strong> Ticket QR scan logs, entry gate timestamps, and dietary notes.</li>
+          <li><strong>Financial Records:</strong> Transaction IDs, dues payment status, and bake-sale cash log references.</li>
+          <li><strong>Mailing Preferences:</strong> Granular opt-in topics (meeting circulars, gala reminders, merch drops).</li>
+        </ul>
+      </section>
+
+      <!-- Section 2 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          2. Payment Security & Card Data
+        </h2>
+        <p>
+          SkylineSOS uses server-verified payment gateways (Razorpay test mode) to handle transactions.
+          <strong>We never store credit card numbers, CVVs, or bank net-banking passwords</strong> on association databases.
+          Payment confirmations are verified cryptographically via server webhooks before updating membership statuses.
+        </p>
+      </section>
+
+      <!-- Section 3 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          3. Mailing Preferences & One-Click Unsubscribe
+        </h2>
+        <p>
+          We strictly respect your notification preferences. Marketing emails, gala alerts, and merch notices are strictly opt-in.
+          You can toggle your preferences anytime from the Announcements dashboard or click the one-click unsubscribe token link in any circular email.
+          Essential account security notices (e.g. password resets, official election ballots) cannot be disabled.
+        </p>
+      </section>
+
+      <!-- Section 4 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          4. Data Sharing & Third Parties
+        </h2>
+        <p>
+          We do not sell, rent, or trade student personal records to commercial advertisers, corporate recruiters, or third parties without explicit written consent.
+          Data is only shared with official campus administrators when required for university facility booking approvals or safety audits.
+        </p>
+      </section>
+
+      <!-- Section 5 -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-bold text-[var(--color-ink-deep)]">
+          5. Data Access & Deletion Rights
+        </h2>
+        <p>
+          Enrolled members have the right to request a complete copy of their personal data or request deletion of inactive accounts upon graduation.
+          To exercise your rights, email the Association Data Custodian.
+        </p>
+      </section>
+    </div>
+
+    <!-- Contact Box -->
+    <div class="p-6 rounded-3xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] space-y-2">
+      <h3 class="text-lg font-bold text-[var(--color-ink-deep)]">Data Protection Inquiries</h3>
+      <p class="text-[13px] text-[var(--color-steel)]">
+        For privacy questions or data deletion requests, contact <span class="font-bold text-[var(--color-ink)]">privacy@skyline-sa.org</span> or visit the Student Affairs Office.
+      </p>
+    </div>
+  </div>
+</BaseLayout>

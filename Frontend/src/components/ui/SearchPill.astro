@@ -1,0 +1,47 @@
+---
+interface Props {
+  placeholder?: string;
+  name?: string;
+  id?: string;
+  class?: string;
+  [key: string]: any;
+}
+
+const {
+  placeholder = 'Search events, members, merch...',
+  name = 'q',
+  id = 'search-pill',
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<form
+  action="/events"
+  method="get"
+  class={`relative flex items-center w-full max-w-[280px] h-[40px] rounded-full bg-[var(--color-surface-soft)] px-3.5 border border-transparent focus-within:border-[var(--color-hairline)] transition-colors ${className}`}
+>
+  <svg
+    class="w-4 h-4 text-[var(--color-steel)] shrink-0"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
+  </svg>
+  <input
+    type="search"
+    id={id}
+    name={name}
+    placeholder={placeholder}
+    aria-label="Search site"
+    class="w-full bg-transparent border-none outline-none pl-2.5 text-[14px] text-[var(--color-ink)] placeholder-[var(--color-steel)] font-normal"
+    {...rest}
+  />
+</form>
