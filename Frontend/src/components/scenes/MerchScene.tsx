@@ -116,13 +116,13 @@ export default function MerchScene() {
                 const name = (primaryProduct?.name || '').toLowerCase();
                 let imgSrc: string | null = null;
                 if (name.includes('hoodie') || name.includes('sweatshirt') || name.includes('sweater')) {
-                  imgSrc = '/merch/hoodie.jpg';
+                  imgSrc = '/merch/hoodie.png';
                 } else if (name.includes('tshirt') || name.includes('t-shirt') || name.includes('tee') || name.includes('shirt')) {
-                  imgSrc = '/merch/tshirt.jpg';
+                  imgSrc = '/merch/tshirt.png';
                 } else if (name.includes('cap') || name.includes('hat') || name.includes('snapback') || name.includes('headwear')) {
-                  imgSrc = '/merch/cap.jpg';
+                  imgSrc = '/merch/cap.png';
                 } else if (name.includes('sticker') || name.includes('pack') || name.includes('badge')) {
-                  imgSrc = '/merch/stickers.jpg';
+                  imgSrc = '/merch/stickers.png';
                 }
 
                 return imgSrc ? (
