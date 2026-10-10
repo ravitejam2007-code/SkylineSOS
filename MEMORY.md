@@ -113,6 +113,26 @@
   - **Remote Database Seeding (`scripts/seed.mjs`):** Successfully executed the full 297 seed records against the cloud database. Created 60 user profiles, 3 membership tiers, 5 events, 10 ticket types, 4 products, 9 variants, fulfilled 28 membership dues checkouts via RPC, 37 ticket purchases and check-ins, 30 merch checkouts, 12 fundraiser contributions (₹5,900), and 10 expenses. Verified ledger reconciliation (Total Income: ₹52,192, Total Outflow: ₹7,500, Net: ₹44,692).
   - **Supabase Edge Function Deployment (`api`):** Deployed Express Edge Function with `--no-verify-jwt` to `https://xwwkpwzartndbjlzpttc.supabase.co/functions/v1/api/v1`. Verified live health check endpoint returning `{"data":{"ok":true,"version":"v1"}}`.
   - **Pure Dynamic Environment Configuration:** Removed all hardcoded keys and secrets from TypeScript code in `supabase/functions/api/lib/env.ts`. Implemented dynamic multi-path `.env` parser reading from `.env` and `supabase/.env.local`, overlaid with runtime environment variables.
-
+- **R4 Operations UI, QA & Landing Implementation (Phase 0, 1, 2 & 4):**
+  - **Dependency Setup & Monorepo Link:** Ran `npm install` at root, linking `@skylinesos/contracts`, `@tailwindcss/vite`, and Astro 5 packages.
+  - **High-Impact Landing Page (`apps/web/src/pages/index.astro`):**
+    - Redesigned per `DESIGN-meta (1).md` commerce specifications: dual-CTA hero pattern, Optimistic VF / Montserrat typography, 32px card softening, and saturated cobalt (`#0064e0`) buy actions.
+    - Built interactive `LandingHeroDemo.tsx` island enabling live testing of Door Gate code check-in, rotating 60s digital member pass, and live double-entry ledger streams directly on the hero band.
+    - Added 3-up architectural feature cards (No-Camera Verification, Atomic Anti-Oversell, Immutable Ledger), Flagship Gala PDP card, student membership tiers, and campus audited metrics strip.
+  - **Complete Staff & Operations Surface (10 New Pages & Islands):**
+    - `admin/applications.astro` + `AdminApplicationsPanel.tsx`: Review queue with approve/reject reasons and resubmit history.
+    - `admin/members.astro` + `AdminMembersPanel.tsx`: Student directory search, role assignment, and walk-up counter signups.
+    - `admin/events.astro` + `AdminEventsPanel.tsx`: Event inventory, ticket tiers, and live attendance/revenue summary.
+    - `admin/merch.astro` + `AdminMerchPanel.tsx`: SKU variant stock adjustments and order item fulfilment tracking.
+    - `admin/announcements.astro` + `AdminAnnouncementsPanel.tsx`: Targeted announcements editor (`public`, `members`, `exec`).
+    - `admin/fundraisers.astro` + `AdminFundraisersPanel.tsx`: Campaign progress, donation recording, and volunteer tasks kanban.
+    - `admin/actions.astro` + `AdminActionQueuePanel.tsx`: Real-time computed action queue for urgent staff triage.
+    - `volunteer.astro` + `VolunteerPortalPanel.tsx`: Volunteer task squad checklist and out-of-pocket expense claim forms.
+    - `treasurer/expenses.astro` + `TreasurerExpensesPanel.tsx`: Expense reimbursement queue with self-approval guards.
+    - `treasurer/audit.astro` + `TreasurerAuditPanel.tsx`: Cryptographic audit trail log with entity and action filters.
+    - `admin.astro`: Upgraded central operations hub with module cards and embedded live Action Queue.
+  - **Documentation & Demo Material:**
+    - Authored complete, judge-ready `README.md` with system architecture, 15-minute quickstart guide, 5 demo accounts credentials, and stage-by-stage 5-minute live pitch runbook.
+  - **Build Verification:** Verified 100% clean static build (`npm run build`) generating all 22 static pages in 6.47s.
 
 

@@ -1,0 +1,29 @@
+---
+import PublicLayout from "@/layouts/PublicLayout.astro";
+import { AdminFundraisersPanel } from "@/islands/ops/AdminFundraisersPanel";
+---
+
+<PublicLayout title="Fundraisers & Campaigns — SkylineSOS Admin">
+  <div class="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div class="mb-6 flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <a href="/admin" class="text-xs font-bold text-steel hover:text-ink">
+            ← Staff Console
+          </a>
+          <span class="text-steel text-xs">/</span>
+          <span class="text-xs font-bold text-primary">Fundraising</span>
+        </div>
+        <h1 class="text-3xl font-black text-ink-deep">Club Fundraisers & Task Board</h1>
+      </div>
+      <a
+        href="/admin"
+        class="px-4 py-2 rounded-full border border-hairline hover:border-ink-deep text-ink-deep font-bold text-xs bg-white transition-all shadow-xs"
+      >
+        Back to Dashboard
+      </a>
+    </div>
+
+    <AdminFundraisersPanel client:load />
+  </div>
+</PublicLayout>

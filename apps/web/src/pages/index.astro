@@ -1,98 +1,370 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
+import { LandingHeroDemo } from "@/islands/LandingHeroDemo";
 ---
 
 <PublicLayout title="SkylineSOS — Student Organization System">
-  <!-- Hero Section -->
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 text-center">
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-soft border border-hairline text-xs font-bold text-charcoal mb-6">
-      <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
-      Skyline Student Association Platform
+  <!-- Promo Notification Banner -->
+  <div class="bg-ink-deep text-white text-xs font-semibold py-2.5 px-4 text-center border-b border-hairline/20">
+    <div class="max-w-7xl mx-auto flex items-center justify-center gap-2 flex-wrap">
+      <span class="px-2 py-0.5 rounded-full bg-primary text-white text-[10px] font-black uppercase tracking-wider">
+        LIVE
+      </span>
+      <span>Skyline Annual Gala Night 2026 passes are now live! Active members receive 25% discount.</span>
+      <a href="/events" class="underline hover:text-primary-soft transition-colors font-bold ml-1">
+        Reserve Tickets →
+      </a>
     </div>
-    <h1 class="text-4xl sm:text-6xl font-black text-ink-deep tracking-tight max-w-4xl mx-auto leading-tight">
-      Run the whole club from one screen — verify at the door with just a code.
+  </div>
+
+  <!-- Hero Section -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 text-center">
+    <!-- Category Pill -->
+    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-soft border border-hairline text-xs font-bold text-charcoal mb-6">
+      <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+      <span>Skyline Student Association · Campus Operations</span>
+    </div>
+
+    <!-- Hero Display Headline -->
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-ink-deep tracking-tight max-w-4xl mx-auto leading-[1.12]">
+      Run the club with zero leaks — verify doors with codes, trace rupees on an immutable ledger.
     </h1>
-    <p class="mt-6 text-lg sm:text-xl text-steel max-w-2xl mx-auto font-medium">
-      One app, one permission model, and one ledger. Unify memberships, tickets, merchandise, fundraisers, and club finances.
+
+    <!-- Editorial Subtitle -->
+    <p class="mt-6 text-base sm:text-lg lg:text-xl text-steel max-w-2xl mx-auto font-normal leading-relaxed">
+      One unified system for student memberships, gala ticketing, hoodie merchandise, fundraisers, and treasury. Built with atomic anti-oversell locks and no-camera gate verification.
     </p>
 
-    <!-- CTAs -->
-    <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
+    <!-- Dual-CTA Pill Buttons (Meta Design Pattern) -->
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-3.5">
       <a
         href="/membership"
-        class="px-8 py-3.5 rounded-full bg-ink-deep hover:bg-charcoal text-white font-bold text-sm transition-all shadow-sm"
+        class="px-8 py-3.5 rounded-full bg-ink-deep hover:bg-charcoal text-white font-bold text-sm transition-all shadow-sm hover:scale-[1.02] active:scale-[0.98]"
       >
-        Join the club
+        Join Skyline Association
       </a>
       <a
         href="/events"
-        class="px-8 py-3.5 rounded-full border-2 border-hairline hover:border-ink-deep text-ink-deep font-bold text-sm transition-all bg-white"
+        class="px-8 py-3.5 rounded-full border-2 border-hairline hover:border-ink-deep text-ink-deep font-bold text-sm transition-all bg-white hover:bg-surface-soft active:scale-[0.98]"
       >
-        Explore Events
+        Explore Gala 2026
       </a>
+    </div>
+
+    <!-- Interactive Simulator Island -->
+    <div class="mt-12">
+      <LandingHeroDemo client:load />
     </div>
   </section>
 
-  <!-- 3-Up Feature Highlights -->
+  <!-- Core Architectural Pillars (3-Up Feature Grid) -->
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="text-center max-w-2xl mx-auto mb-10">
+      <span class="text-xs font-black uppercase tracking-widest text-steel">
+        Built for Speed Under Pressure
+      </span>
+      <h2 class="text-3xl font-black text-ink-deep mt-1">
+        Three Pillars of Operational Integrity
+      </h2>
+      <p class="text-sm text-steel mt-2">
+        Engineered specifically to solve crowd check-ins, overbooking chaos, and financial disputes.
+      </p>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Feature 1 -->
-      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline">
-        <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-primary mb-5 shadow-xs">
-          #
+      <!-- Feature 1: Door Verification -->
+      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline-soft flex flex-col justify-between hover:bg-white hover:border-hairline transition-all">
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-primary mb-6 shadow-xs">
+            🚪
+          </div>
+          <h3 class="text-xl font-bold text-ink-deep mb-2.5">
+            No-Camera Code Verification
+          </h3>
+          <p class="text-sm text-steel leading-relaxed">
+            Eliminates camera glare, bad lighting, and QR scan failures in dark auditoriums. Door volunteers type 6-digit rotating member codes or 8-character Crockford ticket codes with instant sub-second verification.
+          </p>
         </div>
-        <h3 class="text-xl font-bold text-ink-deep mb-2">Code-Based Verification</h3>
-        <p class="text-sm text-steel leading-relaxed">
-          Verify memberships and event tickets instantly with typed numeric & Crockford base32 codes. No camera, glare, or scanner issues at the door.
-        </p>
+        <div class="mt-6 pt-4 border-t border-hairline/60 flex items-center text-xs font-bold text-ink-deep">
+          <span>Door check-in ≤ 0.5s latency</span>
+        </div>
       </div>
 
-      <!-- Feature 2 -->
-      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline">
-        <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-success mb-5 shadow-xs">
-          ₹
+      <!-- Feature 2: Atomic Oversell Protection -->
+      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline-soft flex flex-col justify-between hover:bg-white hover:border-hairline transition-all">
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-success mb-6 shadow-xs">
+            ⚡
+          </div>
+          <h3 class="text-xl font-bold text-ink-deep mb-2.5">
+            Atomic Anti-Oversell Engine
+          </h3>
+          <p class="text-sm text-steel leading-relaxed">
+            Database row-level locks (<code class="text-xs bg-white px-1.5 py-0.5 rounded border border-hairline font-mono">FOR UPDATE</code>) guarantee zero duplicate ticket issuance and zero negative hoodie stock. 20 students competing for the last 5 seats are reconciled cleanly.
+          </p>
         </div>
-        <h3 class="text-xl font-bold text-ink-deep mb-2">Immutable Club Ledger</h3>
-        <p class="text-sm text-steel leading-relaxed">
-          Every rupee on the treasurer screen is traceable to an underlying ticket, dues, merch, or contribution record. Fully audit-ready.
-        </p>
+        <div class="mt-6 pt-4 border-t border-hairline/60 flex items-center text-xs font-bold text-ink-deep">
+          <span>100% Concurrency Safe</span>
+        </div>
       </div>
 
-      <!-- Feature 3 -->
-      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline">
-        <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-ink-deep mb-5 shadow-xs">
-          ⚡
+      <!-- Feature 3: Immutable Ledger -->
+      <div class="p-8 rounded-3xl bg-surface-soft border border-hairline-soft flex flex-col justify-between hover:bg-white hover:border-hairline transition-all">
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-white border border-hairline flex items-center justify-center text-xl font-black text-attention mb-6 shadow-xs">
+            💰
+          </div>
+          <h3 class="text-xl font-bold text-ink-deep mb-2.5">
+            Immutable Double-Entry Ledger
+          </h3>
+          <p class="text-sm text-steel leading-relaxed">
+            Every rupee recorded on the treasurer screen links directly to an underlying ticket order, membership dues payment, or approved expense. Append-only triggers prevent retroactive tampering.
+          </p>
         </div>
-        <h3 class="text-xl font-bold text-ink-deep mb-2">Oversell-Proof Inventory</h3>
-        <p class="text-sm text-steel leading-relaxed">
-          Atomic database row-locks guarantee zero overbooking for gala tickets and zero negative stock for club hoodies.
-        </p>
+        <div class="mt-6 pt-4 border-t border-hairline/60 flex items-center text-xs font-bold text-ink-deep">
+          <span>Audit-ready reconciliation</span>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Featured Event Section -->
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="bg-surface-soft rounded-3xl p-8 sm:p-12 border border-hairline flex flex-col md:flex-row items-center justify-between gap-8">
-      <div>
-        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary">
-          Upcoming Flagship Event
-        </span>
-        <h2 class="text-3xl font-black text-ink-deep mt-3">Skyline Annual Gala Night 2026</h2>
-        <p class="text-steel text-sm sm:text-base mt-2 max-w-xl">
-          The biggest evening of the semester with live music, performances, and awards. Member discount rates available!
-        </p>
-        <div class="mt-4 flex items-center gap-4 text-xs font-bold text-charcoal">
-          <span>📅 17 October 2026 · 18:00 IST</span>
-          <span>📍 Grand Auditorium</span>
+  <!-- Flagship Event Showcase (Commerce PDP Pattern) -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="rounded-3xl bg-gradient-to-br from-surface-soft via-white to-surface-soft p-8 sm:p-12 border border-hairline shadow-xs">
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-10">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary">
+              Flagship Event
+            </span>
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-warning/20 text-ink-deep">
+              🔥 142/200 Tickets Reserved
+            </span>
+          </div>
+
+          <h2 class="text-3xl sm:text-4xl font-black text-ink-deep tracking-tight">
+            Skyline Annual Gala Night 2026
+          </h2>
+          <p class="text-steel text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+            The grand evening for the Skyline Student Association. Live music performances, executive leadership awards, banquet dinner, and networking.
+          </p>
+
+          <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-bold text-charcoal">
+            <div class="p-3 bg-white rounded-xl border border-hairline">
+              <span class="text-steel block text-[10px] uppercase">Date & Time</span>
+              <span class="text-ink-deep">17 Oct 2026 · 18:00 IST</span>
+            </div>
+            <div class="p-3 bg-white rounded-xl border border-hairline">
+              <span class="text-steel block text-[10px] uppercase">Location</span>
+              <span class="text-ink-deep">Main Grand Auditorium</span>
+            </div>
+            <div class="p-3 bg-white rounded-xl border border-hairline">
+              <span class="text-steel block text-[10px] uppercase">Member Price</span>
+              <span class="text-success font-black">₹300 (Save ₹100)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Purchase Action Card -->
+        <div class="w-full lg:w-80 p-6 rounded-2xl bg-white border border-hairline shadow-sm shrink-0 text-center">
+          <span class="text-xs font-bold text-steel uppercase tracking-wider block">
+            General Admission
+          </span>
+          <div class="my-2 flex items-baseline justify-center gap-1.5">
+            <span class="text-4xl font-black text-ink-deep">₹400</span>
+            <span class="text-xs text-steel font-medium">/ person</span>
+          </div>
+          <p class="text-xs text-success font-semibold mb-4">
+            Active members pay ₹300 at checkout
+          </p>
+          <a
+            href="/events"
+            class="block w-full py-3.5 px-6 rounded-full bg-primary hover:bg-primary-deep text-white font-bold text-sm transition-all shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Get Gala Tickets
+          </a>
+          <span class="text-[11px] text-steel mt-3 block">
+            Instant code generated upon payment
+          </span>
         </div>
       </div>
-      <a
-        href="/events"
-        class="shrink-0 px-8 py-4 rounded-full bg-primary hover:bg-primary-deep text-white font-bold text-sm transition-all shadow-md"
-      >
-        Get Tickets →
-      </a>
+    </div>
+  </section>
+
+  <!-- Membership Tiers Section -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="text-center max-w-2xl mx-auto mb-10">
+      <span class="text-xs font-black uppercase tracking-widest text-steel">
+        Student Membership Tiers
+      </span>
+      <h2 class="text-3xl font-black text-ink-deep mt-1">
+        Choose Your Club Tier
+      </h2>
+      <p class="text-sm text-steel mt-2">
+        Full digital student pass, voting rights, and exclusive discounts.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Tier 1: General -->
+      <div class="p-8 rounded-3xl bg-white border border-hairline flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-steel">Campus Entry</span>
+          <h3 class="text-xl font-bold text-ink-deep mt-1">General Student</h3>
+          <div class="my-4">
+            <span class="text-3xl font-black text-ink-deep">₹0</span>
+            <span class="text-xs text-steel"> / free</span>
+          </div>
+          <ul class="space-y-2.5 text-xs text-charcoal">
+            <li class="flex items-center gap-2">✓ Access to campus announcements</li>
+            <li class="flex items-center gap-2">✓ Purchase standard event tickets</li>
+            <li class="flex items-center gap-2">✓ Browse club merchandise</li>
+          </ul>
+        </div>
+        <div class="mt-8 pt-4 border-t border-hairline">
+          <a
+            href="/register"
+            class="block w-full py-2.5 text-center rounded-full border-2 border-hairline hover:border-ink-deep text-ink-deep font-bold text-xs transition-colors"
+          >
+            Create Account
+          </a>
+        </div>
+      </div>
+
+      <!-- Tier 2: Active Associate (Recommended) -->
+      <div class="p-8 rounded-3xl bg-surface-soft border-2 border-primary relative flex flex-col justify-between shadow-xs">
+        <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-white text-[10px] font-black uppercase tracking-wider">
+          RECOMMENDED
+        </span>
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-primary">Full Member</span>
+          <h3 class="text-xl font-bold text-ink-deep mt-1">Active Associate</h3>
+          <div class="my-4">
+            <span class="text-3xl font-black text-ink-deep">₹250</span>
+            <span class="text-xs text-steel"> / semester</span>
+          </div>
+          <ul class="space-y-2.5 text-xs text-charcoal">
+            <li class="flex items-center gap-2">✓ <strong>60-Second Rotating Digital Pass</strong></li>
+            <li class="flex items-center gap-2">✓ <strong>25% discount</strong> on gala & events</li>
+            <li class="flex items-center gap-2">✓ ₹100 off club merchandise & hoodies</li>
+            <li class="flex items-center gap-2">✓ General body meeting voting rights</li>
+          </ul>
+        </div>
+        <div class="mt-8 pt-4 border-t border-hairline">
+          <a
+            href="/membership"
+            class="block w-full py-2.5 text-center rounded-full bg-primary hover:bg-primary-deep text-white font-bold text-xs transition-colors shadow-xs"
+          >
+            Apply for Membership
+          </a>
+        </div>
+      </div>
+
+      <!-- Tier 3: Executive -->
+      <div class="p-8 rounded-3xl bg-white border border-hairline flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-steel">Leadership</span>
+          <h3 class="text-xl font-bold text-ink-deep mt-1">Club Executive</h3>
+          <div class="my-4">
+            <span class="text-3xl font-black text-ink-deep">Staff</span>
+            <span class="text-xs text-steel"> / appointed</span>
+          </div>
+          <ul class="space-y-2.5 text-xs text-charcoal">
+            <li class="flex items-center gap-2">✓ Door gate verification console access</li>
+            <li class="flex items-center gap-2">✓ Event management & ticket configuration</li>
+            <li class="flex items-center gap-2">✓ Treasury ledger and reimbursement approval</li>
+            <li class="flex items-center gap-2">✓ Announcement publishing suite</li>
+          </ul>
+        </div>
+        <div class="mt-8 pt-4 border-t border-hairline">
+          <a
+            href="/login"
+            class="block w-full py-2.5 text-center rounded-full border-2 border-hairline hover:border-ink-deep text-ink-deep font-bold text-xs transition-colors"
+          >
+            Staff Sign In
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Transparency Metrics Strip (§212) -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="rounded-3xl bg-ink-deep text-white p-10 sm:p-14 shadow-lg">
+      <div class="text-center max-w-2xl mx-auto mb-10">
+        <span class="text-xs font-bold uppercase tracking-widest text-white/60">
+          Campus Audited Financials
+        </span>
+        <h2 class="text-3xl font-black text-white mt-1">
+          Zero Leakage Club Operations
+        </h2>
+        <p class="text-sm text-white/70 mt-1">
+          Full data integrity guaranteed by automated ledger triggers and strict constraints.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <span class="text-3xl font-black text-success block">₹1,42,850</span>
+          <span class="text-xs text-white/60 mt-1 block">Recorded Inflow</span>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <span class="text-3xl font-black text-white block">297</span>
+          <span class="text-xs text-white/60 mt-1 block">Audited Transactions</span>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <span class="text-3xl font-black text-primary block">0</span>
+          <span class="text-xs text-white/60 mt-1 block">Oversold Tickets</span>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+          <span class="text-3xl font-black text-attention block">&lt; 0.5s</span>
+          <span class="text-xs text-white/60 mt-1 block">Door Gate Latency</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Staff Quick Launch Section for Judges & Team -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="p-8 rounded-3xl bg-surface-soft border border-hairline flex flex-col md:flex-row items-center justify-between gap-6">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-primary">
+          Hackathon Demo Console
+        </span>
+        <h3 class="text-2xl font-black text-ink-deep mt-1">
+          Explore Operational Roles
+        </h3>
+        <p class="text-xs text-steel mt-1 max-w-lg">
+          Switch between Admin, Treasurer, Door Staff, Volunteer, and Student Member views with one click.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <a
+          href="/door"
+          class="px-5 py-2.5 rounded-full bg-white hover:bg-hairline text-ink-deep font-bold text-xs border border-hairline shadow-xs transition-all"
+        >
+          🚪 Door Console
+        </a>
+        <a
+          href="/treasurer"
+          class="px-5 py-2.5 rounded-full bg-white hover:bg-hairline text-ink-deep font-bold text-xs border border-hairline shadow-xs transition-all"
+        >
+          💰 Treasurer Ledger
+        </a>
+        <a
+          href="/admin"
+          class="px-5 py-2.5 rounded-full bg-white hover:bg-hairline text-ink-deep font-bold text-xs border border-hairline shadow-xs transition-all"
+        >
+          ⚙️ Admin Console
+        </a>
+        <a
+          href="/login"
+          class="px-5 py-2.5 rounded-full bg-ink-deep hover:bg-charcoal text-white font-bold text-xs shadow-xs transition-all"
+        >
+          🔑 1-Click Role Login
+        </a>
+      </div>
     </div>
   </section>
 </PublicLayout>

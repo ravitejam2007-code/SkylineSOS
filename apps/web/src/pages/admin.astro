@@ -1,92 +1,158 @@
 ---
 import PublicLayout from "@/layouts/PublicLayout.astro";
+import { AdminActionQueuePanel } from "@/islands/ops/AdminActionQueuePanel";
 
 const adminModules = [
   {
-    title: "Door Verification",
+    title: "Applications Review",
+    desc: "Review student applications, approve memberships, and provide rejection reasons.",
+    link: "/admin/applications",
+    icon: "🪪",
+    badge: "Scene 1 · Membership"
+  },
+  {
+    title: "Student Directory",
+    desc: "Search students, grant door/volunteer/treasurer roles, and perform walk-up signups.",
+    link: "/admin/members",
+    icon: "👥",
+    badge: "Identity"
+  },
+  {
+    title: "Door Verification Gate",
     desc: "Single-screen check-in console with auto-detecting 6-digit & Crockford ticket code input.",
     link: "/door",
     icon: "🚪",
-    badge: "Gate Ops"
+    badge: "Scene 2 · Gate Ops"
+  },
+  {
+    title: "Events & Capacity",
+    desc: "Manage published events, configure ticket tiers, and view real-time gate attendance.",
+    link: "/admin/events",
+    icon: "🎟️",
+    badge: "Ticketing"
   },
   {
     title: "Treasurer & Ledger",
     desc: "Source-linked financial records, net movement metrics, and expense approval queue.",
     link: "/treasurer",
     icon: "💰",
-    badge: "Finance"
+    badge: "Scene 6 · Finance"
   },
   {
-    title: "Digital Member Pass",
-    desc: "Inspect rotating 60-second dynamic identity cards with real-time countdown ring.",
-    link: "/membership/card",
-    icon: "🪪",
-    badge: "Identity"
-  },
-  {
-    title: "Events & Ticket Sales",
-    desc: "Manage published events, ticket categories, and live capacity constraints.",
-    link: "/events",
-    icon: "🎟️",
-    badge: "Events"
-  },
-  {
-    title: "Merchandise Store",
-    desc: "Manage apparel inventory, stock reservations, and order fulfilment.",
-    link: "/merch",
+    title: "Merchandise & Stock",
+    desc: "Manage apparel inventory, adjust variant stock, and mark orders fulfilled.",
+    link: "/admin/merch",
     icon: "👕",
-    badge: "Merch"
+    badge: "Scene 4 · Merch"
   },
   {
-    title: "Announcements",
-    desc: "Broadcast official updates targeted to public, member, or staff audiences.",
-    link: "/announcements",
+    title: "Announcements Editor",
+    desc: "Broadcast official updates targeted to public, member, or executive staff audiences.",
+    link: "/admin/announcements",
     icon: "📢",
-    badge: "Comms"
+    badge: "Scene 3 · Comms"
+  },
+  {
+    title: "Fundraisers & Tasks",
+    desc: "Track campaign fundraising progress, log donations, and manage volunteer squads.",
+    link: "/admin/fundraisers",
+    icon: "🎯",
+    badge: "Scene 5 · Squads"
+  },
+  {
+    title: "Volunteer Portal",
+    desc: "Volunteer task checklist and out-of-pocket expense claim submission form.",
+    link: "/volunteer",
+    icon: "🤝",
+    badge: "Volunteers"
   }
 ];
 ---
 
 <PublicLayout title="Staff Operations Console — SkylineSOS">
-  <div class="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-    <div class="mb-10">
-      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ink-deep text-white text-xs font-bold uppercase tracking-wider mb-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
-        Executive Board
+  <div class="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-8 rounded-3xl bg-surface-soft border border-hairline">
+      <div>
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ink-deep text-white text-xs font-bold uppercase tracking-wider mb-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+          Executive Board
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-black text-ink-deep">Staff Operations Console</h1>
+        <p class="text-sm text-steel mt-1 max-w-xl">
+          Unified control center for door check-in gates, double-entry treasury, memberships, and club campaigns.
+        </p>
       </div>
-      <h1 class="text-3xl sm:text-4xl font-black text-ink-deep">Staff Operations Console</h1>
-      <p class="text-sm text-steel mt-1">
-        Command center for event gates, treasury, memberships, and club operations.
-      </p>
+
+      <div class="flex items-center gap-3">
+        <a
+          href="/door"
+          class="px-6 py-3 rounded-full bg-primary hover:bg-primary-deep text-white font-bold text-xs shadow-xs transition-all hover:scale-[1.02]"
+        >
+          🚪 Launch Door Gate
+        </a>
+        <a
+          href="/treasurer"
+          class="px-6 py-3 rounded-full bg-ink-deep hover:bg-charcoal text-white font-bold text-xs shadow-xs transition-all hover:scale-[1.02]"
+        >
+          💰 Open Ledger
+        </a>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {adminModules.map((m) => (
-        <a
-          href={m.link}
-          class="p-8 rounded-3xl bg-surface-soft hover:bg-white border border-hairline hover:border-ink-deep/30 transition-all flex flex-col justify-between shadow-xs hover:shadow-md group"
-        >
-          <div>
-            <div class="flex justify-between items-start mb-4">
-              <span class="text-3xl p-3 bg-white rounded-2xl border border-hairline shadow-xs group-hover:scale-105 transition-transform">
-                {m.icon}
-              </span>
-              <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white border border-hairline text-charcoal">
-                {m.badge}
-              </span>
-            </div>
-            <h2 class="text-xl font-bold text-ink-deep group-hover:text-primary transition-colors mb-2">
-              {m.title}
-            </h2>
-            <p class="text-xs text-steel leading-relaxed">{m.desc}</p>
-          </div>
+    <!-- Operations Modules Grid -->
+    <div>
+      <div class="mb-6">
+        <span class="text-xs font-black uppercase tracking-widest text-steel">Operational Modules</span>
+        <h2 class="text-2xl font-black text-ink-deep mt-0.5">Control Planes by Role</h2>
+      </div>
 
-          <div class="mt-6 pt-4 border-t border-hairline flex items-center justify-between text-xs font-bold text-ink">
-            <span>Open Console</span>
-            <span class="group-hover:translate-x-1 transition-transform">→</span>
-          </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {adminModules.map((m) => (
+          <a
+            href={m.link}
+            class="p-8 rounded-3xl bg-white hover:bg-surface-soft border border-hairline hover:border-ink-deep/20 transition-all flex flex-col justify-between shadow-xs hover:shadow-md group"
+          >
+            <div>
+              <div class="flex justify-between items-start mb-4">
+                <span class="text-3xl p-3 bg-surface-soft rounded-2xl border border-hairline shadow-2xs group-hover:scale-105 transition-transform">
+                  {m.icon}
+                </span>
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-surface-soft border border-hairline text-charcoal">
+                  {m.badge}
+                </span>
+              </div>
+              <h3 class="text-lg font-bold text-ink-deep group-hover:text-primary transition-colors mb-2">
+                {m.title}
+              </h3>
+              <p class="text-xs text-steel leading-relaxed">{m.desc}</p>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-hairline flex items-center justify-between text-xs font-bold text-ink">
+              <span>Open Module</span>
+              <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Live Executive Action Queue Component -->
+    <div class="pt-6 border-t border-hairline">
+      <div class="mb-6 flex justify-between items-center">
+        <div>
+          <span class="text-xs font-black uppercase tracking-widest text-steel">Live Triage</span>
+          <h2 class="text-2xl font-black text-ink-deep mt-0.5">Urgent Action Items</h2>
+        </div>
+        <a
+          href="/admin/actions"
+          class="text-xs font-bold text-primary hover:underline"
+        >
+          View Full Action Queue →
         </a>
-      ))}
+      </div>
+
+      <AdminActionQueuePanel client:load />
     </div>
   </div>
 </PublicLayout>
