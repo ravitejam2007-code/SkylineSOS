@@ -673,4 +673,22 @@
       - Executed `npm --prefix Frontend run build`: Clean static compilation of all 21 pages with zero errors.
       - Verified backend test suite with 100% success rate (79/79 passed across 24 suites, `npm test`).
       - Code staged and merged into `main` branch for deployment.
+- **Upstream Main Synchronization & Comprehensive Project README Creation:**
+  - **Git Pull & Merge Sync (`fee1e01`):**
+    - Executed `git pull` pulling commits `ba112d8..fee1e01` (merging `feature/sos-foundation` into `main`).
+    - Brought in 55 updated files with 10,983 additions and 2,345 deletions across frontend scenes, auth guards, merch shopping cart, pickup OTP verification, and documentation.
+  - **Comprehensive Production `README.md` Generation:**
+    - Authored an exhaustive, modern `README.md` reflecting all latest features and architecture:
+      - Project badges (79/79 tests, Astro 5, React 19, Tailwind CSS v4, Express on Deno 2, Supabase PostgreSQL 15, Razorpay, Vercel).
+      - "What's New in Recent Commits" changelog detailing merchandise cart, pickup OTP, per-event ticket segregation, universal auth guards, guest mode switcher, 3 bake-sale stations, student photo badge, zero emoji policy, black & slate theme, and Razorpay test gateway.
+      - Full architectural blueprint with Mermaid diagram illustrating Client, Edge API, Supabase Cloud, and External Services.
+      - Module-by-module capability index.
+      - 8 database invariants breakdown and test verification results.
+      - Complete repository directory tree.
+      - Local setup, environment configuration, testing, and production build instructions.
+      - Hackathon demo credentials table and admin secret code (`SKYLINE_ADMIN_2026`).
+  - **Verification:**
+    - Ran `npm test`: 79/79 tests passed across 24 suites with 100% pass rate.
+    - Ran `npm --prefix Frontend run build`: 21/21 static pages compiled cleanly in ~11s.
+
 
