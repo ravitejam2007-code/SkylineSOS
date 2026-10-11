@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { generateQrDataUrl } from '../../lib/qr';
 import { ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
+import AuthGuard from '../auth/AuthGuard';
 import type { Event, EventSummaryResult, FundraiserTask } from '@campusone/contracts';
 
 function playAudioChime(success: boolean) {
@@ -74,6 +75,12 @@ export default function EventOperationsScene() {
 
   const loadData = async () => {
     try {
+      const current = await getCurrentUserSession();
+      setSession(current);
+      const allowed = ['volunteer', 'door_staff', 'admin'];
+      if (!current || (!allowed.includes(current.role) && !current.roles?.some((r) => allowed.includes(r)))) {
+        return;
+      }
       const [evts, fList] = await Promise.all([
         api.getEvents(),
         api.getActiveFundraisers(),
@@ -279,8 +286,9 @@ export default function EventOperationsScene() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
-      {/* Top Banner */}
+    <AuthGuard requiredRole={['door_staff', 'volunteer', 'admin']} pageTitle="Event Operations Console" requiredRoleLabel="Event Operations & Volunteer Staff">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
+        {/* Top Banner */}
       <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[12px] font-bold">
@@ -720,5 +728,7 @@ export default function EventOperationsScene() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }
+

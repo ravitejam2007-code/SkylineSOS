@@ -223,49 +223,19 @@ export const SANJAY_REGISTERED_ACCOUNT: RegisteredAccountRecord = {
   createdAt: '2026-10-10T00:00:00Z',
 };
 
-export function isBrowserReload(): boolean {
-  if (typeof window === 'undefined' || !window.performance) return false;
-  try {
-    const navEntries = window.performance.getEntriesByType('navigation');
-    if (navEntries.length > 0) {
-      const nav = navEntries[0] as PerformanceNavigationTiming;
-      return nav.type === 'reload';
-    }
-    return (window.performance as any).navigation?.type === 1;
-  } catch {
-    return false;
-  }
-}
-
-export function autoLoginSanjay(): UserSession {
-  if (typeof window !== 'undefined') {
-    try {
-      sessionStorage.removeItem('skylinesos_guest_mode');
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(SANJAY_DEFAULT_SESSION));
-      localStorage.setItem('campusone_demo_role', 'admin');
-    } catch {}
-  }
-  return SANJAY_DEFAULT_SESSION;
-}
-
 /**
  * Retrieve active session synchronously from client storage.
- * Automatically logs in sanjaydsanjay042@gmail.com on page refresh.
+ * Without login or registration, returns null (strictly unauthenticated).
  */
 export function getActiveSession(): UserSession | null {
   if (typeof window !== 'undefined') {
     try {
-      // 1. If page was refreshed/reloaded, automatically log in sanjaydsanjay042@gmail.com
-      if (isBrowserReload()) {
-        return autoLoginSanjay();
-      }
-
-      // 2. If user explicitly signed out in current tab, stay in guest mode until reload
-      if (sessionStorage.getItem('skylinesos_guest_mode') === 'true') {
+      // 1. Priority #1: If user explicitly logged out in this session, keep them logged out as guest!
+      if (sessionStorage.getItem('skylinesos_logged_out') === 'true') {
         return null;
       }
 
-      // 3. Read current session from localStorage
+      // 2. Read stored session from localStorage
       const raw = localStorage.getItem(SESSION_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -274,14 +244,36 @@ export function getActiveSession(): UserSession | null {
         }
       }
 
-      // 4. Default: Auto-login sanjaydsanjay042@gmail.com
-      return autoLoginSanjay();
+      // Without login or registration, visitor is strictly unauthenticated
+      return null;
     } catch {
-      return SANJAY_DEFAULT_SESSION;
+      return null;
     }
   }
   return null;
 }
+
+export function canAccessPortal(session: UserSession | null): boolean {
+  return session !== null;
+}
+
+export function canAccessAdmin(session: UserSession | null): boolean {
+  if (!session) return false;
+  return session.role === 'admin' || (session.roles && session.roles.includes('admin'));
+}
+
+export function canAccessOperations(session: UserSession | null): boolean {
+  if (!session) return false;
+  const allowed = ['admin', 'volunteer', 'door_staff'];
+  return allowed.includes(session.role) || (session.roles && session.roles.some((r) => allowed.includes(r)));
+}
+
+export function canAccessTreasurer(session: UserSession | null): boolean {
+  if (!session) return false;
+  const allowed = ['admin', 'treasurer'];
+  return allowed.includes(session.role) || (session.roles && session.roles.some((r) => allowed.includes(r)));
+}
+
 
 export const PERSONA_USER_IDS: Record<'student' | 'volunteer' | 'admin' | 'treasurer', string> = {
   student: 'c75b16e0-4d97-4411-909f-6322d84e393d',
@@ -341,6 +333,8 @@ export function loginAsPersona(personaId: 'student' | 'volunteer' | 'admin' | 't
   };
 
   if (typeof window !== 'undefined') {
+    sessionStorage.removeItem('skylinesos_logged_out');
+    sessionStorage.removeItem('skylinesos_logged_out_notice');
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
     localStorage.setItem('campusone_demo_role', p.role);
     window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));
@@ -351,12 +345,17 @@ export function loginAsPersona(personaId: 'student' | 'volunteer' | 'admin' | 't
 
 /**
  * Sign out active user.
+ * Explicitly terminates local storage session, clears Supabase auth token, and sets logged-out state.
  */
 export function logoutUser(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(SESSION_STORAGE_KEY);
     localStorage.setItem('campusone_demo_role', 'guest');
-    sessionStorage.setItem('skylinesos_guest_mode', 'true');
+    sessionStorage.setItem('skylinesos_logged_out', 'true');
+    sessionStorage.setItem('skylinesos_logged_out_notice', 'true');
+    try {
+      getBrowserClient().auth.signOut().catch(() => {});
+    } catch {}
     window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: null }));
     window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: 'guest' }));
   }
@@ -366,6 +365,9 @@ export function logoutUser(): void {
  * Retrieve current user session from Supabase or localStorage.
  */
 export async function getCurrentUserSession(): Promise<UserSession | null> {
+  if (typeof window !== 'undefined' && sessionStorage.getItem('skylinesos_logged_out') === 'true') {
+    return null;
+  }
   const local = getActiveSession();
   if (local) return local;
 
@@ -464,7 +466,26 @@ export async function signInWithPassword(email: string, password: string, prefer
     }
 
     if (matchedKey === 'sanjay') {
-      return autoLoginSanjay();
+      const session: UserSession = {
+        userId: SANJAY_DEFAULT_SESSION.userId,
+        email: SANJAY_DEFAULT_SESSION.email,
+        fullName: SANJAY_DEFAULT_SESSION.fullName,
+        studentId: SANJAY_DEFAULT_SESSION.studentId,
+        role: SANJAY_DEFAULT_SESSION.role,
+        roles: SANJAY_DEFAULT_SESSION.roles,
+        title: SANJAY_DEFAULT_SESSION.title,
+        destination: SANJAY_DEFAULT_SESSION.destination,
+      };
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('skylinesos_logged_out');
+        sessionStorage.removeItem('skylinesos_logged_out_notice');
+        sessionStorage.removeItem('skylinesos_guest_mode');
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+        localStorage.setItem('campusone_demo_role', 'admin');
+        window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));
+        window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: 'admin' }));
+      }
+      return session;
     }
     const personaKey = matchedKey === 'door_staff' ? 'volunteer' : matchedKey === 'member' ? 'student' : matchedKey;
     return loginAsPersona(personaKey as 'student' | 'volunteer' | 'admin' | 'treasurer');
@@ -528,6 +549,8 @@ export async function signInWithPassword(email: string, password: string, prefer
     };
 
     if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('skylinesos_logged_out');
+      sessionStorage.removeItem('skylinesos_logged_out_notice');
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
       localStorage.setItem('campusone_demo_role', actualRole);
       window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));
@@ -572,6 +595,8 @@ export async function signInWithPassword(email: string, password: string, prefer
     };
 
     if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('skylinesos_logged_out');
+      sessionStorage.removeItem('skylinesos_logged_out_notice');
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
       localStorage.setItem('campusone_demo_role', actualRole);
       window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));
@@ -614,6 +639,8 @@ export async function signInWithPassword(email: string, password: string, prefer
       };
 
       if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('skylinesos_logged_out');
+        sessionStorage.removeItem('skylinesos_logged_out_notice');
         localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
         localStorage.setItem('campusone_demo_role', actualRole);
         window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));
@@ -738,6 +765,8 @@ export async function signUp(params: {
   };
 
   if (typeof window !== 'undefined') {
+    sessionStorage.removeItem('skylinesos_logged_out');
+    sessionStorage.removeItem('skylinesos_logged_out_notice');
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
     localStorage.setItem('campusone_demo_role', selectedRole);
     window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: session }));

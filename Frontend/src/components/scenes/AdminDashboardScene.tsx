@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { formatPaise } from '../../lib/formatters';
 import { ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
+import AuthGuard from '../auth/AuthGuard';
 import type {
   TreasurerOverviewResult,
   Event,
@@ -37,6 +38,11 @@ export default function AdminDashboardScene() {
 
   const loadData = async () => {
     try {
+      const current = await getCurrentUserSession();
+      setSession(current);
+      if (!current || (current.role !== 'admin' && !current.roles?.includes('admin'))) {
+        return;
+      }
       const [ov, evts, prods, apps, stats] = await Promise.all([
         api.getTreasurerOverview(),
         api.getEvents(),
@@ -129,8 +135,9 @@ export default function AdminDashboardScene() {
   const adminDisplayName = session?.fullName || 'Arjun Mehta';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
-      {/* Top Banner */}
+    <AuthGuard requiredRole="admin" pageTitle="Admin Dashboard" requiredRoleLabel="Executive Administrator">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
+        {/* Top Banner */}
       <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-900 text-white text-[12px] font-bold">
@@ -403,6 +410,8 @@ export default function AdminDashboardScene() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }
+
 

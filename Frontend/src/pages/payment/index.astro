@@ -1,0 +1,147 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/ui/Button.astro';
+
+const url = Astro.url;
+const status = url.searchParams.get('status') || 'confirmed';
+const isConfirmed = status === 'confirmed' || status === 'success';
+const amount = url.searchParams.get('amount') || (isConfirmed ? '319.20' : '399.00');
+const item = url.searchParams.get('item') || 'Skyline Club Merchandise (Club T-Shirt)';
+const type = url.searchParams.get('type') || (item.toLowerCase().includes('ticket') || item.toLowerCase().includes('pass') ? 'event' : 'merch');
+const reason = url.searchParams.get('reason') || 'Transaction declined by bank or user dismissed checkout.';
+const paymentId = url.searchParams.get('payment_id') || 'pay_SKYL_' + Math.random().toString(36).substring(2, 8).toUpperCase();
+---
+
+<BaseLayout
+  title={`Payment States (${isConfirmed ? 'Confirmed' : 'Not Confirmed'}) — SkylineSOS`}
+  description="Verified transaction status and settlement diagnosis for Skyline Student Association."
+>
+  <div class="min-h-[calc(85vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-xl w-full space-y-6 t-enter">
+      {/* State Switcher Tabs */}
+      <div className="flex justify-center">
+        <div class="inline-flex p-1 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold">
+          <a
+            href="/payment?status=confirmed&amount=319.20&type=merch&item=Club+T-Shirt"
+            class={`px-4 py-1.5 rounded-full transition-all ${
+              isConfirmed ? 'bg-black text-white shadow-xs' : 'text-slate-600 hover:text-black'
+            }`}
+          >
+            ✓ Confirmed State
+          </a>
+          <a
+            href="/payment?status=failed&amount=399.00&type=merch&item=Club+T-Shirt&reason=Declined+by+issuing+bank"
+            class={`px-4 py-1.5 rounded-full transition-all ${
+              !isConfirmed ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-black'
+            }`}
+          >
+            ✕ Not Confirmed State
+          </a>
+        </div>
+      </div>
+
+      <!-- Icon & Header -->
+      <div class="text-center space-y-2">
+        <div class={`w-14 h-14 mx-auto rounded-full flex items-center justify-center shadow-xs ${
+          isConfirmed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+        }`}>
+          {isConfirmed ? (
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
+        </div>
+        <div class={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-bold border ${
+          isConfirmed ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+        }`}>
+          <span class={`w-2 h-2 rounded-full animate-pulse ${isConfirmed ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+          {isConfirmed ? 'Payment Confirmed · Ledger Updated' : 'Payment Not Confirmed · Zero Funds Debited'}
+        </div>
+        <h1 class="text-3xl font-extrabold text-[var(--color-ink-deep)]">
+          {isConfirmed ? 'Payment Successfully Confirmed' : 'Payment Not Completed'}
+        </h1>
+        <p class="text-xs text-[var(--color-steel)] max-w-sm mx-auto">
+          {isConfirmed
+            ? 'Your purchase has been verified and settled via Razorpay test gateway.'
+            : 'The transaction could not be processed. Please check the failure diagnostic below.'}
+        </p>
+      </div>
+
+      <!-- Detail Card -->
+      <div class="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <span class="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">
+              {isConfirmed ? 'AMOUNT SETTLED' : 'UNPROCESSED AMOUNT'}
+            </span>
+            <div class={`text-2xl font-extrabold mt-0.5 ${isConfirmed ? 'text-emerald-700' : 'text-rose-600'}`}>
+              ₹{amount}
+            </div>
+          </div>
+          <span class={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+            isConfirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+          }`}>
+            {type === 'merch' ? 'Merchandise Order' : 'Event Ticket Pass'}
+          </span>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-500">Order Context</span>
+            <span class="font-bold text-slate-900">{item}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-500">Classification</span>
+            <span class="font-medium text-slate-700 capitalize">
+              {type === 'merch' ? 'Student Merchandise Collection' : 'Campus Event Delegate Pass'}
+            </span>
+          </div>
+
+          {!isConfirmed && (
+            <div class="py-1 border-b border-slate-100">
+              <span class="text-slate-500 block mb-0.5">Failure Reason</span>
+              <span class="font-bold text-rose-600 block">{reason}</span>
+            </div>
+          )}
+
+          {isConfirmed && (
+            <div class="flex justify-between py-1 border-b border-slate-100">
+              <span class="text-slate-500">Transaction ID</span>
+              <span class="font-mono font-bold text-slate-900">{paymentId}</span>
+            </div>
+          )}
+
+          <div class="flex justify-between py-1">
+            <span class="text-slate-500">Gateway Provider</span>
+            <span class="font-mono text-slate-600">Razorpay Test Mode</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation CTAs -->
+      <div class="space-y-2 pt-2">
+        {isConfirmed ? (
+          <Button variant="primary" size="lg" href={type === 'merch' ? '/merch' : '/events'} class="w-full">
+            {type === 'merch' ? 'Return to Merch Store' : 'Browse More Events'}
+          </Button>
+        ) : (
+          <Button variant="buy-cta" size="lg" href={type === 'merch' ? '/merch' : '/events'} class="w-full">
+            Retry {type === 'merch' ? 'Merchandise' : 'Event'} Payment
+          </Button>
+        )}
+        <div class="flex gap-2">
+          <Button variant="secondary" size="md" href="/portal" class="flex-1">
+            Student Portal
+          </Button>
+          <Button variant="ghost" size="md" href="/" class="flex-1">
+            Home
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

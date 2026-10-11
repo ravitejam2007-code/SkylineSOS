@@ -4,9 +4,10 @@ import Button from '../../components/ui/Button.astro';
 
 const url = Astro.url;
 const paymentId = url.searchParams.get('payment_id') || 'pay_SKYL_' + Math.random().toString(36).substring(2, 9).toUpperCase();
-const orderId = url.searchParams.get('order_id') || 'ord_GALA_2026';
-const amount = url.searchParams.get('amount') || '350';
-const item = url.searchParams.get('item') || 'Spring Gala Member Ticket';
+const orderId = url.searchParams.get('order_id') || 'ord_MCH_' + Math.random().toString(36).substring(2, 6).toUpperCase();
+const amount = url.searchParams.get('amount') || '319.20';
+const item = url.searchParams.get('item') || 'Skyline Official Merchandise (Club T-Shirt)';
+const type = url.searchParams.get('type') || (item.toLowerCase().includes('ticket') || item.toLowerCase().includes('pass') || item.toLowerCase().includes('gala') ? 'event' : 'merch');
 const currentDate = new Date().toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
@@ -15,7 +16,7 @@ const currentDate = new Date().toLocaleDateString('en-US', {
 ---
 
 <BaseLayout
-  title="Payment Successful — SkylineSOS"
+  title="Payment Confirmed — SkylineSOS"
   description="Your transaction with Skyline Student Association has been confirmed."
 >
   <div class="min-h-[calc(85vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -29,13 +30,13 @@ const currentDate = new Date().toLocaleDateString('en-US', {
         </div>
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-bold">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Payment Confirmed · Ledger Updated
+          Payment Confirmed · Verified in Ledger
         </div>
         <h1 class="text-3xl sm:text-4xl font-extrabold text-[var(--color-ink-deep)]">
           Payment Successful!
         </h1>
         <p class="text-[14px] text-[var(--color-steel)] max-w-sm mx-auto">
-          Your transaction has been verified and posted to the association's audited ledger.
+          Your transaction has been confirmed and posted to the association's verified ledger.
         </p>
       </div>
 
@@ -48,15 +49,21 @@ const currentDate = new Date().toLocaleDateString('en-US', {
               ₹{amount}
             </div>
           </div>
-          <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[12px] font-bold">
-            Settled (Test Mode)
+          <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold uppercase tracking-wider">
+            {type === 'merch' ? 'Merchandise Order' : 'Event Ticket Pass'}
           </span>
         </div>
 
         <div class="space-y-2.5 text-[13px]">
           <div class="flex justify-between py-1 border-b border-[var(--color-hairline-soft)]">
-            <span class="text-[var(--color-steel)]">Item / Service</span>
-            <span class="font-bold text-[var(--color-ink-deep)]">{item}</span>
+            <span class="text-[var(--color-steel)]">Item / Details</span>
+            <span class="font-bold text-[var(--color-ink-deep)] text-right max-w-[240px] truncate">{item}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-[var(--color-hairline-soft)]">
+            <span class="text-[var(--color-steel)]">Order Classification</span>
+            <span class="font-semibold text-[var(--color-ink-deep)] capitalize">
+              {type === 'merch' ? 'Merchandise Collection' : 'Event Delegate Admission'}
+            </span>
           </div>
           <div class="flex justify-between py-1 border-b border-[var(--color-hairline-soft)]">
             <span class="text-[var(--color-steel)]">Transaction ID</span>
@@ -72,24 +79,24 @@ const currentDate = new Date().toLocaleDateString('en-US', {
           </div>
           <div class="flex justify-between py-1">
             <span class="text-[var(--color-steel)]">Payment Method</span>
-            <span class="text-[var(--color-slate)]">UPI / Razorpay Verified</span>
+            <span class="text-[var(--color-slate)]">UPI / Razorpay Test Mode</span>
           </div>
         </div>
 
         <div class="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] text-[12px] text-[var(--color-steel)] flex items-center gap-2">
           <span class="text-emerald-600 font-bold">✓</span>
-          <span>A copy of this digital receipt has been linked to your verified student record.</span>
+          <span>Digital receipt linked to your verified student pass and campus identity.</span>
         </div>
       </div>
 
       <!-- Action Navigation Buttons -->
       <div class="space-y-3">
-        <Button variant="primary" size="lg" href="/portal" class="w-full">
-          Open Student Portal & View Pass
+        <Button variant="primary" size="lg" href={type === 'merch' ? '/merch' : '/portal'} class="w-full">
+          {type === 'merch' ? 'Return to Merch Store & View OTP' : 'Open Student Portal & View Pass'}
         </Button>
         <div class="flex gap-3">
-          <Button variant="secondary" size="md" href="/events" class="flex-1">
-            Browse More Events
+          <Button variant="secondary" size="md" href={type === 'merch' ? '/events' : '/merch'} class="flex-1">
+            {type === 'merch' ? 'Browse Events' : 'Browse Merch'}
           </Button>
           <Button variant="ghost" size="md" href="/" class="flex-1">
             Return Home

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../lib/api';
 import { formatPaise } from '../../lib/formatters';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
@@ -43,15 +43,15 @@ export interface PersonnelOption {
 export function getDynamicPersonnel(): PersonnelOption[] {
   const map = new Map<string, PersonnelOption>();
 
-  // 1. Base chapter staff & leads
+  // 1. Base chapter staff & leads (Aligned with Screenshot 052542)
   const defaults: PersonnelOption[] = [
     { id: 'p1', name: 'Sarah Student', role: 'Active Member · Quad Table Lead', email: 'student@studentorg.edu', studentId: 'SKY-2026-1190' },
-    { id: 'p2', name: 'Rahul Sharma', role: 'Core Member · Logistics & Baking Lead', email: 'rahul.s@skyline.edu', studentId: 'SKY-2026-4401' },
-    { id: 'p3', name: 'Maya Deshmukh', role: 'Plus Member · Supplies & Packaging Lead', email: 'maya.d@skyline.edu', studentId: 'SKY-2026-8812' },
+    { id: 'p2', name: 'Rahul Sharma', role: 'Core Member · Logistics Lead', email: 'rahul.s@skyline.edu', studentId: 'SKY-2026-4401' },
+    { id: 'p3', name: 'Maya Deshmukh', role: 'Plus Member · Design Lead', email: 'maya.d@skyline.edu', studentId: 'SKY-2026-8812' },
     { id: 'p4', name: 'Arjun Mehta', role: 'Lead Administrator', email: 'arjun.admin@skyline.edu', studentId: 'SKY-2026-0001' },
-    { id: 'p5', name: 'Priya Patel', role: 'Treasurer · Quad Cashier Desk', email: 'priya.treasurer@skyline.edu', studentId: 'SKY-2026-0002' },
-    { id: 'p6', name: 'Vikram Singh', role: 'Quad Setup & Logistics Lead', email: 'vikram.door@skyline.edu', studentId: 'SKY-2026-0003' },
-    { id: 'p7', name: 'Ananya Rao', role: 'Volunteer Coordinator & Signage', email: 'ananya.volunteer@skyline.edu', studentId: 'SKY-2026-0004' },
+    { id: 'p5', name: 'Priya Patel', role: 'Treasurer · Finance Desk', email: 'priya.treasurer@skyline.edu', studentId: 'SKY-2026-0002' },
+    { id: 'p6', name: 'Vikram Singh', role: 'Door Staff · Entrance Lead', email: 'vikram.door@skyline.edu', studentId: 'SKY-2026-0003' },
+    { id: 'p7', name: 'Ananya Rao', role: 'Volunteer Coordinator', email: 'ananya.volunteer@skyline.edu', studentId: 'SKY-2026-0004' },
   ];
   defaults.forEach((p) => map.set(p.name.toLowerCase(), p));
 
@@ -415,6 +415,13 @@ export default function FundraiserScene() {
   // Volunteering station view filter
   const [stationFilter, setStationFilter] = useState<'all' | 'baking' | 'supplies' | 'table' | 'mine'>('all');
 
+  // Custom dropdown states matching Screenshot 052542 with transitions-dev
+  const [showNewTaskCard, setShowNewTaskCard] = useState(true);
+  const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
+  const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
+  const priorityDropdownRef = useRef<HTMLDivElement | null>(null);
+  const assigneeDropdownRef = useRef<HTMLDivElement | null>(null);
+
   // Personnel state & Real-time member picker
   const [personnelList, setPersonnelList] = useState<PersonnelOption[]>(() => getDynamicPersonnel());
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
@@ -468,9 +475,27 @@ export default function FundraiserScene() {
       refreshPersonnel();
     };
 
+    const handleClickOutside = (e: MouseEvent) => {
+      if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(e.target as Node)) {
+        setPriorityDropdownOpen(false);
+      }
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(e.target as Node)) {
+        setAssigneeDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPriorityDropdownOpen(false);
+        setAssigneeDropdownOpen(false);
+      }
+    };
+
     window.addEventListener('campusone:auth_changed' as any, handleAuthChange);
     window.addEventListener('storage', refreshPersonnel);
     window.addEventListener('skylinesos:registered_accounts_updated' as any, refreshPersonnel);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
 
     const pollTimer = setInterval(refreshPersonnel, 2500);
 
@@ -478,6 +503,8 @@ export default function FundraiserScene() {
       window.removeEventListener('campusone:auth_changed' as any, handleAuthChange);
       window.removeEventListener('storage', refreshPersonnel);
       window.removeEventListener('skylinesos:registered_accounts_updated' as any, refreshPersonnel);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
       clearInterval(pollTimer);
     };
   }, []);

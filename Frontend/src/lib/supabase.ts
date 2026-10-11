@@ -12,11 +12,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-let browserClientInstance: ReturnType<typeof createClient> | null = null;
-
 /**
  * Standard browser client for React Islands and client-side interactions.
- * Uses a singleton pattern to prevent multiple GoTrueClient instances in the browser context.
+ * Uses a strict window singleton pattern to prevent multiple GoTrueClient instances in the browser context.
  */
 export function getBrowserClient() {
   if (typeof window === 'undefined') {
@@ -29,8 +27,9 @@ export function getBrowserClient() {
     });
   }
 
-  if (!browserClientInstance) {
-    browserClientInstance = createClient(supabaseUrl, supabaseAnonKey, {
+  const win = window as any;
+  if (!win.__supabase_browser_client__) {
+    win.__supabase_browser_client__ = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -38,7 +37,7 @@ export function getBrowserClient() {
       },
     });
   }
-  return browserClientInstance;
+  return win.__supabase_browser_client__;
 }
 
 /**

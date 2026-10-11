@@ -46,6 +46,24 @@ export interface CuratedEvent {
   }[];
 }
 
+export const isSameEvent = (pass: EventTicketPass, targetEvent: CuratedEvent): boolean => {
+  if (!pass || !targetEvent) return false;
+  // If event titles match, it is the exact same event
+  if (pass.event_title && targetEvent.title) {
+    if (pass.event_title.trim().toLowerCase() === targetEvent.title.trim().toLowerCase()) {
+      return true;
+    }
+  }
+  // If event_ids match AND titles are not contradictory
+  if (pass.event_id && targetEvent.id && pass.event_id === targetEvent.id) {
+    if (pass.event_title && targetEvent.title) {
+      return pass.event_title.trim().toLowerCase() === targetEvent.title.trim().toLowerCase();
+    }
+    return true;
+  }
+  return false;
+};
+
 const DEFAULT_EVENTS: CuratedEvent[] = [
   {
     id: 'e3',
@@ -240,13 +258,17 @@ export default function EventsScene() {
         const evts = await api.getEvents();
         if (evts && evts.length > 0) {
           setCuratedEvents((prev) => {
-            const updated = prev.map((curated, idx) => {
-              const matched = evts[idx] || evts[0];
+            const updated = prev.map((curated) => {
+              // Match strictly by exact slug or exact ID so distinct/new events are never overwritten with evts[0]!
+              const matched = evts.find(
+                (e) => (e.slug && curated.slug && e.slug === curated.slug) || e.id === curated.id
+              );
               if (!matched) return curated;
               return {
                 ...curated,
                 id: matched.id,
                 slug: matched.slug || curated.slug,
+                seatsLeft: matched.capacity ? Math.max(0, matched.capacity - (matched.sold_count || 0)) : curated.seatsLeft,
               };
             });
             return updated;
@@ -409,8 +431,8 @@ export default function EventsScene() {
       return;
     }
 
-    // Constraint: 1 ticket per event per student account
-    const alreadyReserved = myTicketPasses.find((p) => p.event_id === event.id);
+    // Constraint: 1 ticket per event per student account (strict per-event matching)
+    const alreadyReserved = myTicketPasses.find((p) => isSameEvent(p, event));
     if (alreadyReserved) {
       alert(`You have already generated a ticket for "${event.title}" (${alreadyReserved.seat}). Each student is limited to 1 ticket reservation per event.`);
       return;
@@ -445,10 +467,10 @@ export default function EventsScene() {
       return;
     }
 
-    // Double check 1 ticket limit per event
-    const alreadyReserved = myTicketPasses.find((p) => p.event_id === selectedEvent.id);
+    // Double check 1 ticket limit per event (strict per-event matching)
+    const alreadyReserved = myTicketPasses.find((p) => isSameEvent(p, selectedEvent));
     if (alreadyReserved) {
-      alert(`You have already generated a ticket for "${selectedEvent.title}". Each student is limited to 1 ticket reservation per event.`);
+      alert(`You have already generated a ticket for "${selectedEvent.title}" (${alreadyReserved.seat}). Each student is limited to 1 ticket reservation per event.`);
       setSelectedEvent(null);
       return;
     }
@@ -487,7 +509,11 @@ export default function EventsScene() {
       // Step 2: Only upon successful payment settlement, generate distinct ticket
       const hexSuffix = Math.floor(0x1000 + Math.random() * 0xefff).toString(16).toUpperCase();
       const assignedSeat = `Seat #${hexSuffix}`;
-      const ticketCode = `TKT-${selectedEvent.id.toUpperCase()}-${hexSuffix}`;
+      const cleanEventPrefix = (selectedEvent.slug || selectedEvent.id || 'EVT')
+        .replace(/^evt-/, '')
+        .slice(0, 8)
+        .toUpperCase();
+      const ticketCode = `TKT-${cleanEventPrefix}-${hexSuffix}`;
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
       const newPass: EventTicketPass = {
@@ -526,6 +552,10 @@ export default function EventsScene() {
       try {
         localStorage.setItem('skylinesos:ticket_applications', JSON.stringify(updatedApplications));
       } catch {}
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('campusone:tickets_updated', { detail: updatedPasses }));
+      }
 
       setPurchaseSuccess(
         `Payment successful via Razorpay (ID: ${paymentResult.paymentId})! Pass reserved for ${selectedEvent.title}. Your ticket is ${newPass.code}. Door OTP is securely encoded in QR.`
@@ -680,6 +710,7 @@ export default function EventsScene() {
           const bookedCount = getEventBookedCount(evt.id);
           const remainingSeats = getEventRemainingSeats(evt);
           const isSoldOut = remainingSeats <= 0;
+          const myTicketForThisEvent = myTicketPasses.find((p) => isSameEvent(p, evt));
 
           return (
             <div
@@ -819,6 +850,16 @@ export default function EventsScene() {
                     >
                       Seats Full · Ticket Sold Out
                     </button>
+                  ) : myTicketForThisEvent ? (
+                    <a
+                      href="#my-tickets"
+                      className="flex-1 py-3.5 px-6 rounded-full font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 active:scale-[0.99] transition-all text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Ticket Generated ({myTicketForThisEvent.seat}) · View in Wallet ↓</span>
+                    </a>
                   ) : (
                     <button
                       type="button"
@@ -1249,7 +1290,7 @@ export default function EventsScene() {
       )}
 
       {/* ─── MY EVENT TICKET STATUS (EXACT SCREENSHOT 011914) ─── */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 md:p-10 shadow-2xs space-y-6">
+      <div id="my-tickets" className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 md:p-10 shadow-2xs space-y-6">
         <div className="border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-black border border-slate-200">

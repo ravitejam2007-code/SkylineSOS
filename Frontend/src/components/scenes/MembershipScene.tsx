@@ -595,23 +595,18 @@ export default function MembershipScene() {
             {session && (
               <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="text-slate-500">
-                  Auto-login active: <strong>{session.email}</strong> ({session.role || 'Admin'})
+                  Active Account: <strong>{session.fullName}</strong> ({session.email}) · <span className="font-semibold text-black">{session.role === 'admin' ? 'Executive Admin' : 'Student Member'}</span>
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      logoutUser();
-                      setSession(null);
-                    }}
-                    className="px-3 py-1 rounded-full border border-slate-300 hover:border-black text-slate-700 hover:text-black hover:bg-slate-50 text-[11px] font-bold cursor-pointer transition-colors"
-                  >
-                    Test Guest Mode (Log Out)
-                  </button>
-                  <span className="text-[11px] text-slate-400 hidden md:inline">
-                    (Refresh page anytime to auto-restore Sanjay session)
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logoutUser();
+                    setSession(null);
+                  }}
+                  className="px-3 py-1 rounded-full border border-slate-300 hover:border-black text-slate-700 hover:text-black hover:bg-slate-50 text-[11px] font-bold cursor-pointer transition-colors"
+                >
+                  Sign Out
+                </button>
               </div>
             )}
           </div>
@@ -744,13 +739,13 @@ export default function MembershipScene() {
 
       {/* ─── MODAL: SIGN IN FIRST COMMAND (WHEN WITHOUT LOGIN OR REGISTER) ─── */}
       {signInFirstModal?.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 t-modal-backdrop is-open bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6 shadow-2xl relative my-auto border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             {/* Close Button */}
             <button
               type="button"
               onClick={() => setSignInFirstModal(null)}
-              className="absolute top-5 right-5 text-2xl font-bold text-slate-400 hover:text-black cursor-pointer leading-none"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-black flex items-center justify-center text-xl font-bold cursor-pointer leading-none transition-colors"
               aria-label="Close"
             >
               ×
@@ -828,17 +823,25 @@ export default function MembershipScene() {
 
       {/* ─── MODAL: APPLICATION SUBMIT FORM ─── */}
       {applyTier && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 t-modal-backdrop is-open">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 space-y-6 shadow-2xl relative t-modal is-open">
-            <div className="flex justify-between items-start border-b border-[var(--color-hairline-soft)] pb-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-5 shadow-2xl relative my-auto border border-slate-200 t-modal is-open">
+            <div className="flex justify-between items-start border-b border-slate-100 pb-4 sticky top-0 bg-white z-10 -mt-1 pt-1">
               <div>
-                <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Join as {applyTier.name}</h3>
-                <p className="text-[14px] text-[var(--color-steel)]">Annual dues: {formatPaise(applyTier.fee_paise)}</p>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-black bg-slate-100 px-2.5 py-0.5 rounded-full inline-block mb-1">
+                  Membership Application
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a] tracking-tight">
+                  Join as {applyTier.name}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#64748b] mt-0.5 font-medium">
+                  Annual dues: <strong className="text-black">{formatPaise(applyTier.fee_paise)}</strong>
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setApplyTier(null)}
-                className="text-2xl text-[var(--color-steel)] hover:text-black cursor-pointer leading-none"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-black flex items-center justify-center text-xl cursor-pointer leading-none transition-colors shrink-0 ml-3"
+                aria-label="Close"
               >
                 ×
               </button>
@@ -882,7 +885,7 @@ export default function MembershipScene() {
                     required
                     value={applicantName}
                     onChange={(e) => setApplicantName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                    className="w-full px-4 py-3 rounded-full border border-slate-300 text-[14px] focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
                   />
                 </div>
 
@@ -893,7 +896,7 @@ export default function MembershipScene() {
                     required
                     value={applicantEmail}
                     onChange={(e) => setApplicantEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                    className="w-full px-4 py-3 rounded-full border border-slate-300 text-[14px] focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
                   />
                 </div>
 
@@ -904,7 +907,7 @@ export default function MembershipScene() {
                     required
                     value={applicantIdNum}
                     onChange={(e) => setApplicantIdNum(e.target.value)}
-                    className="w-full px-4 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                    className="w-full px-4 py-3 rounded-full border border-slate-300 text-[14px] focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
                   />
                 </div>
 
@@ -915,12 +918,12 @@ export default function MembershipScene() {
                     required
                     value={statement}
                     onChange={(e) => setStatement(e.target.value)}
-                    className="w-full p-4 rounded-2xl border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-black"
+                    className="w-full p-4 rounded-2xl border border-slate-300 text-[14px] focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
                     placeholder="Share your background and club interest..."
                   />
                 </div>
 
-                <div className="text-[11px] text-[#64748b] bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+                <div className="text-[11px] text-[#64748b] bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
                   <div>
                     <strong>Razorpay Test Gateway:</strong> API Key <code className="px-1.5 py-0.5 rounded bg-slate-200 text-black font-mono text-[10px]">rzp_test_T8GBnZ6P23gRoO</code>
                   </div>
@@ -929,18 +932,18 @@ export default function MembershipScene() {
                   </div>
                 </div>
 
-                <div className="pt-2 flex gap-3">
+                <div className="pt-2 flex flex-col-reverse sm:flex-row gap-3">
                   <button
                     type="button"
                     onClick={() => setApplyTier(null)}
-                    className="flex-1 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] font-bold hover:bg-[var(--color-surface-soft)] t-button-action cursor-pointer"
+                    className="w-full sm:w-auto sm:px-6 py-3.5 rounded-full border border-slate-300 text-sm font-bold text-slate-700 hover:bg-slate-100 t-button-action cursor-pointer transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isApplying}
-                    className="flex-1 py-3 rounded-full bg-black text-white text-[14px] font-bold hover:bg-slate-900 cursor-pointer t-button-action flex items-center justify-center gap-2"
+                    className="flex-1 py-3.5 px-6 rounded-full bg-black text-white text-sm font-bold hover:bg-slate-900 cursor-pointer t-button-action flex items-center justify-center gap-2 shadow-sm transition-all"
                   >
                     {isApplying ? (
                       <>
@@ -960,16 +963,26 @@ export default function MembershipScene() {
 
       {/* ─── MODAL: REAPPLY FORM ─── */}
       {reapplyApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 t-modal-backdrop is-open">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 space-y-6 shadow-2xl relative t-modal is-open">
-            <div className="border-b border-[var(--color-hairline-soft)] pb-4">
-              <span className="text-[12px] font-bold text-[var(--color-critical)] uppercase tracking-wider">Revision #{reapplyApp.revision + 1}</span>
-              <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Update & Reapply</h3>
-              {reapplyApp.rejection_reason && (
-                <div className="mt-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[13px]">
-                  <strong>Prior Review Note:</strong> {reapplyApp.rejection_reason}
-                </div>
-              )}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6 shadow-2xl relative my-auto border border-slate-200 t-modal is-open">
+            <div className="flex justify-between items-start border-b border-slate-100 pb-4 sticky top-0 bg-white z-10 -mt-1 pt-1">
+              <div>
+                <span className="text-[12px] font-bold text-red-600 uppercase tracking-wider">Revision #{reapplyApp.revision + 1}</span>
+                <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Update & Reapply</h3>
+                {reapplyApp.rejection_reason && (
+                  <div className="mt-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[13px]">
+                    <strong>Prior Review Note:</strong> {reapplyApp.rejection_reason}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setReapplyApp(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-black flex items-center justify-center text-xl cursor-pointer leading-none transition-colors shrink-0 ml-3"
+                aria-label="Close"
+              >
+                ×
+              </button>
             </div>
 
             <form onSubmit={handleReapply} className="space-y-4">
@@ -980,23 +993,23 @@ export default function MembershipScene() {
                   required
                   value={updatedStatement}
                   onChange={(e) => setUpdatedStatement(e.target.value)}
-                  className="w-full p-4 rounded-2xl border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
+                  className="w-full p-4 rounded-2xl border border-slate-300 text-[14px] focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
                   placeholder="Address reviewer feedback and include missing details..."
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setReapplyApp(null)}
-                  className="flex-1 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] font-bold hover:bg-[var(--color-surface-soft)] t-button-action cursor-pointer"
+                  className="w-full sm:w-auto sm:px-6 py-3.5 rounded-full border border-slate-300 text-sm font-bold text-slate-700 hover:bg-slate-100 t-button-action cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isReapplying}
-                  className="flex-1 py-3 rounded-full bg-[var(--color-ink-deep)] text-white text-[14px] font-bold hover:bg-black cursor-pointer t-button-action flex items-center justify-center gap-2"
+                  className="flex-1 py-3.5 px-6 rounded-full bg-black text-white text-sm font-bold hover:bg-slate-900 cursor-pointer t-button-action flex items-center justify-center gap-2 shadow-sm transition-all"
                 >
                   {isReapplying ? <ButtonSpinner size={16} /> : `Submit Revision #${reapplyApp.revision + 1}`}
                 </button>
@@ -1008,18 +1021,19 @@ export default function MembershipScene() {
 
       {/* ─── MODAL: REJECT FORM ─── */}
       {rejectModalApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 t-modal-backdrop is-open">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 space-y-6 shadow-2xl relative t-modal is-open">
-            <div className="flex justify-between items-start border-b border-[var(--color-hairline-soft)] pb-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6 shadow-2xl relative my-auto border border-slate-200 t-modal is-open">
+            <div className="flex justify-between items-start border-b border-slate-100 pb-4 sticky top-0 bg-white z-10 -mt-1 pt-1">
               <div>
-                <span className="text-[12px] font-bold text-[var(--color-critical)] uppercase tracking-wider">Review Decision</span>
+                <span className="text-[12px] font-bold text-red-600 uppercase tracking-wider">Review Decision</span>
                 <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Reject Application {rejectModalApp.id}</h3>
-                <p className="text-[13px] text-[var(--color-steel)]">State a reason so the applicant can revise and reapply.</p>
+                <p className="text-[13px] text-slate-500">State a reason so the applicant can revise and reapply.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setRejectModalApp(null)}
-                className="text-2xl text-[var(--color-steel)] hover:text-black cursor-pointer leading-none"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-black flex items-center justify-center text-xl cursor-pointer leading-none transition-colors shrink-0 ml-3"
+                aria-label="Close"
               >
                 ×
               </button>
@@ -1042,23 +1056,23 @@ export default function MembershipScene() {
                   required
                   value={rejectReasonInput}
                   onChange={(e) => setRejectReasonInput(e.target.value)}
-                  className="w-full p-4 rounded-2xl border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-red-500"
+                  className="w-full p-4 rounded-2xl border border-slate-300 text-[14px] focus:outline-none focus:border-red-500"
                   placeholder="Explain what needs revision (e.g. Incomplete statement, missing ID)..."
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setRejectModalApp(null)}
-                  className="flex-1 py-3 rounded-full border border-[var(--color-hairline)] text-[14px] font-bold hover:bg-[var(--color-surface-soft)] t-button-action cursor-pointer"
+                  className="w-full sm:w-auto sm:px-6 py-3.5 rounded-full border border-slate-300 text-sm font-bold text-slate-700 hover:bg-slate-100 t-button-action cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={reviewingId === rejectModalApp.id}
-                  className="flex-1 py-3 rounded-full bg-red-600 text-white text-[14px] font-bold hover:bg-red-700 cursor-pointer t-button-action flex items-center justify-center gap-2"
+                  className="flex-1 py-3.5 px-6 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 cursor-pointer t-button-action flex items-center justify-center gap-2 shadow-sm transition-all"
                 >
                   {reviewingId === rejectModalApp.id ? <ButtonSpinner size={16} /> : 'Confirm Rejection'}
                 </button>

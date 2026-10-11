@@ -591,9 +591,86 @@
   - **Verification:**
     - Executed `npm test`: All 79 contract, integrity, and route specification tests passed (100% pass rate).
     - Executed `npm --prefix Frontend run build`: All 20 static pages compiled cleanly with zero errors.
-
-
-
-
-
+- **Authentication Lockout for Unauthenticated Visitors & Student vs Admin Authority Alignment:**
+  - **Problem Solved:**
+    - Without logging in or signing up, visitors could previously access or be defaulted into privileged platform routes due to hardcoded fallback logic in `getActiveSession()`.
+    - Mismatched permissions allowed student members to navigate to admin/staff areas, and allowed unauthorized roles to see administrative panels.
+  - **PRD Authority & Permission Segregation Adherence:**
+    - Per PRD §4 & §7:
+      - *Public / Unauthenticated Visitors:* Permitted access only to public landing pages (`/`, `/events`, `/memberships`, `/merch`, `/login`, `/signup`) and public-facing announcements. Blocked from student portal and platform consoles.
+      - *Students / Members (`member` / `student`):* Granted access to `/portal` (digital pass with rotating TOTP code, dues status, tickets, order history), membership tier applications, ticket purchases, merchandise checkout, and announcements targeted to `public` or `all_members`. Strictly forbidden from admin dashboards, member review boards, treasury, and gate check-in consoles.
+      - *Door Staff / Volunteers (`door_staff`, `volunteer`):* Granted access to `/operations` for ticket check-ins and code verification. Blocked from executive administration and treasury ledgers.
+      - *Treasurer (`treasurer`):* Granted access to `/treasurer` for ledger tracking, financial health, and expense reviews.
+      - *Admin (`admin`):* Executive control over `/admin` (membership approvals, user role management, system metrics, merchandise management), broadcasting announcements to any audience (`public`, `all_members`, `volunteers`, `leads_only`), and access to all operational views.
+  - **Universal Client-Side Auth Guard ([`AuthGuard.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/auth/AuthGuard.tsx)):**
+    - Created a reusable gate wrapping protected routes:
+      - **Locked Gate (401 Unauthenticated):** Displays a high-contrast security gate warning when `!session`, explaining that authentication is mandatory to view the platform or portal. Provides direct links to Sign In (`/login?redirect=...`) or Register (`/signup?redirect=...`).
+      - **Authority Mismatch Gate (403 Forbidden):** Displays a clear role segregation error when a logged-in user lacks the required role (e.g. Student Member attempting to access `/admin`). Shows the user's active role, explains PRD authority rules, and provides a safe return button to `/portal` or `/`.
+  - **Route Protection Integration:**
+    - **Student Portal ([`StudentPortalScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx)):** Wrapped in `<AuthGuard requiredRole="authenticated">`. Prevents unauthenticated pass generation and displays the login lock screen if unauthenticated.
+    - **Admin Dashboard ([`AdminDashboardScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/AdminDashboardScene.tsx)):** Wrapped in `<AuthGuard requiredRole="admin">`. Stops non-admins and students from viewing executive metrics, broadcasts, or membership review queues.
+    - **Event Operations Console ([`EventOperationsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventOperationsScene.tsx)):** Wrapped in `<AuthGuard requiredRole={['door_staff', 'volunteer', 'admin']}>`. Blocks students from gate check-in consoles.
+    - **Treasury Dashboard ([`TreasurerScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/TreasurerScene.tsx)):** Wrapped in `<AuthGuard requiredRole={['treasurer', 'admin']}>`. Blocks non-financial roles from ledger and expense reviews.
+  - **Auth Session & RBAC Helpers Hardening ([`auth.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/auth.ts)):**
+    - Removed automatic `autoLoginSanjay()` invocation from `getActiveSession()`; unauthenticated visits now return `null` instead of auto-elevating to admin.
+    - Added typed authority helpers: `canAccessPortal`, `canAccessAdmin`, `canAccessOperations`, `canAccessTreasurer`.
+    - Initialized [`RoleContext.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/RoleContext.tsx) to `'guest'` instead of `'admin'`.
+  - **Audience-Scoped Announcements Feed ([`AnnouncementsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/AnnouncementsScene.tsx)):**
+    - Enforced PRD FR-31 audience filtering: unauthenticated visitors see `public` announcements only; signed-in members see `public` + `all_members`; staff/admin see all.
+    - Publishing and deleting announcements is strictly gated to `admin`.
+  - **Landing Page Auth Gate ([`LandingAuthGate.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/LandingAuthGate.tsx)):**
+    - Intercepts clicks on `/portal`, `/admin`, `/operations`, `/treasurer` when unauthenticated, prompting the user to sign in or register with redirect tracking.
+  - **Role-Appropriate User Navigation Dropdown ([`UserNavMenu.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/layout/UserNavMenu.tsx)):**
+    - Students see only Student Portal, Membership, Tickets, Merch, and Announcements (Admin/Treasury options hidden).
+    - Admins see administrative console shortcuts.
+  - **Verification:**
+    - Executed `npm test`: All 79 backend invariant, route, and RBAC tests passed across 24 suites (100% pass rate).
+    - Executed `npm --prefix Frontend run build`: All 20 Astro static pages compiled cleanly with zero errors.
+  - **Individual Per-Event Ticket Generation & Post Segregation Fix:**
+    - **Problem Solved:**
+      - In [`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx), `loadBackendEvents` was using `const matched = evts[idx] || evts[0]`, which mistakenly replaced every curated event's `id` with `evts[0].id`. Consequently, when an admin posted a new event, all events shared the same ID, causing tickets generated for any event to collide and falsely display "You have already generated a ticket for [New Event]...".
+      - Furthermore, `api.generateAllInOnePass` in [`Frontend/src/lib/api.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/api.ts) was auto-injecting fake pre-registered tickets (`is_registered: true`) for every event from `/public/events`, falsely displaying "Seat Confirmed" on the student portal before any ticket was actually purchased.
+    - **Per-Event Ticket Segregation Implementation:**
+      - Added `isSameEvent(pass, targetEvent)` helper in [`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx) ensuring strict individual event matching by unique `event_id` and non-contradictory `event_title`.
+      - Fixed `loadBackendEvents` in [`EventsScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/EventsScene.tsx) to match backend events strictly by exact slug or exact ID, preventing new posts or distinct events from having their IDs overwritten with `evts[0]`.
+      - Updated `openReservationModal` and `handleBuyPass` to verify existing reservations strictly per-event using `isSameEvent`, allowing students to generate individual tickets for each distinct event.
+      - Updated event card action buttons to dynamically reflect per-event ticket status: if a ticket has been generated for that specific event, shows `✓ Ticket Generated (${seat}) · View in Wallet ↓` linking to `#my-tickets`; otherwise shows `Reserve Event Passes →`.
+      - Enhanced `StudentPortalScene.tsx` and `api.generateAllInOnePass` to dynamically read and synchronize actual user-generated tickets from client storage (`skylinesos:tickets_${email}`) and listen for `campusone:tickets_updated` events, eliminating hardcoded mock admissions and accurately showing only genuine issued tickets.
+    - **Verification:**
+      - Executed `npm test`: All 79 backend invariant, route, and RBAC tests passed across 24 suites (100% pass rate).
+      - Executed `npm --prefix Frontend run build`: All 20 Astro static pages compiled cleanly with zero errors.
+  - **Admin Merchandise Orders & Approvals Console with Buyer Pickup OTP ([`MerchScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MerchScene.tsx)):**
+    - **User Requirement (Screenshot 2026-10-11 090602.png):**
+      - Add the exact design table from Screenshot 090602 (`Events Ticket Applications & Approvals Console` pattern) to the downside/bottom of the Merchandise scene, strictly visible only to users with the `admin` role (`session?.role === 'admin'`).
+      - When any student or user buys merchandise through the Razorpay payment gateway and payment settles successfully, automatically generate a 6-digit pickup OTP (`generatedOtp`) and present it clearly to the buyer.
+      - Save the order with status `pending`, item details, order code, and the generated OTP in `skylinesos:merch_orders`.
+      - In the admin table at the bottom of the merchandise page, display all student merchandise orders. For pending orders, provide an `ENTER OTP` input box and an `Approve` button.
+      - When an admin enters the OTP, verify if the entered OTP matches the order's generated OTP. If both are correct, transition order status to `approved` / `done`, and display `✓ Approved & Admitted`. If the OTP is incorrect, display an error message and prevent status update.
+    - **Implementation Details:**
+      - Defined `MerchOrder` interface with `id`, `code`, `otp`, `status`, `buyer_name`, `buyer_email`, `item_name`, `item_variant`, `amount_paise`, `order_date`, and `created_at`.
+      - Seeded initial realistic data matching Screenshot 090602: row 1 (`sanjayd` / `sanjaydsanjay042@gmail.com` with `APPROVED` status and `✓ Approved & Admitted`), row 2 (`Sarah Student` / `student@studentorg.edu` with `PENDING` status and interactive OTP entry).
+      - In `handleBuy`, upon Razorpay payment success, generated a 6-digit OTP, prepended the new order with `status: 'pending'`, saved to `localStorage`, and displayed a high-contrast receipt card for the buyer showing their Pickup OTP with instructions.
+      - Implemented `handleApproveOtp` validating entered OTP against `order.otp`, updating the status to `approved`, saving to storage, and giving real-time feedback.
+      - Added `Refresh Applications` handler and event listeners (`campusone:auth_changed`, `campusone:merch_orders_updated`) for multi-tab synchronization.
+    - **Verification:**
+      - Executed `npm --prefix Frontend run build`: Clean static compilation of all 20 pages with zero errors.
+  - **Multi-Product & Multi-Size Merchandise Cart with Razorpay Checkout ([`MerchScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MerchScene.tsx)):**
+    - **User Requirement (Screenshot 2026-10-11 093432.png):**
+      - Enable shoppers to add multiple products (Club T-Shirt, Skyline Cap, Skyline Hoodie, Sticker Pack) across different sizes (XL, M, L, S, Std, Pack) into a unified shopping cart.
+      - Provide a quantity stepper on the product purchase rail to select any quantity before adding to cart.
+      - Add a dedicated Shopping Cart component displaying all cart items, individual sizes, unit prices with dynamic 20% member discounts, line totals, and quantity modification controls (+ / - / remove).
+      - Add a prominent checkout button at the end of the cart directly connecting to the Razorpay test mode payment gateway modal (`rzp_test_T8GBnZ6P23gRoO`).
+      - Upon payment settlement, fulfill all cart items, generate a single unified 6-digit pickup OTP for the entire cart order, display the student receipt card listing all bundled items, record the order in the Admin Orders & Approvals Console, and clear the cart.
+    - **Implementation Details:**
+      - Created `CartItem` data model tracking `id`, `productId`, `productName`, `variantId`, `sku`, `size`, `label`, `basePricePaise`, `quantity`, and `stockAvailable`.
+      - Added `cart` state with localStorage persistence (`skylinesos:merch_cart`).
+      - Implemented `handleAddToCart` merging items of the same product and variant, plus `updateCartQuantity` and `removeFromCart`.
+      - Added floating sticky cart badge at the bottom-right for quick navigation and cart total visibility.
+      - Enhanced `api.getProducts()` with comprehensive fallback data matching `seed/demo-data.json` and Screenshot 093432 (Club T-Shirt with XL 21, M 19, L 14; Skyline Cap; Hoodie; Sticker Pack).
+      - Connected `handleCheckoutCart` to `openRazorpayCheckout` with bundle notes and multi-item breakdown, followed by OTP generation and admin console synchronization.
+    - **Verification & Release Readiness:**
+      - Resolved JSX syntax issue in `UserNavMenu.tsx`.
+      - Executed `npm --prefix Frontend run build`: Clean static compilation of all 21 pages with zero errors.
+      - Verified backend test suite with 100% success rate (79/79 passed across 24 suites, `npm test`).
+      - Code staged and merged into `main` branch for deployment.
 

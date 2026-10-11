@@ -199,6 +199,48 @@ export default function AnnouncementsScene() {
     }
   };
 
+  const isStaffOrAdmin = Boolean(
+    session &&
+      (session.role === 'admin' ||
+        session.role === 'volunteer' ||
+        session.role === 'door_staff' ||
+        session.role === 'treasurer' ||
+        session.roles?.some((r) => ['admin', 'volunteer', 'door_staff', 'treasurer'].includes(r)))
+  );
+  const isMember = Boolean(session && session.role === 'member');
+
+  // PRD FR-31: Visitors see 'public' only; members add 'members'; staff add 'staff'
+  const visibleAnnouncements = announcements.filter((a) => {
+    if (!session) {
+      return a.audience === 'public';
+    }
+    if (isMember && !isStaffOrAdmin) {
+      if (a.audience === 'volunteers') return false;
+      if (activeFilter === 'public') return a.audience === 'public';
+      if (activeFilter === 'all_members') return a.audience === 'all_members' || a.audience === 'active_members';
+      return true;
+    }
+    // Staff and Admin
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'all_members') return a.audience === 'all_members' || a.audience === 'active_members';
+    return a.audience === activeFilter;
+  });
+
+  const availableFilters = isStaffOrAdmin
+    ? ([
+        { key: 'all', label: 'All Posts' },
+        { key: 'all_members', label: 'General Members' },
+        { key: 'volunteers', label: 'Volunteers' },
+        { key: 'public', label: 'Public Notices' },
+      ] as const)
+    : isMember
+    ? ([
+        { key: 'all', label: 'All My Notices' },
+        { key: 'all_members', label: 'Members Only' },
+        { key: 'public', label: 'Public Notices' },
+      ] as const)
+    : ([{ key: 'public', label: 'Public Notices' }] as const);
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 t-enter">
       {/* Toast Feedback */}
@@ -211,24 +253,32 @@ export default function AnnouncementsScene() {
         </div>
       )}
 
+      {/* Visitor Notice Banner */}
+      {!session && (
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold">📢 Public Bulletin Feed:</span>
+            <span>You are viewing public notices as a visitor. Sign in with your student account to unlock member-only circulars.</span>
+          </div>
+          <a
+            href="/login?redirect=/announcements"
+            className="px-3.5 py-1.5 rounded-full bg-black text-white font-bold hover:bg-slate-900 transition-colors shrink-0"
+          >
+            Sign In
+          </a>
+        </div>
+      )}
+
       {/* ─── FEED HEADER & OPTIONAL ADMIN PUBLISH ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--color-hairline-soft)]">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          {(['all', 'all_members', 'volunteers', 'public'] as const).map((filterKey) => {
-            const label =
-              filterKey === 'all'
-                ? 'All Posts'
-                : filterKey === 'all_members'
-                ? 'General Members'
-                : filterKey === 'volunteers'
-                ? 'Volunteers'
-                : 'Public Notices';
-            const active = activeFilter === filterKey;
+          {availableFilters.map(({ key: filterKey, label }) => {
+            const active = activeFilter === filterKey || (!isStaffOrAdmin && !isMember && filterKey === 'public');
             return (
               <button
                 key={filterKey}
                 type="button"
-                onClick={() => setActiveFilter(filterKey)}
+                onClick={() => setActiveFilter(filterKey as any)}
                 className={`px-4 py-1.5 rounded-full text-[13px] font-bold transition-all cursor-pointer t-button-action ${
                   active
                     ? 'bg-[var(--color-ink-deep)] text-white shadow-sm'
@@ -252,6 +302,7 @@ export default function AnnouncementsScene() {
           </button>
         )}
       </div>
+
 
       {/* New Announcement Form Drawer (Admin Only) */}
       {session?.role === 'admin' && showPublish && (
@@ -334,7 +385,13 @@ export default function AnnouncementsScene() {
 
       {/* Feed Posts */}
       <div className="space-y-6">
-        {announcements.map((a) => (
+        {visibleAnnouncements.length === 0 ? (
+          <div className="p-12 text-center rounded-3xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] space-y-2">
+            <p className="text-base font-bold text-[var(--color-ink-deep)]">No notices found</p>
+            <p className="text-xs text-[var(--color-steel)]">There are no circulars matching your current filter.</p>
+          </div>
+        ) : (
+          visibleAnnouncements.map((a) => (
           <div
             key={a.id}
             className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-4 t-card-interactive shadow-2xs"
@@ -373,8 +430,9 @@ export default function AnnouncementsScene() {
               </div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
+
   );
 }

@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Button from '../components/ui/Button.astro';
 import Card from '../components/ui/Card.astro';
 import Badge from '../components/ui/Badge.astro';
+import LandingAuthGate from '../components/scenes/LandingAuthGate';
 
 const rolePortals = [
   {
@@ -97,6 +98,8 @@ const clubModules = [
   title="SkylineSOS — Student Organization System"
   description="SkylineSOS: The unified operating system for student organizations — memberships, gala events, announcements, merch, fundraisers, and club finances."
 >
+  <LandingAuthGate client:load />
+
   <!-- Hero Section -->
   <section class="relative min-h-[85vh] flex flex-col justify-center py-20 md:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
     <div class="relative z-10 max-w-5xl mx-auto space-y-8 t-enter">

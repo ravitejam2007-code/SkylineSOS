@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../../lib/api';
 import { getCurrentUserSession } from '../../lib/auth';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
+import AuthGuard from '../auth/AuthGuard';
 import type { StudentAllInOnePassResult, Announcement } from '@campusone/contracts';
 
 function checkIsMember(session: any, passPayload?: any): boolean {
@@ -33,6 +34,35 @@ export default function StudentPortalScene() {
   const [isRenewing, setIsRenewing] = useState(false);
   const [renewSuccess, setRenewSuccess] = useState<string | null>(null);
 
+  // Real user-generated tickets from localStorage
+  const [userTickets, setUserTickets] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const active = getActiveSession();
+      if (active?.email) {
+        try {
+          const stored = localStorage.getItem(`skylinesos:tickets_${active.email.trim().toLowerCase()}`);
+          if (stored) return JSON.parse(stored);
+        } catch {}
+      }
+    }
+    return [];
+  });
+
+  const syncUserTickets = (email?: string | null) => {
+    if (typeof window === 'undefined') return;
+    const targetEmail = email || getActiveSession()?.email;
+    if (!targetEmail) {
+      setUserTickets([]);
+      return;
+    }
+    try {
+      const stored = localStorage.getItem(`skylinesos:tickets_${targetEmail.trim().toLowerCase()}`);
+      setUserTickets(stored ? JSON.parse(stored) : []);
+    } catch {
+      setUserTickets([]);
+    }
+  };
+
   // Student Profile Photo state with user input & presets
   const [studentPhoto, setStudentPhoto] = useState<string>('/avatars/student-academic.jpg');
   const [photoToast, setPhotoToast] = useState<string | null>(null);
@@ -42,6 +72,11 @@ export default function StudentPortalScene() {
     try {
       const currentSession = await getCurrentUserSession();
       setSession(currentSession);
+      syncUserTickets(currentSession?.email);
+      if (!currentSession) {
+        setLoading(false);
+        return;
+      }
       const [passRes, annList] = await Promise.all([
         api.generateAllInOnePass(currentSession?.userId),
         api.getAnnouncements('all_members'),
@@ -109,6 +144,7 @@ export default function StudentPortalScene() {
     const handleAuthChange = async (e: CustomEvent) => {
       const updated = e.detail;
       setSession(updated);
+      syncUserTickets(updated?.email);
       if (updated?.userId) {
         const passRes = await api.generateAllInOnePass(updated.userId);
         setPass(passRes);
@@ -119,9 +155,16 @@ export default function StudentPortalScene() {
         }
       }
     };
+
+    const handleTicketsUpdated = () => {
+      syncUserTickets(session?.email);
+    };
+
     window.addEventListener('campusone:auth_changed' as any, handleAuthChange);
+    window.addEventListener('campusone:tickets_updated' as any, handleTicketsUpdated);
     return () => {
       window.removeEventListener('campusone:auth_changed' as any, handleAuthChange);
+      window.removeEventListener('campusone:tickets_updated' as any, handleTicketsUpdated);
     };
   }, []);
 
@@ -153,51 +196,22 @@ export default function StudentPortalScene() {
     );
   }
 
-  // Privacy Protection: Hide all personal data when user is logged out (User request)
-  if (!session) {
-    return (
-      <div className="max-w-xl mx-auto px-4 py-24 text-center space-y-6">
-        <div className="w-16 h-16 mx-auto rounded-3xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
-          <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0f172a]">
-            Personal Student Portal Locked
-          </h2>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">
-            Please sign in to access your personal digital membership pass, rotating door verification code, and organization records.
-          </p>
-        </div>
-        <div>
-          <a
-            href="/login"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-slate-900 text-white font-bold text-sm shadow-sm transition-all"
-          >
-            <span>Sign In to Student Portal</span>
-            <span>→</span>
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   const membership = pass?.payload.membership;
-  const upcomingEvents = pass?.payload.upcoming_events || [];
+  const myRealTickets = userTickets;
 
   // Scoped strictly to authenticated user session
-  const displayName = session.fullName || 'Student Member';
-  const displayEmail = session.email;
-  const displayStudentId = session.studentId || `SKY-2026-${String(session.userId || 'NEW').slice(0, 4)}`;
+  const displayName = session?.fullName || 'Student Member';
+  const displayEmail = session?.email || '';
+  const displayStudentId = session?.studentId || `SKY-2026-${String(session?.userId || 'NEW').slice(0, 4)}`;
 
   // Check if user has an approved membership application or is executive admin
   const isApprovedMember = checkIsMember(session, pass?.payload);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
-      {/* Top Banner / Welcome Card */}
-      <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <AuthGuard requiredRole="authenticated" pageTitle="Student Portal" requiredRoleLabel="Student Member">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
+        {/* Top Banner / Welcome Card */}
+        <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div
             className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-bold ${
@@ -394,16 +408,16 @@ export default function StudentPortalScene() {
             {/* Registered Admissions on Pass */}
             <div className="space-y-3">
               <h4 className="text-[12px] font-bold uppercase tracking-wider text-[var(--color-steel)]">
-                Active Admissions Linked to This Pass ({upcomingEvents.length})
+                Active Admissions Linked to This Pass ({myRealTickets.length})
               </h4>
               <div className="space-y-2">
-                {upcomingEvents.length > 0 ? (
-                  upcomingEvents.map((ev: any, idx: number) => {
-                    const ticketIdStr = String(ev?.ticket_id || ev?.id || `TKT-${idx + 1}`);
-                    const displayCode = ticketIdStr.length > 8 ? `${ticketIdStr.slice(0, 8)}...` : ticketIdStr;
+                {myRealTickets.length > 0 ? (
+                  myRealTickets.map((ev: any, idx: number) => {
+                    const ticketIdStr = String(ev?.code || ev?.ticket_id || ev?.id || `TKT-${idx + 1}`);
+                    const displayCode = ticketIdStr.length > 16 ? `${ticketIdStr.slice(0, 16)}...` : ticketIdStr;
                     return (
                       <div
-                        key={ev?.ticket_id || ev?.id || idx}
+                        key={ev?.id || ev?.code || idx}
                         className="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] flex items-center justify-between"
                       >
                         <div>
@@ -411,12 +425,12 @@ export default function StudentPortalScene() {
                             {ev?.event_title || ev?.title || 'Skyline Event'}
                           </p>
                           <p className="text-[11px] text-[var(--color-steel)]">
-                            {ev?.venue || 'Campus Hall'} · {ev?.ticket_type_name || 'General Admission'}
+                            {ev?.seat || 'Reserved Seat'} · {ev?.tier_name || 'Standard Pass'}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-black border border-slate-200">
-                            Seat Confirmed
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            {ev?.status === 'approved' ? 'Admitted' : 'Ticket Issued'}
                           </span>
                           <span className="text-[11px] font-mono text-[var(--color-steel)]">{displayCode}</span>
                         </div>
@@ -425,7 +439,7 @@ export default function StudentPortalScene() {
                   })
                 ) : (
                   <div className="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] text-center text-[12px] text-[var(--color-steel)]">
-                    No event tickets purchased yet. <a href="/events" className="text-[var(--color-primary)] font-bold underline">Browse Spring Gala tickets</a>.
+                    No event tickets purchased yet. <a href="/events" className="text-[var(--color-primary)] font-bold underline">Browse and reserve event tickets →</a>
                   </div>
                 )}
               </div>
@@ -465,38 +479,44 @@ export default function StudentPortalScene() {
           </div>
         </div>
 
-        {/* 2. Spring Gala Tickets */}
+        {/* 2. Event Tickets */}
         <div className="p-6 rounded-3xl bg-white/85 backdrop-blur-md border border-[var(--color-hairline-soft)] shadow-xs space-y-4 t-card-interactive">
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-mono font-bold text-[var(--color-steel)]">02 · EVENT ACCESS</span>
-            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-black border border-slate-200 text-[11px] font-bold">
-              {upcomingEvents.length} Ticket Issued
+            <span className={`px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${
+              myRealTickets.length > 0
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                : 'bg-slate-100 text-black border-slate-200'
+            }`}>
+              {myRealTickets.length} Ticket{myRealTickets.length === 1 ? '' : 's'} Issued
             </span>
           </div>
           <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">
-            Spring Gala: Masquerade Night
+            {myRealTickets.length > 0 ? myRealTickets[0].event_title : 'Campus Event Passes'}
           </h3>
           <p className="text-[13px] text-[var(--color-steel)] leading-relaxed">
-            Friday, April 24, 2026 at 7:00 PM IST · Skyline Grand Ballroom, Student Activity Center.
+            {myRealTickets.length > 0
+              ? `You have ${myRealTickets.length} active event pass${myRealTickets.length === 1 ? '' : 'es'} linked to your student wallet. Present QR pass at entrance.`
+              : 'Browse upcoming campus events and reserve your individual entry passes.'}
           </p>
           <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] flex items-center justify-between">
             <div>
               <p className="text-[11px] font-bold text-[var(--color-steel)]">TICKET PASS</p>
               <p className="text-[14px] font-mono font-bold text-[var(--color-ink-deep)]">
-                {upcomingEvents[0]?.ticket_id
-                  ? `TKT-GALA-${String(upcomingEvents[0].ticket_id).slice(0, 4).toUpperCase()}`
-                  : upcomingEvents[0]?.id
-                  ? `TKT-GALA-${String(upcomingEvents[0].id).slice(0, 4).toUpperCase()}`
-                  : 'TKT-GALA-8819'}
+                {myRealTickets.length > 0 ? (myRealTickets[0].code || myRealTickets[0].id) : 'NONE RESERVED'}
               </p>
             </div>
-            <div className="px-3 py-1 rounded-full bg-black text-white text-[11px] font-mono font-bold">
-              Ready for Door Scan
+            <div className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold ${
+              myRealTickets.length > 0
+                ? 'bg-black text-white'
+                : 'bg-slate-200 text-slate-600'
+            }`}>
+              {myRealTickets.length > 0 ? 'Ready for Door Scan' : 'No Active Pass'}
             </div>
           </div>
           <div className="pt-2 flex items-center justify-between">
             <a href="/events" className="text-[13px] font-bold text-[var(--color-primary)] hover:underline">
-              View Event Details & Guests →
+              {myRealTickets.length > 0 ? 'View All Tickets & QR Codes →' : 'Browse & Reserve Tickets →'}
             </a>
           </div>
         </div>
@@ -554,6 +574,8 @@ export default function StudentPortalScene() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }
+
 

@@ -60,9 +60,14 @@ export default function LoginScene() {
       setSuccessMsg(`Welcome back, ${session.fullName}! Signed in as [${session.roles.join(', ') || 'member'}].`);
       localStorage.setItem('campusone_demo_role', session.roles[0] || 'member');
       window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: session.roles[0] || 'member' }));
+      
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const redirect = params?.get('redirect') || params?.get('next');
+      const target = (redirect && redirect.startsWith('/')) ? redirect : (session.destination || '/portal');
+
       setTimeout(() => {
-        window.location.href = session.destination || '/';
-      }, 900);
+        window.location.href = target;
+      }, 700);
     } catch (err: any) {
       if (err?.message?.toLowerCase().includes('rate limit') || err?.status === 429) {
         setErrorMsg('Email verification rate limited (3/hr on free tier). Try signing in with 1-Click Demo accounts or retry in a few moments.');
@@ -85,9 +90,14 @@ export default function LoginScene() {
       setSuccessMsg(`Authenticated as ${session.fullName} (${DEMO_ACCOUNTS[roleKey]?.label}) via Supabase Auth!`);
       localStorage.setItem('campusone_demo_role', roleKey);
       window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: roleKey }));
+      
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const redirect = params?.get('redirect') || params?.get('next');
+      const target = (redirect && redirect.startsWith('/')) ? redirect : (session.destination || '/portal');
+
       setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
+        window.location.href = target;
+      }, 700);
     } catch (err: any) {
       setErrorMsg(err.message || 'Demo authentication failed');
     } finally {

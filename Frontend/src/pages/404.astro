@@ -1,38 +1,63 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Button from '../components/ui/Button.astro';
+
+const url = Astro.url;
+const endpoint = url.searchParams.get('endpoint');
+const code = url.searchParams.get('code') || 'ERR_NOT_FOUND';
+const message = url.searchParams.get('message');
+const requestId = url.searchParams.get('request_id') || url.searchParams.get('requestId');
+const isApiError = Boolean(endpoint || code !== 'ERR_NOT_FOUND' || message);
 ---
 
 <BaseLayout
-  title="404 — Page Not Found · SkylineSOS"
-  description="The requested page could not be found on SkylineSOS."
+  title={isApiError ? `404 API Error — ${code}` : '404 — Page Not Found · SkylineSOS'}
+  description="The requested page or API endpoint could not be found on SkylineSOS."
 >
   <div class="min-h-[calc(80vh-64px)] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
     <div class="max-w-xl w-full text-center space-y-6 t-enter">
       <!-- Badge -->
       <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] text-[12px] font-bold text-[var(--color-steel)]">
         <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-        HTTP 404 · Resource Missing
+        {isApiError ? 'HTTP 404 · API Route / Request Missing' : 'HTTP 404 · Resource Missing'}
       </div>
 
       <!-- Heading -->
-      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-[var(--color-ink-deep)]">
-        Page Not Found
+      <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--color-ink-deep)]">
+        {isApiError ? 'API Resource Not Found' : 'Page Not Found'}
       </h1>
 
       <!-- Description -->
-      <p class="text-[15px] sm:text-[16px] text-[var(--color-steel)] max-w-md mx-auto leading-relaxed">
-        The page, event pass, or circular you are looking for doesn't exist, has been archived, or was moved to another section.
+      <p class="text-[14px] sm:text-[15px] text-[var(--color-steel)] max-w-md mx-auto leading-relaxed">
+        {message ||
+          "The resource, API call endpoint, or student circular you requested does not exist or returned a 404 response."}
       </p>
 
-      <!-- Glassmorphic Preview Info -->
+      <!-- Glassmorphic Diagnostic Details -->
       <div class="p-6 rounded-3xl glass-card border border-[var(--color-hairline-soft)] text-left space-y-3 shadow-xs">
-        <div class="flex items-center justify-between text-[11px] font-mono font-bold text-[var(--color-steel)]">
+        <div class="flex items-center justify-between text-[11px] font-mono font-bold text-[var(--color-steel)] pb-2 border-b border-slate-100">
           <span>DIAGNOSTIC STATUS</span>
-          <span class="text-rose-600">ERR_NOT_FOUND</span>
+          <span class="text-rose-600 font-bold">{code}</span>
         </div>
-        <p class="text-[13px] text-[var(--color-ink)]">
-          If you followed a link for a gala ticket or dues verification, check your active dashboard or verify your student ID.
+
+        {endpoint && (
+          <div class="space-y-1 text-xs">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Requested Endpoint:</span>
+            <p class="font-mono text-[12px] text-slate-900 bg-slate-100 p-2 rounded-xl break-all">
+              {endpoint}
+            </p>
+          </div>
+        )}
+
+        {requestId && (
+          <div class="flex justify-between items-center text-[11px] text-slate-600 font-mono">
+            <span>Trace ID:</span>
+            <span class="text-slate-800 font-bold">{requestId}</span>
+          </div>
+        )}
+
+        <p class="text-[12px] text-[var(--color-ink)] pt-1">
+          If you encountered this error during an action or checkout, try returning to the homepage or reload the application view.
         </p>
       </div>
 
@@ -42,7 +67,7 @@ import Button from '../components/ui/Button.astro';
           Return to Homepage
         </Button>
         <Button variant="secondary" size="md" href="/events">
-          Browse Gala Tickets
+          Browse Events
         </Button>
         <Button variant="ghost" size="md" href="/portal">
           Student Portal

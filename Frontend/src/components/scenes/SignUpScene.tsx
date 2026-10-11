@@ -53,14 +53,18 @@ export default function SignUpScene() {
         setSuccessMsg(`Welcome Administrator, ${session.fullName}! Executive security code verified. Redirecting to admin panel...`);
         setTimeout(() => {
           window.location.href = '/admin';
-        }, 1000);
+        }, 900);
         return;
       }
 
-      setSuccessMsg(`Welcome, ${session.fullName}! Your student account has been created. Redirecting to memberships...`);
+      setSuccessMsg(`Welcome, ${session.fullName}! Your student account has been created. Redirecting to your student portal...`);
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const redirect = params?.get('redirect') || params?.get('next');
+      const target = (redirect && redirect.startsWith('/') && !redirect.startsWith('/admin')) ? redirect : '/portal';
+
       setTimeout(() => {
-        window.location.href = '/memberships';
-      }, 1000);
+        window.location.href = target;
+      }, 900);
     } catch (err: any) {
       if (err?.message?.toLowerCase().includes('rate limit') || err?.status === 429) {
         setErrorMsg('Supabase email verification rate limit exceeded (3/hr on free tier). Sign in via Demo Persona or try again shortly.');

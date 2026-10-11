@@ -58,20 +58,25 @@
 .t-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
-  background-color: rgba(10, 19, 23, 0.48) !important;
+  z-index: 100 !important;
+  background-color: rgba(0, 0, 0, 0.72) !important;
   -webkit-backdrop-filter: blur(0px);
   backdrop-filter: blur(0px);
   opacity: 0;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
   transition: opacity var(--modal-open-dur) var(--ease-smooth-out),
               -webkit-backdrop-filter var(--modal-open-dur) var(--ease-smooth-out),
               backdrop-filter var(--modal-open-dur) var(--ease-smooth-out);
 }
 .t-modal-backdrop.is-open {
   opacity: 1;
-  background-color: rgba(10, 19, 23, 0.48) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  backdrop-filter: blur(14px) !important;
+  background-color: rgba(0, 0, 0, 0.72) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(16px) !important;
 }
 
 .t-modal {
@@ -79,6 +84,9 @@
   transform: scale(var(--modal-scale)) translateY(8px);
   opacity: 0;
   filter: blur(var(--blur-small));
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
   transition: transform var(--modal-open-dur) var(--modal-ease),
               opacity var(--modal-open-dur) var(--modal-ease),
               filter var(--modal-open-dur) var(--modal-ease);

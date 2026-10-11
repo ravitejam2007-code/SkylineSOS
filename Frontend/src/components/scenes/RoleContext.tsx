@@ -24,16 +24,16 @@ const ROLE_LABELS: Record<DemoRole, string> = {
 };
 
 const RoleContext = createContext<RoleContextValue>({
-  role: 'admin',
+  role: 'guest',
   setRole: async () => {},
-  roleLabel: 'Executive / Admin',
+  roleLabel: 'Campus Guest',
   session: null,
   authStatus: 'loading',
   isRealAuth: false,
 });
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRoleState] = useState<DemoRole>('admin');
+  const [role, setRoleState] = useState<DemoRole>('guest');
   const [session, setSession] = useState<UserSession | null>(null);
   const [authStatus, setAuthStatus] = useState<'authenticated' | 'demo' | 'loading'>('loading');
 
@@ -50,6 +50,8 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         const saved = localStorage.getItem('campusone_demo_role') as DemoRole;
         if (saved && ROLE_LABELS[saved]) {
           setRoleState(saved);
+        } else {
+          setRoleState('guest');
         }
         setAuthStatus('demo');
       }
