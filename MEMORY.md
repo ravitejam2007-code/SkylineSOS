@@ -551,28 +551,6 @@
   - **Verification:**
     - Executed `npm test`: 79/79 tests passed with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: All 20 static pages built cleanly with zero errors.
-- **Student-Exclusive Task Progress & Feedback System, Admin Read-Only Status, and Full Volunteering Rebrand:**
-  - **Full Renaming & Removal of "Fundraiser" Terminology:**
-    - **Navbar ([`Navbar.astro`](file:///E:/projects/SkylineSOS/Frontend/src/components/layout/Navbar.astro)):** Replaced `Fundraiser` with `Volunteering` (`/volunteering`).
-    - **Dedicated Page ([`volunteering.astro`](file:///E:/projects/SkylineSOS/Frontend/src/pages/volunteering.astro)):** Created official `/volunteering` page with title "SkylineSOS — Bake Sale Volunteering".
-    - **Legacy Compatibility ([`fundraiser.astro`](file:///E:/projects/SkylineSOS/Frontend/src/pages/fundraiser.astro)):** Updated to render the Volunteering scene.
-    - **Removal of Fundraiser Financials ([`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx)):** Completely removed the fundraiser financials tab, cash intake form, and donation simulator to show 100% volunteering duty stations.
-  - **Student-Only Task Actions Inside Student Accounts ([`StudentPortalScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx)):**
-    - Built **"My Assigned Volunteer Duties"** section inside the student account view:
-      - Automatically filters duties assigned to the authenticated student.
-      - Displays station badge (Baking, Supplies, Quad Table), priority, due date, status, and completion progress.
-      - **Interactive Status Options:** Added 3 dedicated student action buttons: `To Do (0%)`, `In Progress / Process (50%)`, and `Complete (100%)`.
-      - **Pass Feedback to Admin:** Added feedback input and `Pass Feedback to Admin` action button allowing students to submit progress reports, ingredient needs, or completion notes directly to Chapter Admins.
-      - Displays the complete feedback log passed to admin with author and timestamps.
-      - Dispatches real-time `skylinesos:tasks_updated` events for instant bi-directional synchronization.
-  - **Admin Read-Only Status View:**
-    - Gated task status updates exclusively to student roles / assigned students.
-    - Chapter Admins cannot change task statuses (no toggle buttons in admin view).
-    - Admins see the live task status (`Complete`, `In Progress`, `To Do`), progress bar, and all feedback messages passed from students.
-  - **Verification:**
-    - Executed `npm test`: 79/79 invariant and route tests passed with 100% pass rate.
-    - Executed `npm --prefix Frontend run build`: 21/21 static pages compiled cleanly with zero errors.
-
 
 
 
