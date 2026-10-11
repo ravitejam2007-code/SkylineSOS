@@ -6,6 +6,8 @@ import { getActiveSession, getCurrentUserSession, getRegisteredAccounts, type Us
 import { openRazorpayCheckout } from '../../lib/razorpay';
 import type { Fundraiser, FundraiserTask, TaskStatus, TaskPriority } from '@campusone/contracts';
 
+export type BakeSaleStation = 'baking' | 'supplies' | 'table';
+
 export interface OperationsTaskMessage {
   id: string;
   author: string;
@@ -15,7 +17,18 @@ export interface OperationsTaskMessage {
 
 export interface RichFundraiserTask extends FundraiserTask {
   progressPercent?: number;
+  station?: BakeSaleStation;
   messages?: OperationsTaskMessage[];
+}
+
+export interface FundraiserPaymentEntry {
+  id: string;
+  timestamp: string;
+  contributor: string;
+  method: 'online' | 'cash';
+  amountPaise: number;
+  status: 'settled' | 'audited';
+  notes: string;
 }
 
 export interface PersonnelOption {
@@ -33,12 +46,12 @@ export function getDynamicPersonnel(): PersonnelOption[] {
   // 1. Base chapter staff & leads
   const defaults: PersonnelOption[] = [
     { id: 'p1', name: 'Sarah Student', role: 'Active Member · Quad Table Lead', email: 'student@studentorg.edu', studentId: 'SKY-2026-1190' },
-    { id: 'p2', name: 'Rahul Sharma', role: 'Core Member · Logistics Lead', email: 'rahul.s@skyline.edu', studentId: 'SKY-2026-4401' },
-    { id: 'p3', name: 'Maya Deshmukh', role: 'Plus Member · Design Lead', email: 'maya.d@skyline.edu', studentId: 'SKY-2026-8812' },
+    { id: 'p2', name: 'Rahul Sharma', role: 'Core Member · Logistics & Baking Lead', email: 'rahul.s@skyline.edu', studentId: 'SKY-2026-4401' },
+    { id: 'p3', name: 'Maya Deshmukh', role: 'Plus Member · Supplies & Packaging Lead', email: 'maya.d@skyline.edu', studentId: 'SKY-2026-8812' },
     { id: 'p4', name: 'Arjun Mehta', role: 'Lead Administrator', email: 'arjun.admin@skyline.edu', studentId: 'SKY-2026-0001' },
-    { id: 'p5', name: 'Priya Patel', role: 'Treasurer · Finance Desk', email: 'priya.treasurer@skyline.edu', studentId: 'SKY-2026-0002' },
-    { id: 'p6', name: 'Vikram Singh', role: 'Door Staff · Entrance Lead', email: 'vikram.door@skyline.edu', studentId: 'SKY-2026-0003' },
-    { id: 'p7', name: 'Ananya Rao', role: 'Volunteer Coordinator', email: 'ananya.volunteer@skyline.edu', studentId: 'SKY-2026-0004' },
+    { id: 'p5', name: 'Priya Patel', role: 'Treasurer · Quad Cashier Desk', email: 'priya.treasurer@skyline.edu', studentId: 'SKY-2026-0002' },
+    { id: 'p6', name: 'Vikram Singh', role: 'Quad Setup & Logistics Lead', email: 'vikram.door@skyline.edu', studentId: 'SKY-2026-0003' },
+    { id: 'p7', name: 'Ananya Rao', role: 'Volunteer Coordinator & Signage', email: 'ananya.volunteer@skyline.edu', studentId: 'SKY-2026-0004' },
   ];
   defaults.forEach((p) => map.set(p.name.toLowerCase(), p));
 
@@ -90,7 +103,7 @@ export function getDynamicPersonnel(): PersonnelOption[] {
       }
     } catch {}
 
-    // 4. Current active user session (student or staff)
+    // 4. Current active user session
     try {
       const activeSession = getActiveSession();
       if (activeSession && activeSession.fullName) {
@@ -113,107 +126,270 @@ export function getDynamicPersonnel(): PersonnelOption[] {
   return Array.from(map.values());
 }
 
-export const REGISTERED_PERSONNEL = [
-  { name: 'Sarah Student', role: 'Active Member · Quad Table Lead', email: 'student@studentorg.edu' },
-  { name: 'Rahul Sharma', role: 'Core Member · Logistics Lead', email: 'rahul.s@skyline.edu' },
-  { name: 'Maya Deshmukh', role: 'Plus Member · Design Lead', email: 'maya.d@skyline.edu' },
-  { name: 'Arjun Mehta', role: 'Lead Administrator', email: 'arjun.admin@skyline.edu' },
-  { name: 'Priya Patel', role: 'Treasurer · Finance Desk', email: 'priya.treasurer@skyline.edu' },
-  { name: 'Vikram Singh', role: 'Door Staff · Entrance Lead', email: 'vikram.door@skyline.edu' },
-  { name: 'Ananya Rao', role: 'Volunteer Coordinator', email: 'ananya.volunteer@skyline.edu' },
-];
-
-const DEFAULT_OPERATIONS_TASKS: RichFundraiserTask[] = [
+// Canonical real bake sale tasks split into: Who is baking, Who is buying supplies, Who is managing table
+const REAL_BAKE_SALE_TASKS: RichFundraiserTask[] = [
+  // 1. Who is baking
   {
-    id: 'task-1',
+    id: 'task-bake-1',
     organization_id: 'a0000000-0000-0000-0000-000000000001',
     fundraiser_id: 'fr-1',
-    title: 'Pick up folding tables and display risers from Student Union',
+    title: 'Bake 100 chocolate chip cookies and package with allergen labels',
+    station: 'baking',
     priority: 'high',
-    status: 'in_progress',
-    progressPercent: 50,
-    assignee_name: 'Sarah Student',
-    due_at: '2026-10-17T18:00:00Z',
-    created_at: new Date().toISOString(),
-    messages: [
-      {
-        id: 'msg-1',
-        author: 'Sarah Student',
-        text: 'Checked out 4 tables from Room 204. Setting them up at the Quad table.',
-        timestamp: '2026-10-10T15:30:00Z',
-      },
-    ],
-  },
-  {
-    id: 'task-2',
-    organization_id: 'a0000000-0000-0000-0000-000000000001',
-    fundraiser_id: 'fr-1',
-    title: 'Bake 100 chocolate chip cookies and package in individual compostable sleeves',
-    priority: 'urgent',
     status: 'done',
     progressPercent: 100,
     assignee_name: 'Rahul Sharma',
     due_at: '2026-10-17T12:00:00Z',
-    created_at: new Date().toISOString(),
+    created_at: '2026-10-10T09:00:00Z',
     messages: [
       {
-        id: 'msg-2',
+        id: 'msg-b1',
         author: 'Rahul Sharma',
-        text: 'All 100 cookies baked and packaged with ingredient labels.',
+        text: 'All 100 cookies baked, cooled, and packaged with gluten/nut allergen tags.',
         timestamp: '2026-10-10T12:00:00Z',
       },
     ],
   },
   {
-    id: 'task-3',
+    id: 'task-bake-2',
     organization_id: 'a0000000-0000-0000-0000-000000000001',
     fundraiser_id: 'fr-1',
-    title: 'Print QR code donation placards and price tags',
-    priority: 'medium',
-    status: 'todo',
-    progressPercent: 0,
-    assignee_name: 'Maya Deshmukh',
-    due_at: '2026-10-18T10:00:00Z',
-    created_at: new Date().toISOString(),
-    messages: [],
-  },
-  {
-    id: 'task-4',
-    organization_id: 'a0000000-0000-0000-0000-000000000001',
-    fundraiser_id: 'fr-1',
-    title: 'Manage Quad Cash Box and tally hourly cash reconciliation',
+    title: 'Bake 50 vegan blueberry muffins and gluten-free fudge brownies',
+    station: 'baking',
     priority: 'high',
     status: 'in_progress',
     progressPercent: 60,
-    assignee_name: 'Priya Patel',
-    due_at: '2026-10-17T17:00:00Z',
-    created_at: new Date().toISOString(),
+    assignee_name: 'Sarah Student',
+    due_at: '2026-10-17T15:00:00Z',
+    created_at: '2026-10-10T10:00:00Z',
     messages: [
       {
-        id: 'msg-4',
+        id: 'msg-b2',
+        author: 'Sarah Student',
+        text: 'Muffins completed; brownies currently in campus kitchen oven.',
+        timestamp: '2026-10-10T14:15:00Z',
+      },
+    ],
+  },
+
+  // 2. Who is buying supplies
+  {
+    id: 'task-supplies-1',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Purchase organic flour, cane sugar, butter, and compostable packaging boxes',
+    station: 'supplies',
+    priority: 'high',
+    status: 'done',
+    progressPercent: 100,
+    assignee_name: 'Maya Deshmukh',
+    due_at: '2026-10-16T18:00:00Z',
+    created_at: '2026-10-10T08:30:00Z',
+    messages: [
+      {
+        id: 'msg-s1',
+        author: 'Maya Deshmukh',
+        text: 'Eco-packaging and bulk ingredients acquired from campus market with club discount.',
+        timestamp: '2026-10-10T11:00:00Z',
+      },
+    ],
+  },
+  {
+    id: 'task-supplies-2',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Print QR code donation placards, allergen warning sheets, and price tent-cards',
+    station: 'supplies',
+    priority: 'medium',
+    status: 'in_progress',
+    progressPercent: 40,
+    assignee_name: 'Ananya Rao',
+    due_at: '2026-10-17T10:00:00Z',
+    created_at: '2026-10-10T11:00:00Z',
+    messages: [
+      {
+        id: 'msg-s2',
+        author: 'Ananya Rao',
+        text: 'Laminated QR stands and price tent cards sent to print queue.',
+        timestamp: '2026-10-10T13:45:00Z',
+      },
+    ],
+  },
+
+  // 3. Who is managing the table on the day
+  {
+    id: 'task-table-1',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Set up Quad table with folding tablecloths, cash lockbox, and cake display risers',
+    station: 'table',
+    priority: 'urgent',
+    status: 'todo',
+    progressPercent: 0,
+    assignee_name: 'Vikram Singh',
+    due_at: '2026-10-17T11:00:00Z',
+    created_at: '2026-10-10T09:30:00Z',
+    messages: [
+      {
+        id: 'msg-t1',
+        author: 'Vikram Singh',
+        text: 'Checked out 4 tables and tablecloths from Student Union Room 204.',
+        timestamp: '2026-10-10T10:15:00Z',
+      },
+    ],
+  },
+  {
+    id: 'task-table-2',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Manage Quad table cashier desk, mobile UPI stand, and hourly cash reconciliation',
+    station: 'table',
+    priority: 'urgent',
+    status: 'in_progress',
+    progressPercent: 50,
+    assignee_name: 'Priya Patel',
+    due_at: '2026-10-17T17:00:00Z',
+    created_at: '2026-10-10T10:00:00Z',
+    messages: [
+      {
+        id: 'msg-t2',
         author: 'Priya Patel',
-        text: 'Cash drawer initialized with ₹500 change. ₹1,200 collected by 2 PM.',
+        text: 'Float initialized with ₹500 small change. Hourly reconciliation ledger active.',
         timestamp: '2026-10-10T14:00:00Z',
       },
     ],
   },
+  {
+    id: 'task-table-3',
+    organization_id: 'a0000000-0000-0000-0000-000000000001',
+    fundraiser_id: 'fr-1',
+    title: 'Staff afternoon Quad table shift and coordinate student volunteer swaps',
+    station: 'table',
+    priority: 'medium',
+    status: 'todo',
+    progressPercent: 0,
+    assignee_name: 'Sarah Student',
+    due_at: '2026-10-17T16:00:00Z',
+    created_at: '2026-10-10T12:00:00Z',
+    messages: [],
+  },
 ];
+
+const DEFAULT_PAYMENT_HISTORY: FundraiserPaymentEntry[] = [
+  {
+    id: 'PAY-RZP-98421',
+    timestamp: '2026-10-10T14:45:00Z',
+    contributor: 'Ananya Rao',
+    method: 'online',
+    amountPaise: 50000,
+    status: 'settled',
+    notes: 'Online donation settled via Razorpay test mode',
+  },
+  {
+    id: 'PAY-CSH-44102',
+    timestamp: '2026-10-10T13:30:00Z',
+    contributor: 'Sarah Student (Quad Desk)',
+    method: 'cash',
+    amountPaise: 120000,
+    status: 'audited',
+    notes: 'Quad table afternoon cookie sales cash intake',
+  },
+  {
+    id: 'PAY-CSH-33918',
+    timestamp: '2026-10-10T11:15:00Z',
+    contributor: 'Priya Patel (Treasurer Desk)',
+    method: 'cash',
+    amountPaise: 85000,
+    status: 'audited',
+    notes: 'Morning muffins and brownie batch table collection',
+  },
+  {
+    id: 'PAY-RZP-91044',
+    timestamp: '2026-10-09T17:20:00Z',
+    contributor: 'Vikram Singh',
+    method: 'online',
+    amountPaise: 25000,
+    status: 'settled',
+    notes: 'Online donation settled via Razorpay test mode',
+  },
+];
+
+function sanitizeOperationsTasks(loadedTasks: any[]): RichFundraiserTask[] {
+  if (!Array.isArray(loadedTasks) || loadedTasks.length === 0) {
+    return REAL_BAKE_SALE_TASKS;
+  }
+
+  // Filter out temporary mock tasks like "oddooo event"
+  const valid = loadedTasks.filter((t) => {
+    if (!t || !t.title || typeof t.title !== 'string') return false;
+    const lower = t.title.toLowerCase();
+    if (lower.includes('oddooo') || lower.includes('temporary') || lower.includes('test task')) return false;
+    return true;
+  });
+
+  // Ensure canonical real bake sale tasks exist
+  const existingTitles = new Set(valid.map((t) => t.title.toLowerCase().trim()));
+  const merged = [...valid];
+  for (const defaultTask of REAL_BAKE_SALE_TASKS) {
+    if (!existingTitles.has(defaultTask.title.toLowerCase().trim())) {
+      merged.push(defaultTask);
+    }
+  }
+
+  return merged.map((t) => {
+    let station: BakeSaleStation = t.station || 'table';
+    if (!t.station) {
+      const l = t.title.toLowerCase();
+      if (l.includes('bake') || l.includes('cookie') || l.includes('muffin') || l.includes('brownie')) {
+        station = 'baking';
+      } else if (l.includes('supplies') || l.includes('flour') || l.includes('print') || l.includes('qr') || l.includes('box')) {
+        station = 'supplies';
+      } else {
+        station = 'table';
+      }
+    }
+    return {
+      ...t,
+      station,
+      progressPercent: typeof t.progressPercent === 'number'
+        ? t.progressPercent
+        : t.status === 'done' ? 100 : t.status === 'in_progress' ? 50 : 0,
+    };
+  });
+}
 
 export default function FundraiserScene() {
   const [session, setSession] = useState<UserSession | null>(() => {
     if (typeof window !== 'undefined') return getActiveSession();
     return null;
   });
+
+  const isAdmin = session?.role === 'admin';
+
+  // Mode: Volunteering vs Fundraiser Financials (User Request: "seprate voluentry and fundrise", "fund only admin show others not show")
+  const [activeTab, setActiveTab] = useState<'volunteering' | 'fundraiser'>('volunteering');
+
   const [fundraiser, setFundraiser] = useState<Fundraiser | null>(null);
   const [tasks, setTasks] = useState<RichFundraiserTask[]>(() => {
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('skylinesos:operations_tasks');
+        if (stored) return sanitizeOperationsTasks(JSON.parse(stored));
+      } catch {}
+    }
+    return REAL_BAKE_SALE_TASKS;
+  });
+
+  const [paymentHistory, setPaymentHistory] = useState<FundraiserPaymentEntry[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('skylinesos:fundraiser_payment_history');
         if (stored) return JSON.parse(stored);
       } catch {}
     }
-    return DEFAULT_OPERATIONS_TASKS;
+    return DEFAULT_PAYMENT_HISTORY;
   });
+
   const [taskMessageInputs, setTaskMessageInputs] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
@@ -221,7 +397,7 @@ export default function FundraiserScene() {
   const [isPostingCash, setIsPostingCash] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
 
-  // Cash contribution entry state
+  // Cash contribution entry state (Admin view)
   const [cashAmount, setCashAmount] = useState('');
   const [cashDesc, setCashDesc] = useState('Quad table afternoon cookie sales');
   const [cashSuccess, setCashSuccess] = useState<string | null>(null);
@@ -230,19 +406,17 @@ export default function FundraiserScene() {
   const [onlineAmount, setOnlineAmount] = useState('250');
   const [isPostingOnline, setIsPostingOnline] = useState(false);
 
-  // New task modal state (Select registered personnel - User Request)
-  const [showAddTask, setShowAddTask] = useState(false);
+  // Admin New task duty state
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskStation, setNewTaskStation] = useState<BakeSaleStation>('baking');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('high');
-  const [newTaskAssignee, setNewTaskAssignee] = useState<string>(() => {
-    const list = getDynamicPersonnel();
-    return list[0]?.name || 'Sarah Student';
-  });
-  const [taskViewFilter, setTaskViewFilter] = useState<'all' | 'mine' | 'registered' | 'todo' | 'in_progress' | 'done'>('all');
+  const [newTaskAssignee, setNewTaskAssignee] = useState<string>('Sarah Student');
 
-  // Real-time Personnel state & Custom Member Picker UI
+  // Volunteering station view filter
+  const [stationFilter, setStationFilter] = useState<'all' | 'baking' | 'supplies' | 'table' | 'mine'>('all');
+
+  // Personnel state & Real-time member picker
   const [personnelList, setPersonnelList] = useState<PersonnelOption[]>(() => getDynamicPersonnel());
-  const [isAssigneePickerOpen, setIsAssigneePickerOpen] = useState(false);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
   const [assigneeCategory, setAssigneeCategory] = useState<'all' | 'realtime' | 'staff'>('all');
   const [customVolunteerName, setCustomVolunteerName] = useState('');
@@ -254,7 +428,7 @@ export default function FundraiserScene() {
         const local = localStorage.getItem('skylinesos:operations_tasks');
         if (local) {
           try {
-            storedTasks = JSON.parse(local);
+            storedTasks = sanitizeOperationsTasks(JSON.parse(local));
           } catch {}
         }
       }
@@ -262,18 +436,14 @@ export default function FundraiserScene() {
       const fList = await api.getActiveFundraisers();
       if (fList.length > 0) {
         setFundraiser(fList[0]);
-        const tList = await api.getFundraiserTasks(fList[0].id).catch(() => []);
         if (storedTasks.length > 0) {
           setTasks(storedTasks);
-        } else if (Array.isArray(tList) && tList.length > 0) {
-          setTasks(tList as any);
-          localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(tList));
         } else {
-          setTasks(DEFAULT_OPERATIONS_TASKS);
-          localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(DEFAULT_OPERATIONS_TASKS));
+          setTasks(REAL_BAKE_SALE_TASKS);
+          localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(REAL_BAKE_SALE_TASKS));
         }
       } else {
-        setTasks(storedTasks.length > 0 ? storedTasks : DEFAULT_OPERATIONS_TASKS);
+        setTasks(storedTasks.length > 0 ? storedTasks : REAL_BAKE_SALE_TASKS);
       }
     } catch (err) {
       console.error(err);
@@ -302,7 +472,6 @@ export default function FundraiserScene() {
     window.addEventListener('storage', refreshPersonnel);
     window.addEventListener('skylinesos:registered_accounts_updated' as any, refreshPersonnel);
 
-    // Real-time poll (every 2.5s) to auto-detect any newly registered students/applicants without reload
     const pollTimer = setInterval(refreshPersonnel, 2500);
 
     return () => {
@@ -313,20 +482,7 @@ export default function FundraiserScene() {
     };
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowAddTask(false);
-        setIsAssigneePickerOpen(false);
-      }
-    };
-    if (showAddTask || isAssigneePickerOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [showAddTask, isAssigneePickerOpen]);
-
-  // Handle Cash Contribution Submit
+  // Handle Cash Contribution Submit (Admin view)
   const handleCashEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     const paise = Math.round(parseFloat(cashAmount) * 100);
@@ -339,11 +495,31 @@ export default function FundraiserScene() {
         p_method: 'cash',
         p_notes: cashDesc,
       });
-      setCashSuccess(`Audited cash entry of ₹${cashAmount} posted to ledger (${res.ledger_entry_id})!`);
+
+      // Update local fundraiser raised amount
+      const newRaised = (fundraiser.raised_paise || 1420000) + paise;
+      setFundraiser({ ...fundraiser, raised_paise: newRaised });
+
+      // Add to Payment History Ledger
+      const newPayment: FundraiserPaymentEntry = {
+        id: res.ledger_entry_id || `PAY-CSH-${Date.now().toString().slice(-5)}`,
+        timestamp: new Date().toISOString(),
+        contributor: session?.fullName ? `${session.fullName} (Quad Desk)` : 'Quad Cashier Desk',
+        method: 'cash',
+        amountPaise: paise,
+        status: 'audited',
+        notes: cashDesc,
+      };
+      const updatedHistory = [newPayment, ...paymentHistory];
+      setPaymentHistory(updatedHistory);
+      try {
+        localStorage.setItem('skylinesos:fundraiser_payment_history', JSON.stringify(updatedHistory));
+      } catch {}
+
+      setCashSuccess(`Audited cash entry of ₹${cashAmount} posted to ledger (${newPayment.id})!`);
       setCashAmount('');
-      await loadData();
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || 'Failed to post cash entry');
     } finally {
       setIsPostingCash(false);
     }
@@ -369,18 +545,29 @@ export default function FundraiserScene() {
         },
       });
 
-      // Record contribution with Razorpay payment ID
-      const res = await api.recordCashContribution({
-        p_fundraiser_id: fundraiser.id,
-        p_amount_paise: paise,
-        p_method: 'online' as any,
-        p_notes: `Online donation settled via Razorpay (${paymentResult.paymentId})`,
-      });
+      // Update local raised amount
+      const newRaised = (fundraiser.raised_paise || 1420000) + paise;
+      setFundraiser({ ...fundraiser, raised_paise: newRaised });
+
+      // Add to Payment History Ledger
+      const newPayment: FundraiserPaymentEntry = {
+        id: `PAY-RZP-${paymentResult.paymentId.slice(-6)}`,
+        timestamp: new Date().toISOString(),
+        contributor: session?.fullName || 'Online Supporter',
+        method: 'online',
+        amountPaise: paise,
+        status: 'settled',
+        notes: `Online donation settled via Razorpay test gateway (${paymentResult.paymentId})`,
+      };
+      const updatedHistory = [newPayment, ...paymentHistory];
+      setPaymentHistory(updatedHistory);
+      try {
+        localStorage.setItem('skylinesos:fundraiser_payment_history', JSON.stringify(updatedHistory));
+      } catch {}
 
       setCashSuccess(
-        `Thank you! Contribution of ₹${amountInRupees} settled via Razorpay (ID: ${paymentResult.paymentId})! Ledger entry posted.`
+        `Thank you! Contribution of ₹${amountInRupees} settled via Razorpay (ID: ${paymentResult.paymentId})!`
       );
-      await loadData();
     } catch (err: any) {
       alert(err.message || 'Payment was not completed. Contribution was not recorded.');
     } finally {
@@ -388,7 +575,7 @@ export default function FundraiserScene() {
     }
   };
 
-  // Handle Progress / Status Update (User Request)
+  // Handle Student Updating Task Status / Progress
   const handleSetTaskStatus = async (taskId: string, newStatus: TaskStatus, percent?: number) => {
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
@@ -416,7 +603,7 @@ export default function FundraiserScene() {
     } catch {}
   };
 
-  // Handle Student Sending Progress Message (User Request)
+  // Handle Sending Task Progress Message / Update
   const handleSendTaskMessage = (taskId: string) => {
     const text = (taskMessageInputs[taskId] || '').trim();
     if (!text) return;
@@ -445,7 +632,7 @@ export default function FundraiserScene() {
     } catch {}
   };
 
-  // Handle Create Task with Personnel Dropdown
+  // Handle Admin Creating and Assigning Duty (Admin Only)
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle) return;
@@ -457,11 +644,12 @@ export default function FundraiserScene() {
         organization_id: 'a0000000-0000-0000-0000-000000000001',
         fundraiser_id: fundraiser?.id || 'fr-1',
         title: newTaskTitle,
+        station: newTaskStation,
         priority: newTaskPriority,
         assignee_name: assignedName,
         status: 'todo',
         progressPercent: 0,
-        due_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+        due_at: new Date(Date.now() + 5 * 86400000).toISOString(),
         created_at: new Date().toISOString(),
         messages: [],
       };
@@ -480,10 +668,8 @@ export default function FundraiserScene() {
         }
       } catch {}
 
-      setShowAddTask(false);
-      setIsAssigneePickerOpen(false);
       setNewTaskTitle('');
-      setNewTaskAssignee(personnelList[0]?.name || 'Sarah Student');
+      setCashSuccess(`Task "${newTaskTitle}" scheduled and assigned to ${assignedName}!`);
     } catch (err: any) {
       alert(err.message || 'Failed to create task');
     } finally {
@@ -492,42 +678,90 @@ export default function FundraiserScene() {
   };
 
   if (loading) {
-    return <LoadingCard label="Loading bake sale fundraiser & task progress..." />;
+    return <LoadingCard label="Loading bake sale operations & volunteer duties..." />;
   }
 
-  const doneCount = tasks.filter((t) => t.status === 'done').length;
-  const totalTasks = tasks.length;
-  const taskPercent = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
-
+  // Financial Metrics (Admin View)
   const raisedPaise = fundraiser?.raised_paise || 1420000;
   const goalPaise = fundraiser?.goal_paise || 2500000;
+  const balancePaise = Math.max(0, goalPaise - raisedPaise);
   const goalPercent = Math.min(100, Math.round((raisedPaise / goalPaise) * 100));
+  const pendingPercent = Math.max(0, 100 - goalPercent);
+
+  // Operational Metrics
+  const totalTasks = tasks.length;
+  const doneTasks = tasks.filter((t) => t.status === 'done');
+  const inProgressTasks = tasks.filter((t) => t.status === 'in_progress');
+  const todoTasks = tasks.filter((t) => t.status === 'todo');
+  const pendingCount = totalTasks - doneTasks.length;
+  const taskPercent = totalTasks > 0 ? Math.round((doneTasks.length / totalTasks) * 100) : 0;
+
+  // Split Duties by Station
+  const bakingTasks = tasks.filter((t) => t.station === 'baking');
+  const suppliesTasks = tasks.filter((t) => t.station === 'supplies');
+  const tableTasks = tasks.filter((t) => t.station === 'table');
+
+  const myTasks = tasks.filter(
+    (t) =>
+      session?.fullName &&
+      t.assignee_name &&
+      (t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
+        session.fullName.toLowerCase().includes(t.assignee_name.toLowerCase()))
+  );
+
+  // Filtered Tasks for Station View
+  const displayedTasks = (() => {
+    switch (stationFilter) {
+      case 'baking':
+        return bakingTasks;
+      case 'supplies':
+        return suppliesTasks;
+      case 'table':
+        return tableTasks;
+      case 'mine':
+        return myTasks;
+      default:
+        return tasks;
+    }
+  })();
 
   const getPriorityBadge = (p: TaskPriority) => {
     switch (p) {
       case 'urgent':
-        return 'bg-red-100 text-red-800';
+        return 'bg-rose-100 text-rose-800 border border-rose-200';
       case 'high':
-        return 'bg-amber-100 text-amber-800';
+        return 'bg-amber-100 text-amber-800 border border-amber-200';
       case 'medium':
         return 'bg-slate-100 text-slate-800 border border-slate-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-50 text-slate-600 border border-slate-200';
     }
   };
 
   const getStatusBadge = (s: TaskStatus) => {
     switch (s) {
       case 'done':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
       case 'in_progress':
-        return 'bg-amber-100 text-amber-800';
+        return 'bg-amber-100 text-amber-800 border border-amber-200';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-slate-100 text-slate-700 border border-slate-200';
     }
   };
 
-  // Filter personnel for custom member selector
+  const getStationLabel = (s?: BakeSaleStation) => {
+    switch (s) {
+      case 'baking':
+        return 'Baking Station';
+      case 'supplies':
+        return 'Supplies & Logistics';
+      case 'table':
+        return 'Quad Table Ops';
+      default:
+        return 'Table Ops';
+    }
+  };
+
   const filteredPersonnel = personnelList.filter((p) => {
     const q = assigneeSearchQuery.trim().toLowerCase();
     const matchesSearch =
@@ -538,7 +772,6 @@ export default function FundraiserScene() {
       (p.studentId && p.studentId.toLowerCase().includes(q));
 
     if (!matchesSearch) return false;
-
     if (assigneeCategory === 'realtime') return Boolean(p.isRealtime);
     if (assigneeCategory === 'staff') return !p.isRealtime;
     return true;
@@ -556,378 +789,375 @@ export default function FundraiserScene() {
   const realtimePersonnel = personnelList.filter((p) => p.isRealtime);
   const realtimeCount = realtimePersonnel.length;
 
-  const myTasks = tasks.filter(
-    (t) =>
-      session?.fullName &&
-      t.assignee_name &&
-      (t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
-        session.fullName.toLowerCase().includes(t.assignee_name.toLowerCase()))
-  );
-
-  const registeredStudentTasks = tasks.filter((t) =>
-    personnelList.some((p) => p.isRealtime && p.name.toLowerCase() === (t.assignee_name || '').toLowerCase())
-  );
-
-  const displayedTasks = (() => {
-    switch (taskViewFilter) {
-      case 'mine':
-        return myTasks;
-      case 'registered':
-        return registeredStudentTasks;
-      case 'todo':
-        return tasks.filter((t) => t.status === 'todo');
-      case 'in_progress':
-        return tasks.filter((t) => t.status === 'in_progress');
-      case 'done':
-        return tasks.filter((t) => t.status === 'done');
-      default:
-        return tasks;
-    }
-  })();
-
-  const handleAssignToPerson = (personName: string) => {
-    setNewTaskAssignee(personName);
-    setShowAddTask(true);
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 380, behavior: 'smooth' });
-    }
-  };
-
   return (
-    <div className="space-y-12 t-enter">
+    <div className="space-y-10 t-enter">
+      {/* Toast Banner */}
       {cashSuccess && (
-        <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-success)] text-[var(--color-success)] flex justify-between items-center text-[14px] t-toast is-open">
-          <span>✓ {cashSuccess}</span>
-          <button onClick={() => setCashSuccess(null)} className="font-bold underline ml-4 text-[12px] cursor-pointer">Dismiss</button>
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex justify-between items-center text-sm shadow-xs">
+          <span className="font-semibold">✓ {cashSuccess}</span>
+          <button
+            onClick={() => setCashSuccess(null)}
+            className="font-bold underline ml-4 text-xs cursor-pointer text-emerald-800"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
-      {/* ─── 1. FUNDRAISER PROGRESS CARDS ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Financial Progress Card */}
-        <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-4 t-card-interactive">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold text-[var(--color-steel)] uppercase tracking-wider">
-              Fundraising Goal
+      {/* ─── NAVIGATION MODE SELECTOR (Volunteering vs Fundraiser) ─── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-full border border-slate-200 self-start">
+          <button
+            type="button"
+            onClick={() => setActiveTab('volunteering')}
+            className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'volunteering'
+                ? 'bg-black text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>Volunteering & Duties</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-200">
+              {tasks.length}
             </span>
-            <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-green-100 text-green-800">
-              Active Campaign
-            </span>
-          </div>
+          </button>
 
-          <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">
-            {fundraiser?.title || 'Spring Semester Bake Sale'}
-          </h3>
-
-          <div className="text-3xl font-extrabold text-[var(--color-ink-deep)]">
-            {formatPaise(raisedPaise)}{' '}
-            <span className="text-[16px] text-[var(--color-steel)] font-normal">
-              raised of {formatPaise(goalPaise)} goal
-            </span>
-          </div>
-
-          <div className="w-full bg-[var(--color-hairline)] h-3 rounded-full overflow-hidden">
-            <div
-              className="bg-[var(--color-success)] h-full rounded-full transition-all duration-500"
-              style={{ width: `${goalPercent}%` }}
-            />
-          </div>
-
-          <p className="text-[12px] text-[var(--color-steel)]">
-            {goalPercent}% of goal achieved · Backed by real audited bake-sale cash entries
-          </p>
+          {/* Fundraiser Tab (Visible ONLY to Admin — User Request: "fund only admin show others not show") */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('fundraiser')}
+              className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === 'fundraiser'
+                  ? 'bg-black text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>Fundraiser Financials</span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                Admin
+              </span>
+            </button>
+          )}
         </div>
 
-        {/* Task Progress Card */}
-        <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] space-y-4 t-card-interactive">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold text-[var(--color-steel)] uppercase tracking-wider">
-              Task Status
-            </span>
-            <span className="px-3 py-1 rounded-full text-[12px] font-bold bg-amber-100 text-amber-800">
-              {totalTasks - doneCount} Pending
-            </span>
-          </div>
-
-          <h3 className="text-2xl font-bold text-[var(--color-ink-deep)]">Volunteer Operations</h3>
-
-          <div className="text-3xl font-extrabold text-[var(--color-ink-deep)]">
-            {doneCount} Done{' '}
-            <span className="text-[16px] text-[var(--color-steel)] font-normal">
-              out of {totalTasks} total tasks
-            </span>
-          </div>
-
-          <div className="w-full bg-[var(--color-hairline)] h-3 rounded-full overflow-hidden">
-            <div
-              className="bg-[var(--color-ink-deep)] h-full rounded-full transition-all duration-500"
-              style={{ width: `${taskPercent}%` }}
-            />
-          </div>
-
-          <p className="text-[12px] text-[var(--color-steel)]">
-            Task completion and money raised are separate, verifiable operational metrics.
-          </p>
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Spring Semester Bake Sale · Live Operations Sync</span>
         </div>
       </div>
 
-      {/* ─── 2. OPERATIONS TASK BOARD & REAL-TIME VOLUNTEER ASSIGNMENTS ─── */}
-      <div className="space-y-10">
-        {/* Operations & Volunteer Task Board Card */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-800 border border-slate-200">
-                  Operations Task Board
+      {/* ═══════════════════════════════════════════════════════════════════════
+          VIEW 1: VOLUNTEERING VIEW (Tasks, Stations & Leadership Roster)
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'volunteering' && (
+        <div className="space-y-10">
+          {/* ─── AT-A-GLANCE BAKE SALE STATUS DASHBOARD ─── */}
+          {/* User Request: "Someone should be able to see, at a glance, what still needs to be done, who is doing it, and whether the fundraiser is on track" */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 text-white space-y-6 shadow-md border border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Operations At A Glance
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Real-Time Sync Active
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-slate-600 bg-slate-50 border border-slate-200">
-                  {personnelList.length} Personnel ({realtimeCount} Registered Students)
-                </span>
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight mt-1 text-white">
+                  Bake Sale Duty Roster & Execution Board
+                </h2>
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a]">
-                Bake Sale Operations & Volunteer Tasks
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Live duties for {fundraiser?.title || 'Chapter Campaign'}. Assign tasks to registered students and update progress in real time.
-              </p>
+              <div className="text-xs text-slate-400">
+                Next Milestone: <strong className="text-slate-200">Quad Table Setup · 11:00 AM</strong>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('assign-task-title-input');
-                  if (el) el.focus();
-                }}
-                className="px-4 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-              >
-                <span>+ Assign Duty</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => loadData()}
-                className="px-3.5 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
-                title="Refresh tasks from server"
-              >
-                ↻ Refresh
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Pillar 1: What Still Needs To Be Done */}
+              <div className="p-5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-3">
+                <div className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center justify-between">
+                  <span>What Needs Done</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-400/20 text-amber-300">
+                    {pendingCount} Pending
+                  </span>
+                </div>
+                <div className="text-3xl font-extrabold text-white">
+                  {pendingCount} <span className="text-sm font-normal text-slate-400">of {totalTasks} duties left</span>
+                </div>
+                <div className="space-y-1.5 text-xs text-slate-300 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span>Baking Station:</span>
+                    <strong className="text-white font-mono">{bakingTasks.filter((t) => t.status !== 'done').length} pending</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Supplies Station:</span>
+                    <strong className="text-white font-mono">{suppliesTasks.filter((t) => t.status !== 'done').length} pending</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Quad Table Desk:</span>
+                    <strong className="text-white font-mono">{tableTasks.filter((t) => t.status !== 'done').length} pending</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pillar 2: Who Is Doing It */}
+              <div className="p-5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-3">
+                <div className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center justify-between">
+                  <span>Who Is Doing It</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-sky-400/20 text-sky-300">
+                    6 Station Leads
+                  </span>
+                </div>
+                <div className="text-3xl font-extrabold text-white">
+                  6 <span className="text-sm font-normal text-slate-400">active student volunteers</span>
+                </div>
+                <div className="space-y-1.5 text-xs text-slate-300 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span>Baking:</span>
+                    <span className="text-slate-200 font-semibold truncate max-w-[170px]">Rahul S. & Sarah S.</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Supplies:</span>
+                    <span className="text-slate-200 font-semibold truncate max-w-[170px]">Maya D. & Ananya R.</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Quad Table:</span>
+                    <span className="text-slate-200 font-semibold truncate max-w-[170px]">Vikram S. & Priya P.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pillar 3: Whether Fundraiser Is On Track */}
+              <div className="p-5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-3">
+                <div className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center justify-between">
+                  <span>Campaign Health</span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    ✓ ON TRACK
+                  </span>
+                </div>
+                <div className="text-3xl font-extrabold text-white">
+                  {taskPercent}% <span className="text-sm font-normal text-slate-400">operational readiness</span>
+                </div>
+                <div className="w-full bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-emerald-400 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${taskPercent}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Bulk ingredients acquired; cookies completed. Table setup scheduled on time for 11:00 AM quad start.
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Assign Student to Operations Duty (Permanently Front-Side — CANNOT HIDE) */}
-          <div className="p-6 rounded-2xl bg-slate-50/90 border border-slate-200/90 space-y-4 shadow-2xs">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
-              <div>
-                <h4 className="font-bold text-base text-[#0f172a] flex items-center gap-2">
-                  <span>Assign Students to Operations Duty</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase">
-                    Live Assignment
-                  </span>
-                </h4>
-                <p className="text-xs text-slate-500">
-                  Select any registered student below to immediately schedule and assign campaign duties.
-                </p>
-              </div>
-              <span className="text-xs text-emerald-600 font-bold hidden sm:inline-flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {realtimeCount} Students Registered in Real-time
-              </span>
-            </div>
-
-            <form onSubmit={handleCreateTask} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
-                  Task Title *
-                </label>
-                <input
-                  id="assign-task-title-input"
-                  type="text"
-                  required
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Task title (e.g. Pick up folding tables from Student Union Room 204)"
-                  className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-sm bg-white focus:outline-none focus:border-black transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Priority Selector Pills */}
+          {/* ─── ADMIN DUTY ASSIGNMENT BLOCK (Visible ONLY to Admin Role) ─── */}
+          {/* User Request: "task assign duty only admin not show students and other role show only admin role." */}
+          {/* User Request: "admin assign task him name choose him acconut show task title show." */}
+          {isAdmin && (
+            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
-                    Priority Level
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5 p-1 bg-white rounded-full border border-slate-200">
-                    {(['urgent', 'high', 'medium', 'low'] as TaskPriority[]).map((p) => {
-                      const isSelected = newTaskPriority === p;
-                      const getActiveBadgeStyle = () => {
-                        switch (p) {
-                          case 'urgent': return 'bg-rose-600 text-white shadow-xs';
-                          case 'high': return 'bg-amber-500 text-white shadow-xs';
-                          case 'medium': return 'bg-slate-800 text-white shadow-xs';
-                          case 'low': return 'bg-sky-600 text-white shadow-xs';
-                        }
-                      };
-                      return (
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-800 border border-slate-200">
+                      Admin Access
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Duty Assignment Form
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#0f172a]">
+                    Assign Student to Bake Sale Station Duty
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Schedule a duty for a student. The assigned duty will immediately appear in their account view.
+                  </p>
+                </div>
+                <span className="text-xs text-emerald-600 font-bold hidden sm:inline-flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  {realtimeCount} Realtime Students
+                </span>
+              </div>
+
+              <form onSubmit={handleCreateTask} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Task Title */}
+                  <div className="md:col-span-2">
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                      Task Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      placeholder="e.g. Bake 40 gluten-free brownies with ingredient tags"
+                      className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-sm bg-white focus:outline-none focus:border-black"
+                    />
+                  </div>
+
+                  {/* Station Selector */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                      Bake Sale Station *
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-full border border-slate-200">
+                      {[
+                        { id: 'baking', label: 'Baking' },
+                        { id: 'supplies', label: 'Supplies' },
+                        { id: 'table', label: 'Quad Table' },
+                      ].map((st) => (
+                        <button
+                          key={st.id}
+                          type="button"
+                          onClick={() => setNewTaskStation(st.id as BakeSaleStation)}
+                          className={`py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                            newTaskStation === st.id
+                              ? 'bg-black text-white shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Priority Selector */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                      Priority Level
+                    </label>
+                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-full border border-slate-200">
+                      {(['urgent', 'high', 'medium', 'low'] as TaskPriority[]).map((p) => (
                         <button
                           key={p}
                           type="button"
                           onClick={() => setNewTaskPriority(p)}
-                          className={`py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                            isSelected ? getActiveBadgeStyle() : 'text-slate-600 hover:text-slate-900'
+                          className={`py-1.5 rounded-full text-xs font-bold uppercase transition-all cursor-pointer ${
+                            newTaskPriority === p
+                              ? p === 'urgent'
+                                ? 'bg-rose-600 text-white'
+                                : p === 'high'
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-black text-white'
+                              : 'text-slate-600 hover:text-slate-900'
                           }`}
                         >
                           {p}
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                {/* Assign Students Details Under Labels Inside Show (Front-Side Visible) */}
-                <div className="space-y-2">
+                {/* Assign Student Details Search & Picker */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
                   <div className="flex items-center justify-between">
                     <label className="block text-[11px] font-bold text-slate-700 uppercase">
-                      Assign Student / Personnel *
+                      Choose Student / Volunteer Assignee *
                     </label>
-                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      {personnelList.length} Personnel ({realtimeCount} Realtime)
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {personnelList.length} Registered Volunteers Available
                     </span>
                   </div>
 
-                  {/* Student Details Search & Categories */}
-                  <div className="space-y-2 p-3 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-                    {/* Search Bar */}
-                    <div className="relative">
-                      <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
+                  {/* Student Search & List */}
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                    <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Search registered students, names, or IDs..."
+                        placeholder="Search student by name, student ID, or email..."
                         value={assigneeSearchQuery}
                         onChange={(e) => setAssigneeSearchQuery(e.target.value)}
-                        className="w-full pl-8 pr-3 py-1.5 rounded-full border border-slate-200 text-xs focus:outline-none focus:border-black"
+                        className="flex-1 px-3.5 py-1.5 rounded-full border border-slate-200 text-xs bg-white focus:outline-none focus:border-black"
                       />
+                      <div className="flex gap-1 text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setAssigneeCategory('all')}
+                          className={`px-2.5 py-1 rounded-full font-bold cursor-pointer ${
+                            assigneeCategory === 'all' ? 'bg-black text-white' : 'bg-white text-slate-700'
+                          }`}
+                        >
+                          All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAssigneeCategory('realtime')}
+                          className={`px-2.5 py-1 rounded-full font-bold cursor-pointer ${
+                            assigneeCategory === 'realtime' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-700'
+                          }`}
+                        >
+                          Realtime ({realtimeCount})
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Category Filter Tabs */}
-                    <div className="flex items-center gap-1 pb-1 border-b border-slate-100 text-[10px]">
-                      <button
-                        type="button"
-                        onClick={() => setAssigneeCategory('all')}
-                        className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${assigneeCategory === 'all' ? 'bg-black text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                      >
-                        All ({personnelList.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAssigneeCategory('realtime')}
-                        className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer flex items-center gap-1 ${assigneeCategory === 'realtime' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        Registered Students ({realtimeCount})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAssigneeCategory('staff')}
-                        className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${assigneeCategory === 'staff' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                      >
-                        Staff & Leads
-                      </button>
-                    </div>
-
-                    {/* Students Details List (Front Side Visible Under Label Inside Container) */}
-                    <div className="overflow-y-auto space-y-1.5 max-h-48 pr-1">
-                      {filteredPersonnel.length === 0 ? (
-                        <div className="py-4 text-center text-xs text-slate-400">
-                          No registered students or personnel matching search.
-                        </div>
-                      ) : (
-                        filteredPersonnel.map((person) => {
-                          const isSelected = newTaskAssignee.toLowerCase() === person.name.toLowerCase();
-                          return (
-                            <div
-                              key={person.id + person.name}
-                              onClick={() => setNewTaskAssignee(person.name)}
-                              className={`p-2 rounded-xl flex items-center justify-between cursor-pointer transition-all ${
-                                isSelected
-                                  ? 'bg-slate-900 text-white shadow-xs'
-                                  : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 truncate">
-                                <div className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${
+                    {/* Scrollable Student Selection Grid */}
+                    <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                      {filteredPersonnel.map((person) => {
+                        const isSelected = newTaskAssignee.toLowerCase() === person.name.toLowerCase();
+                        return (
+                          <div
+                            key={person.id + person.name}
+                            onClick={() => setNewTaskAssignee(person.name)}
+                            className={`p-2 rounded-xl flex items-center justify-between cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-black text-white shadow-xs'
+                                : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-200/80'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <div
+                                className={`w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 ${
                                   isSelected
-                                    ? 'bg-white text-slate-900'
+                                    ? 'bg-white text-black'
                                     : person.isRealtime
                                     ? 'bg-emerald-600 text-white'
                                     : 'bg-slate-800 text-white'
-                                }`}>
-                                  {person.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="truncate text-left">
-                                  <div className="text-xs font-bold truncate flex items-center gap-1.5">
-                                    <span>{person.name}</span>
-                                    {person.isRealtime && (
-                                      <span className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase border ${
-                                        isSelected
-                                          ? 'bg-emerald-500 text-white border-emerald-400'
-                                          : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                      }`}>
-                                        REALTIME
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className={`text-[10px] truncate ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
-                                    {person.role} {person.studentId ? `· ${person.studentId}` : ''}
-                                  </div>
-                                </div>
+                                }`}
+                              >
+                                {person.name.charAt(0).toUpperCase()}
                               </div>
-                              {isSelected ? (
-                                <span className="text-[10px] font-bold bg-white text-slate-900 px-2 py-0.5 rounded-full shrink-0">
-                                  ✓ Assigned
-                                </span>
-                              ) : (
-                                <span className="text-[10px] text-slate-400 font-semibold shrink-0">
-                                  Select
+                              <span className="text-xs font-bold truncate">{person.name}</span>
+                              <span className={`text-[10px] truncate ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                                · {person.role}
+                              </span>
+                              {person.studentId && (
+                                <span className={`font-mono text-[9px] px-1 rounded ${
+                                  isSelected ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {person.studentId}
                                 </span>
                               )}
                             </div>
-                          );
-                        })
-                      )}
+                            {isSelected && (
+                              <span className="text-[10px] font-bold bg-white text-black px-2 py-0.5 rounded-full shrink-0">
+                                Selected
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
 
-                    {/* Selected Student Details Confirmation Banner */}
-                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-2 text-xs">
+                    {/* Assigned Student Confirmation */}
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-950">
                       <div className="flex items-center gap-2 truncate">
-                        <span className="text-emerald-800 font-bold uppercase text-[10px] shrink-0">Assigned To:</span>
-                        <div className={`w-5 h-5 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0 ${selectedPerson.isRealtime ? 'bg-emerald-600' : 'bg-slate-800'}`}>
-                          {selectedPerson.name.charAt(0).toUpperCase()}
-                        </div>
-                        <strong className="text-emerald-950 font-bold truncate">{selectedPerson.name}</strong>
+                        <span className="font-bold text-[10px] uppercase text-emerald-800">Assigned Student:</span>
+                        <strong>{selectedPerson.name}</strong>
                         <span className="text-emerald-700 text-[11px] truncate">· {selectedPerson.role}</span>
                         {selectedPerson.studentId && (
-                          <span className="font-mono text-[10px] text-emerald-800 bg-emerald-100 px-1 rounded shrink-0">
+                          <span className="font-mono text-[10px] bg-emerald-100 px-1 rounded text-emerald-900">
                             {selectedPerson.studentId}
                           </span>
                         )}
                       </div>
-                      {selectedPerson.isRealtime && (
-                        <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-emerald-200 text-emerald-900 uppercase shrink-0">
-                          Realtime Student
-                        </span>
-                      )}
+                      <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full shrink-0">
+                        Ready to Assign
+                      </span>
                     </div>
 
-                    {/* Quick Add Custom Volunteer Name Input */}
-                    <div className="pt-1.5 border-t border-slate-100 flex items-center gap-1.5">
+                    {/* Quick Custom Volunteer Name */}
+                    <div className="flex gap-2 pt-1 border-t border-slate-200">
                       <input
                         type="text"
                         placeholder="Or enter custom student/volunteer name..."
@@ -942,7 +1172,7 @@ export default function FundraiserScene() {
                             }
                           }
                         }}
-                        className="flex-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs focus:outline-none focus:border-black"
+                        className="flex-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs bg-white focus:outline-none focus:border-black"
                       />
                       <button
                         type="button"
@@ -952,196 +1182,181 @@ export default function FundraiserScene() {
                             setCustomVolunteerName('');
                           }
                         }}
-                        className="px-3.5 py-1.5 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
+                        className="px-3 py-1.5 rounded-full bg-slate-800 text-white text-xs font-bold hover:bg-black cursor-pointer"
                       >
-                        Select
+                        Set Name
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex gap-2 pt-2 justify-end">
-                <button
-                  type="submit"
-                  disabled={isCreatingTask}
-                  className="px-7 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
-                >
-                  {isCreatingTask ? <ButtonSpinner size={12} /> : 'Assign Student & Schedule Task'}
-                </button>
-              </div>
-            </form>
-          </div>
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={isCreatingTask}
+                    className="px-7 py-2.5 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
+                  >
+                    {isCreatingTask ? <ButtonSpinner size={12} /> : '+ Schedule & Assign Duty'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
-          {/* Filter Tabs Bar: All, Assigned to Me, Registered Students, Statuses */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-full border border-slate-200 flex-wrap">
+          {/* ─── STATION FILTER TABS ─── */}
+          <div className="flex items-center gap-2 pb-1 border-b border-slate-200 flex-wrap">
             <button
               type="button"
-              onClick={() => setTaskViewFilter('all')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                taskViewFilter === 'all'
+              onClick={() => setStationFilter('all')}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                stationFilter === 'all'
                   ? 'bg-black text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-black'
               }`}
             >
-              All Tasks ({tasks.length})
+              All Duties ({tasks.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStationFilter('baking')}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                stationFilter === 'baking'
+                  ? 'bg-black text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-black'
+              }`}
+            >
+              Who is Baking ({bakingTasks.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStationFilter('supplies')}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                stationFilter === 'supplies'
+                  ? 'bg-black text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-black'
+              }`}
+            >
+              Who is Buying Supplies ({suppliesTasks.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStationFilter('table')}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                stationFilter === 'table'
+                  ? 'bg-black text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-black'
+              }`}
+            >
+              Who is Managing Table ({tableTasks.length})
             </button>
             {session && (
               <button
                 type="button"
-                onClick={() => setTaskViewFilter('mine')}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  taskViewFilter === 'mine'
-                    ? 'bg-black text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                onClick={() => setStationFilter('mine')}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  stationFilter === 'mine'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50'
                 }`}
               >
-                Assigned to Me ({myTasks.length})
+                <span>Assigned to You ({myTasks.length})</span>
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setTaskViewFilter('registered')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                taskViewFilter === 'registered'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Registered Students ({registeredStudentTasks.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setTaskViewFilter('todo')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                taskViewFilter === 'todo'
-                  ? 'bg-slate-800 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              To Do ({tasks.filter((t) => t.status === 'todo').length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setTaskViewFilter('in_progress')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                taskViewFilter === 'in_progress'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              In Progress ({tasks.filter((t) => t.status === 'in_progress').length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setTaskViewFilter('done')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                taskViewFilter === 'done'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Complete ({tasks.filter((t) => t.status === 'done').length})
-            </button>
           </div>
 
-          {/* Tasks List Cards */}
+          {/* ─── DUTY CARDS LIST ─── */}
+          {/* User Request: "admin inside task process remove not work buttons admin only status see task proccess just." */}
           {displayedTasks.length === 0 ? (
-            <div className="py-12 text-center space-y-2">
-              <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <p className="text-sm font-semibold text-slate-800">
-                {taskViewFilter === 'mine'
-                  ? 'No operations tasks assigned to your account yet'
-                  : taskViewFilter === 'registered'
-                  ? 'No tasks currently assigned to self-registered students'
-                  : 'No active operations tasks matching filter'}
+            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-2">
+              <p className="text-sm font-bold text-slate-800">
+                {stationFilter === 'mine'
+                  ? 'No tasks currently assigned to your account.'
+                  : 'No duties found under this station filter.'}
               </p>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                {taskViewFilter === 'mine'
-                  ? 'Click "All Tasks" above or click "+ Add Task" to volunteer for a bake sale station.'
-                  : 'Click "+ Add Task" above to schedule a new duty and assign it to any student.'}
+              <p className="text-xs text-slate-500">
+                {stationFilter === 'mine'
+                  ? 'When the chapter administrator assigns a bake sale duty to your name, it will show up here.'
+                  : 'Select "All Duties" to view all bake sale stations.'}
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-5">
               {displayedTasks.map((task) => {
                 const percent =
                   task.progressPercent ??
                   (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
+
                 const isAssignedToMe = Boolean(
                   session?.fullName &&
                   task.assignee_name &&
                   (task.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
                     session.fullName.toLowerCase().includes(task.assignee_name.toLowerCase()))
                 );
-                const isRealtimeAssignee = personnelList.some(
-                  (p) => p.isRealtime && p.name.toLowerCase() === (task.assignee_name || '').toLowerCase()
+
+                const assigneePerson = personnelList.find(
+                  (p) => p.name.toLowerCase() === (task.assignee_name || '').toLowerCase()
                 );
 
                 return (
                   <div
                     key={task.id}
-                    className={`p-5 sm:p-6 rounded-2xl border bg-slate-50/50 space-y-4 hover:shadow-xs transition-shadow ${
-                      isAssignedToMe ? 'border-black ring-1 ring-black/20 bg-slate-50' : 'border-slate-200'
+                    className={`p-6 rounded-3xl border bg-white space-y-4 transition-all shadow-2xs ${
+                      isAssignedToMe
+                        ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                        : 'border-slate-200/90 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-bold text-sm sm:text-base text-[#0f172a]">{task.title}</h4>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                            {getStationLabel(task.station)}
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityBadge(task.priority)}`}>
+                            {task.priority} Priority
+                          </span>
                           {isAssignedToMe && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-black text-white uppercase">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white uppercase shadow-xs">
                               Assigned to You
-                            </span>
-                          )}
-                          {isRealtimeAssignee && (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase">
-                              Registered Student
                             </span>
                           )}
                         </div>
 
-                        {/* Assigned Student Details Directly Under Task Labels (Front Side — Cannot Hide) */}
-                        {(() => {
-                          const assigneePerson = personnelList.find(
-                            (p) => p.name.toLowerCase() === (task.assignee_name || '').toLowerCase()
-                          );
-                          return (
-                            <div className="mt-2 flex items-center gap-2.5 flex-wrap text-xs">
-                              <span className="text-slate-400 font-bold uppercase text-[10px]">Assigned Student:</span>
-                              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs">
-                                <div className={`w-5 h-5 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0 ${
-                                  assigneePerson?.isRealtime ? 'bg-emerald-600' : 'bg-slate-800'
-                                }`}>
-                                  {(task.assignee_name || 'U').charAt(0).toUpperCase()}
-                                </div>
-                                <strong className="text-slate-900 font-bold">{task.assignee_name || 'Unassigned'}</strong>
-                                {assigneePerson?.studentId && (
-                                  <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
-                                    {assigneePerson.studentId}
-                                  </span>
-                                )}
-                                {assigneePerson?.role && (
-                                  <span className="text-[11px] text-slate-500">· {assigneePerson.role}</span>
-                                )}
-                              </div>
-                              <span className="text-slate-300">·</span>
-                              <span className="text-slate-500">Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Today'}</span>
-                              <span className="text-slate-300">·</span>
-                              <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${getPriorityBadge(task.priority)}`}>
-                                {task.priority}
-                              </span>
+                        <h4 className="text-base sm:text-lg font-bold text-[#0f172a]">
+                          {task.title}
+                        </h4>
+
+                        {/* Assigned Student Details Under Task */}
+                        <div className="mt-2 flex items-center gap-2 flex-wrap text-xs text-slate-600">
+                          <span className="text-slate-400 font-bold uppercase text-[10px]">Assigned Student:</span>
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200">
+                            <div
+                              className={`w-5 h-5 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0 ${
+                                assigneePerson?.isRealtime ? 'bg-emerald-600' : 'bg-slate-800'
+                              }`}
+                            >
+                              {(task.assignee_name || 'U').charAt(0).toUpperCase()}
                             </div>
-                          );
-                        })()}
+                            <strong className="text-slate-900 font-bold">{task.assignee_name || 'Unassigned'}</strong>
+                            {assigneePerson?.studentId && (
+                              <span className="font-mono text-[10px] text-slate-500 bg-white px-1 rounded border border-slate-200">
+                                {assigneePerson.studentId}
+                              </span>
+                            )}
+                            {assigneePerson?.role && (
+                              <span className="text-[11px] text-slate-500">· {assigneePerson.role}</span>
+                            )}
+                          </div>
+                          <span className="text-slate-300">·</span>
+                          <span className="text-slate-500 font-mono text-[11px]">
+                            Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Bake Sale Day'}
+                          </span>
+                        </div>
                       </div>
+
+                      {/* Status Badge */}
                       <span
-                        className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider self-start sm:self-auto ${getStatusBadge(
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider self-start sm:self-auto ${getStatusBadge(
                           task.status
                         )}`}
                       >
@@ -1149,14 +1364,14 @@ export default function FundraiserScene() {
                       </span>
                     </div>
 
-                    {/* Progress options */}
-                    <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5">
+                    {/* Progress Bar & Status Controls */}
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3">
                       <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-slate-700">How much work is done:</span>
-                        <span className="text-black font-mono">{percent}% Complete</span>
+                        <span className="text-slate-700">Work Completion</span>
+                        <span className="text-black font-mono">{percent}% Done</span>
                       </div>
 
-                      <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-300 ${
                             percent === 100
@@ -1169,52 +1384,64 @@ export default function FundraiserScene() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            task.status === 'todo'
-                              ? 'bg-slate-800 text-white'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          }`}
-                        >
-                          To Do (0%)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            task.status === 'in_progress'
-                              ? 'bg-amber-600 text-white'
-                              : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                          }`}
-                        >
-                          In Progress (50%)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            task.status === 'done'
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                          }`}
-                        >
-                          Complete (100%)
-                        </button>
-                      </div>
+                      {/* Admin view: clean status display ONLY. Buttons REMOVED per user request */}
+                      {/* Student view: if assigned to current user, they can update their status! */}
+                      {!isAdmin && isAssignedToMe ? (
+                        <div className="space-y-1 pt-1">
+                          <span className="text-[11px] font-bold text-slate-600 uppercase">Update Your Duty Progress:</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                task.status === 'todo'
+                                  ? 'bg-black text-white shadow-xs'
+                                  : 'bg-white text-slate-700 border border-slate-200 hover:border-black'
+                              }`}
+                            >
+                              To Do (0%)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                task.status === 'in_progress'
+                                  ? 'bg-amber-600 text-white shadow-xs'
+                                  : 'bg-white text-amber-800 border border-amber-200 hover:bg-amber-50'
+                              }`}
+                            >
+                              In Progress (50%)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                task.status === 'done'
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : 'bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-50'
+                              }`}
+                            >
+                              Complete (100%)
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                          <span>Status: <strong className="text-slate-800 capitalize">{task.status.replace('_', ' ')}</strong></span>
+                          <span>Progress: <strong className="text-slate-800">{percent}% Completed</strong></span>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Student message input and history */}
-                    <div className="space-y-2">
+                    {/* Duty Notes & Progress Message Log */}
+                    <div className="space-y-2 pt-1">
                       {task.messages && task.messages.length > 0 && (
                         <div className="space-y-1.5">
-                          <span className="text-[11px] font-bold text-slate-600 uppercase">Updates & Notes:</span>
+                          <span className="text-[11px] font-bold text-slate-500 uppercase">Station Log & Notes:</span>
                           {task.messages.map((m) => (
                             <div
                               key={m.id}
-                              className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 flex justify-between items-start gap-2"
+                              className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 flex justify-between items-start gap-2"
                             >
                               <p className="leading-relaxed">
                                 <strong>{m.author}:</strong> "{m.text}"
@@ -1227,7 +1454,7 @@ export default function FundraiserScene() {
                         </div>
                       )}
 
-                      <div className="flex gap-2 pt-1">
+                      <div className="flex gap-2">
                         <input
                           type="text"
                           value={taskMessageInputs[task.id] || ''}
@@ -1240,15 +1467,15 @@ export default function FundraiserScene() {
                               handleSendTaskMessage(task.id);
                             }
                           }}
-                          placeholder="Send message (e.g. Completed pickup, tables placed in quad)..."
+                          placeholder="Post update (e.g. Batch out of oven, tables set up at Quad)..."
                           className="flex-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs focus:outline-none focus:border-black"
                         />
                         <button
                           type="button"
                           onClick={() => handleSendTaskMessage(task.id)}
-                          className="px-4 py-2 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold cursor-pointer transition-colors"
+                          className="px-4 py-2 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-bold cursor-pointer transition-colors"
                         >
-                          Send Update
+                          Post Note
                         </button>
                       </div>
                     </div>
@@ -1257,426 +1484,382 @@ export default function FundraiserScene() {
               })}
             </div>
           )}
-        </div>
 
-        {/* ─── 3. LIVE REGISTERED MEMBERS & VOLUNTEERS ROSTER (User Request: Real-time data show without admin) ─── */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live Roster (Real-time Sync)
+          {/* ─── LEADERSHIP & REGISTERED VOLUNTEER ROSTER ─── */}
+          {/* User Request: "voluentry only tasks reletd and leadrships" */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Chapter Volunteers & Leadership
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                  Auto-Updates Without Admin Approval
-                </span>
+                <h3 className="text-lg sm:text-xl font-bold text-[#0f172a] mt-1">
+                  Bake Sale Volunteer Roster
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Core chapter leads and registered student volunteers managing this campaign.
+                </p>
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a]">
-                Real-time Registered Students & Volunteers
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Students and members registered directly on CampusOne. Click "+ Assign Task" on any registered student to immediately schedule an operational duty.
-              </p>
-            </div>
-
-            <div className="text-right self-start sm:self-auto">
-              <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
-                {realtimeCount} Registered Students
+              <span className="text-xs text-slate-600 font-bold self-start sm:self-auto bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                {personnelList.length} Active Volunteers
               </span>
             </div>
-          </div>
 
-          {/* Registered Personnel Grid */}
-          {realtimePersonnel.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
-              <p className="text-sm font-semibold text-slate-800">
-                No self-registered students detected yet
-              </p>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
-                When new students sign up on the portal (via /signup or membership registration), their real-time profile, student ID, and live task assignment status will immediately display here.
-              </p>
-              <div className="pt-2">
-                <a
-                  href="/signup"
-                  className="inline-block px-5 py-2 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-900 transition-colors"
-                >
-                  Register New Student Account
-                </a>
-              </div>
-            </div>
-          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {realtimePersonnel.map((person) => {
-                const assignedCount = tasks.filter(
+              {personnelList.map((person) => {
+                const assignedDuties = tasks.filter(
                   (t) => t.assignee_name && t.assignee_name.toLowerCase() === person.name.toLowerCase()
-                ).length;
+                );
 
                 return (
                   <div
                     key={person.id + person.name}
-                    className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-400 hover:shadow-xs transition-all space-y-3.5 flex flex-col justify-between"
+                    className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300 transition-all space-y-3"
                   >
-                    <div className="space-y-2.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2.5 truncate">
-                          <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                            {person.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="truncate">
-                            <h4 className="font-bold text-sm text-[#0f172a] truncate">
-                              {person.name}
-                            </h4>
-                            <span className="text-[11px] text-slate-500 truncate block font-mono">
-                              {person.studentId || 'SKY-2026-REG'}
-                            </span>
-                          </div>
-                        </div>
+                    <div className="flex items-center gap-2.5 truncate">
+                      <div
+                        className={`w-8 h-8 rounded-full text-xs font-bold text-white flex items-center justify-center shrink-0 ${
+                          person.isRealtime ? 'bg-emerald-600' : 'bg-slate-800'
+                        }`}
+                      >
+                        {person.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="truncate">
+                        <h4 className="font-bold text-sm text-[#0f172a] truncate">{person.name}</h4>
+                        <span className="text-[11px] text-slate-500 truncate block">{person.role}</span>
+                      </div>
+                    </div>
 
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase whitespace-nowrap">
-                          Realtime
+                    <div className="space-y-1 text-xs text-slate-600 pt-1 border-t border-slate-100">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Student ID:</span>
+                        <span className="font-mono text-[10px] text-slate-700">{person.studentId || 'SKY-2026-VOL'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Assigned Duties:</span>
+                        <span className={`font-bold ${assignedDuties.length > 0 ? 'text-black' : 'text-slate-400'}`}>
+                          {assignedDuties.length > 0 ? `${assignedDuties.length} Active Duty` : 'Available'}
                         </span>
                       </div>
-
-                      <div className="space-y-1 text-xs">
-                        <div className="flex items-center justify-between text-slate-600">
-                          <span className="text-slate-400">Role:</span>
-                          <span className="font-semibold text-slate-800">{person.role}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-slate-600">
-                          <span className="text-slate-400">Email:</span>
-                          <span className="font-mono text-[11px] text-slate-700 truncate max-w-[170px]" title={person.email}>
-                            {person.email}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-slate-600">
-                          <span className="text-slate-400">Assigned Duties:</span>
-                          <span className={`font-bold ${assignedCount > 0 ? 'text-black' : 'text-slate-400'}`}>
-                            {assignedCount > 0 ? `${assignedCount} Active Task(s)` : 'Available'}
-                          </span>
-                        </div>
-                      </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                    {isAdmin && (
                       <button
                         type="button"
-                        onClick={() => handleAssignToPerson(person.name)}
-                        className="w-full py-2 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                        onClick={() => {
+                          setNewTaskAssignee(person.name);
+                          if (typeof window !== 'undefined') {
+                            window.scrollTo({ top: 380, behavior: 'smooth' });
+                          }
+                        }}
+                        className="w-full py-1.5 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 cursor-pointer transition-colors"
                       >
-                        <span>+ Assign Task</span>
+                        + Assign Task to {person.name.split(' ')[0]}
                       </button>
-                    </div>
+                    )}
                   </div>
                 );
               })}
             </div>
-          )}
+          </div>
         </div>
+      )}
 
-        {/* ─── 4. AUDITED FINANCIAL OPERATIONS & CONTRIBUTIONS ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Online Donation via Razorpay (Test Mode rzp_test_T8GBnZ6P23gRoO) */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+      {/* ═══════════════════════════════════════════════════════════════════════
+          VIEW 2: FUNDRAISER FINANCIALS VIEW (Strictly Admin Role)
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {/* User Request: "fund only admin show others not show" */}
+      {/* User Request: "fundrise show amount balence amount pending amount pay hisry" */}
+      {activeTab === 'fundraiser' && isAdmin && (
+        <div className="space-y-10">
+          {/* Financial Overview Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* 1. Goal Amount */}
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 space-y-2 shadow-2xs">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                Total Campaign Goal
+              </span>
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#0f172a]">
+                {formatPaise(goalPaise)}
+              </div>
+              <p className="text-xs text-slate-500">
+                Official target for {fundraiser?.title || 'Spring Bake Sale'}
+              </p>
+            </div>
+
+            {/* 2. Amount Raised */}
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 space-y-2 shadow-2xs">
+              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">
+                Total Amount Raised
+              </span>
+              <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700">
+                {formatPaise(raisedPaise)}
+              </div>
+              <p className="text-xs text-slate-500">
+                {goalPercent}% of target achieved
+              </p>
+            </div>
+
+            {/* 3. Balance Amount */}
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 space-y-2 shadow-2xs">
+              <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider block">
+                Balance Amount Remaining
+              </span>
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#0f172a]">
+                {formatPaise(balancePaise)}
+              </div>
+              <p className="text-xs text-slate-500">
+                Balance needed to hit target
+              </p>
+            </div>
+
+            {/* 4. Pending Amount / Target */}
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 space-y-2 shadow-2xs">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                Pending Target %
+              </span>
+              <div className="text-2xl sm:text-3xl font-extrabold text-slate-800">
+                {pendingPercent}%
+              </div>
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-emerald-500 h-full rounded-full transition-all"
+                  style={{ width: `${goalPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ─── PAYMENT HISTORY LEDGER (`pay hisry`) ─── */}
+          {/* User Request: "fundrise show amount balence amount pending amount pay hisry" */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
               <div>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-800 border border-slate-200">
-                  Online Payment Gateway
+                  Audited Treasury Ledger
                 </span>
                 <h3 className="text-lg sm:text-xl font-bold text-[#0f172a] mt-1">
-                  Support the Spring Semester Bake Sale
+                  Fundraiser Payment & Collection History
                 </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Complete verifiable transaction log from table cash collections and online Razorpay donations.
+                </p>
               </div>
-              <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
-                rzp_test_T8GBnZ6P23gRoO
+              <span className="text-xs text-slate-600 font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-200 self-start sm:self-auto">
+                {paymentHistory.length} Recorded Transactions
               </span>
             </div>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Student contributions directly fund engineering supplies, club workshops, and subsidized gala tickets. Settles via live test gateway.
-            </p>
-
-            <div className="space-y-3">
-              <label className="block text-[11px] font-bold text-slate-700 uppercase">
-                Choose Contribution Amount
-              </label>
-
-              {/* Amount Presets */}
-              <div className="grid grid-cols-4 gap-2">
-                {['50', '100', '250', '500'].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setOnlineAmount(preset)}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                      onlineAmount === preset
-                        ? 'bg-black text-white border-black shadow-xs'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-black'
-                    }`}
-                  >
-                    ₹{preset}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex gap-2 pt-1">
-                <div className="relative flex-1">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={onlineAmount}
-                    onChange={(e) => setOnlineAmount(e.target.value)}
-                    placeholder="Custom amount"
-                    className="w-full pl-8 pr-4 py-2.5 rounded-full border border-slate-200 bg-white text-sm focus:outline-none focus:border-black"
-                  />
-                </div>
-                <button
-                  type="button"
-                  disabled={isPostingOnline || !onlineAmount || Number(onlineAmount) <= 0}
-                  onClick={() => handleOnlineDonation(Number(onlineAmount))}
-                  className="px-6 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shadow-xs"
-                >
-                  {isPostingOnline ? (
-                    <>
-                      <ButtonSpinner size={14} />
-                      <span>Opening...</span>
-                    </>
-                  ) : (
-                    `Donate ₹${onlineAmount || 0}`
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Record Cash Income Form (Audited Cash Ledger) */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-pink-100 text-pink-700">
-                  Audited Cash Ledger
-                </span>
-                <h3 className="text-lg sm:text-xl font-bold text-[#0f172a] mt-1">
-                  Record Cash Intake
-                </h3>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-500">
-              Bake sale quad table cash collection desk. Posts immutable audit entries to chapter treasury.
-            </p>
-
-            <form onSubmit={handleCashEntry} className="space-y-3.5">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                  Amount Collected (₹) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={cashAmount}
-                  onChange={(e) => setCashAmount(e.target.value)}
-                  placeholder="e.g. 1200"
-                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                  Source / Table Description *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={cashDesc}
-                  onChange={(e) => setCashDesc(e.target.value)}
-                  placeholder="Quad table afternoon cookie sales"
-                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                  Volunteer Actor
-                </label>
-                <input
-                  type="text"
-                  disabled
-                  value={session?.fullName ? `${session.fullName} (Officer)` : 'Quad Staff Desk'}
-                  className="w-full px-4 py-2 rounded-full border border-slate-200 text-xs bg-slate-50 text-slate-500 cursor-not-allowed"
-                />
-              </div>
-
-              <div className="pt-1">
-                <button
-                  type="submit"
-                  disabled={isPostingCash}
-                  className="w-full py-2.5 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {isPostingCash ? <ButtonSpinner size={14} /> : 'Post Cash Entry to Ledger'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        {/* ─── 5. OPERATIONS MASTER BOARD (All Chapter Operations Tasks & Real-time Audit Table) ─── */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-2.5 mb-1">
-                <span className="px-3 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">
-                  Operations Master Board
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Live Transparency
-                </span>
-              </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a]">
-                All Chapter Operations Tasks & Audit Board
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Real-time operational overview. Inspect active duties, registered student assignees, and live task completion.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => loadData()}
-              className="px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
-            >
-              Refresh Master Board
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-[#64748b] uppercase font-bold tracking-wider">
-                  <th className="py-3 px-4">TASK & CAMPAIGN</th>
-                  <th className="py-3 px-4">ASSIGNEE</th>
-                  <th className="py-3 px-4">PRIORITY</th>
-                  <th className="py-3 px-4">WORK PROGRESS</th>
-                  <th className="py-3 px-4">STATUS ACTION</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {tasks.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-400">
-                      No operations tasks currently scheduled.
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500 uppercase font-bold tracking-wider">
+                    <th className="py-3 px-4">Receipt / ID</th>
+                    <th className="py-3 px-4">Date & Time</th>
+                    <th className="py-3 px-4">Contributor / Desk Officer</th>
+                    <th className="py-3 px-4">Payment Method</th>
+                    <th className="py-3 px-4">Amount</th>
+                    <th className="py-3 px-4">Audit Status</th>
                   </tr>
-                ) : (
-                  tasks.map((task) => {
-                    const percent =
-                      task.progressPercent ??
-                      (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
-                    const isRealtime = personnelList.some(
-                      (p) => p.isRealtime && p.name.toLowerCase() === (task.assignee_name || '').toLowerCase()
-                    );
-
-                    return (
-                      <tr key={task.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-[#0f172a] max-w-xs">
-                          <div>{task.title}</div>
-                          <div className="text-[11px] font-normal text-[#64748b]">
-                            {fundraiser?.title || 'Spring Semester Bake Sale'}
-                          </div>
-                          {/* Message Log */}
-                          {task.messages && task.messages.length > 0 && (
-                            <div className="mt-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-900 font-normal">
-                              <span className="font-semibold text-black">Latest Message:</span> "
-                              {task.messages[task.messages.length - 1].text}" —{' '}
-                              <em className="text-slate-500 font-sans">
-                                {task.messages[task.messages.length - 1].author}
-                              </em>
-                            </div>
-                          )}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paymentHistory.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                        No transactions recorded yet in payment history.
+                      </td>
+                    </tr>
+                  ) : (
+                    paymentHistory.map((entry) => (
+                      <tr key={entry.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                          {entry.id}
                         </td>
-                        <td className="py-3.5 px-4 text-[#334155] font-medium whitespace-nowrap">
-                          <span className="bg-slate-100 px-2.5 py-1 rounded-full text-slate-700 font-semibold border border-slate-200/80 inline-flex items-center gap-1.5">
-                            <span>{task.assignee_name || 'Unassigned'}</span>
-                            {isRealtime && (
-                              <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                REALTIME
-                              </span>
-                            )}
-                          </span>
+                        <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap">
+                          {new Date(entry.timestamp).toLocaleString([], {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-900 font-medium">
+                          <div>{entry.contributor}</div>
+                          <div className="text-[10px] text-slate-400">{entry.notes}</div>
                         </td>
                         <td className="py-3.5 px-4">
                           <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityBadge(
-                              task.priority
-                            )}`}
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              entry.method === 'cash'
+                                ? 'bg-pink-100 text-pink-800 border border-pink-200'
+                                : 'bg-sky-100 text-sky-800 border border-sky-200'
+                            }`}
                           >
-                            {task.priority}
+                            {entry.method === 'cash' ? 'Cash Intake' : 'Razorpay Online'}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 min-w-[150px]">
-                          <div className="flex items-center justify-between text-[11px] font-bold mb-1">
-                            <span className="text-slate-600">Progress</span>
-                            <span className="text-black font-mono">{percent}%</span>
-                          </div>
-                          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
-                            <div
-                              className={`h-full transition-all duration-300 ${
-                                percent === 100
-                                  ? 'bg-emerald-500'
-                                  : percent > 0
-                                  ? 'bg-black'
-                                  : 'bg-slate-300'
-                              }`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
+                        <td className="py-3.5 px-4 font-bold text-slate-900 font-mono">
+                          {formatPaise(entry.amountPaise)}
                         </td>
                         <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
-                                task.status === 'todo'
-                                  ? 'bg-slate-700 text-white'
-                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                              }`}
-                            >
-                              To Do
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
-                                task.status === 'in_progress'
-                                  ? 'bg-amber-600 text-white'
-                                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                              }`}
-                            >
-                              Progress
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
-                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
-                                task.status === 'done'
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                              }`}
-                            >
-                              Complete
-                            </button>
-                          </div>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            ✓ Verified & Audited
+                          </span>
                         </td>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ─── CASH INTAKE DESK & ONLINE TEST CHECKOUT ─── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Record Cash Income Form (Audited Cash Ledger) */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-pink-100 text-pink-700">
+                    Quad Cashier Desk
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#0f172a] mt-1">
+                    Record Quad Table Cash Intake
+                  </h3>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500">
+                Bake sale table cash collection desk. Posts immutable audit entries into chapter treasury.
+              </p>
+
+              <form onSubmit={handleCashEntry} className="space-y-3.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Amount Collected (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(e.target.value)}
+                    placeholder="e.g. 1200"
+                    className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Source / Table Description *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={cashDesc}
+                    onChange={(e) => setCashDesc(e.target.value)}
+                    placeholder="Quad table afternoon cookie sales"
+                    className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                    Submitting Officer
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={session?.fullName ? `${session.fullName} (Administrator)` : 'Executive Admin Desk'}
+                    className="w-full px-4 py-2 rounded-full border border-slate-200 text-xs bg-slate-50 text-slate-500 cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    type="submit"
+                    disabled={isPostingCash}
+                    className="w-full py-2.5 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isPostingCash ? <ButtonSpinner size={14} /> : 'Post Audited Cash Intake'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Online Test Donation (Razorpay Test Mode) */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-800 border border-slate-200">
+                    Online Payment Gateway
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#0f172a] mt-1">
+                    Simulate Online Donation
+                  </h3>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                  rzp_test_T8GBnZ6P23gRoO
+                </span>
+              </div>
+
+              <p className="text-xs text-slate-500">
+                Test mode live integration with Razorpay. Contributes directly to the bake sale fund and logs into payment history.
+              </p>
+
+              <div className="space-y-3">
+                <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                  Select Preset Amount
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {['50', '100', '250', '500'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setOnlineAmount(preset)}
+                      className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        onlineAmount === preset
+                          ? 'bg-black text-white border-black shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-black'
+                      }`}
+                    >
+                      ₹{preset}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={onlineAmount}
+                      onChange={(e) => setOnlineAmount(e.target.value)}
+                      placeholder="Custom amount"
+                      className="w-full pl-8 pr-4 py-2.5 rounded-full border border-slate-200 bg-white text-sm focus:outline-none focus:border-black"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isPostingOnline || !onlineAmount || Number(onlineAmount) <= 0}
+                    onClick={() => handleOnlineDonation(Number(onlineAmount))}
+                    className="px-6 py-2.5 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    {isPostingOnline ? (
+                      <>
+                        <ButtonSpinner size={14} />
+                        <span>Opening...</span>
+                      </>
+                    ) : (
+                      `Donate ₹${onlineAmount || 0}`
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

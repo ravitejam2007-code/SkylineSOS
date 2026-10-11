@@ -512,6 +512,46 @@
   - **Verification:**
     - Executed `npm test`: 79/79 invariant and route tests passed across 24 suites with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
+- **Volunteer Operations Split, Admin-Gated Task Assignment, and Navbar Polish:**
+  - **Navbar Navigation & Clean-Up ([`Navbar.astro`](file:///E:/projects/SkylineSOS/Frontend/src/components/layout/Navbar.astro)):**
+    - Renamed navigation link from `Merch` to full name `Merchandise` (`/merch`).
+    - Completely removed search bar elements (desktop and mobile `<SearchPill />` and unused imports) per user request.
+  - **Volunteer Operations & Fundraiser Separation ([`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx)):**
+    - **Segregation of Duties:** Split into two dedicated modes:
+      1. **Volunteering & Duties View:** Visible to all users (students, volunteers, guests, and admins). Focuses strictly on operational duties, duty stations, and the volunteer leadership roster.
+      2. **Fundraiser Financials View:** Strictly gated to `admin` role (`session?.role === 'admin'`). Completely hidden from non-admin students and guests ("fund only admin show others not show").
+    - **Fundraiser Financial Metrics (Admin Only):**
+      - Total Campaign Goal: `formatPaise(goalPaise)` (e.g. ₹25,000).
+      - Amount Raised: `formatPaise(raisedPaise)` (e.g. ₹14,200).
+      - Balance Amount: `formatPaise(balancePaise)` (`goal - raised`, e.g. ₹10,800).
+      - Pending Amount / Target %: `pendingPercent` (43% pending).
+      - **Payment History Ledger (`pay hisry`):** Complete immutable table logging receipt ID, date/time, contributor, payment method (Cash Intake vs Razorpay Online), amount, and audit status.
+      - **Cash Intake Desk Form:** Allows admin to post table cash collections directly to the chapter treasury ledger.
+      - **Online Razorpay Test Gateway:** Direct integration with `rzp_test_T8GBnZ6P23gRoO` test checkout.
+  - **At-A-Glance Bake Sale Operations Dashboard:**
+    - Built executive overview board addressing the bake-sale scenario:
+      1. *What still needs to be done:* Real-time counter of pending/in-progress duties and breakdown by station.
+      2. *Who is doing it:* Active volunteer roster split across the 3 stations.
+      3. *Whether the fundraiser is on track:* Live health indicator ("ON TRACK", operational readiness gauge, and timeline notes).
+    - **3 Dedicated Bake Sale Stations:**
+      - **Who is Baking:** Batch baking, allergen compliance labeling, recipe tags (Rahul Sharma, Sarah Student).
+      - **Who is Buying Supplies:** Organic ingredients, compostable boxes, printing QR donation placards (Maya Deshmukh, Ananya Rao).
+      - **Who is Managing the Table on the Day:** Quad table setup, cash reconciliation lockbox, UPI QR stand, and volunteer shift swaps (Vikram Singh, Priya Patel, Sarah Student).
+  - **Admin-Only Duty Assignment Gating:**
+    - The task assignment form is strictly rendered only when `session?.role === 'admin'`. Students and non-admin roles cannot assign tasks.
+    - When admin assigns a duty to a student name, that task immediately appears under "Assigned to You" in that student's account view.
+    - Station selector allows admin to route new tasks to Baking, Supplies, or Table Ops.
+  - **Admin Clean Task View (Buttons Removed):**
+    - Per user request, removed the non-working status toggle buttons (`To Do`, `Progress`, `Complete`) from the admin view.
+    - Admins now see a clean status badge and progress bar.
+    - Assigned students (`isAssignedToMe`) can update their own duty status and post notes.
+  - **Removal of Screenshot `061357.png` Table & Temporary Tasks:**
+    - Completely deleted the "All Chapter Operations Tasks & Audit Board" table from Screenshot `061357.png`.
+    - Implemented `sanitizeOperationsTasks()` to purge temporary mock tasks (such as "oddooo event") from state and `localStorage`, retaining only real bake sale operational duties.
+  - **Verification:**
+    - Executed `npm test`: 79/79 tests passed with 100% pass rate.
+    - Executed `npm --prefix Frontend run build`: All 20 static pages built cleanly with zero errors.
+
 
 
 
