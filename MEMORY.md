@@ -551,6 +551,16 @@
   - **Verification:**
     - Executed `npm test`: 79/79 tests passed with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: All 20 static pages built cleanly with zero errors.
+- **Rollback to Design Commit `f307377`:**
+  - Reverted commit `848f92f` via commit `56b5af6` to restore the exact design and functionality of commit `f307377`:
+    - Segregated Volunteering and Fundraiser Financials modes.
+    - Admin-only task duty assignment with 3 bake sale stations (Baking, Supplies, Table Ops).
+    - Fundraiser Financials overview (Total Goal, Amount Raised, Balance Amount, Pending Target, Payment History ledger, Cash Intake form, and Razorpay test online donation).
+    - Clean navbar with `Merchandise` and search bar removed.
+  - **Verification:**
+    - Executed `npm test`: 79/79 invariant and route tests passed.
+    - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly.
+    - Remote branch `feature/sos-foundation` synchronized.
 
 
 
