@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { getCurrentUserSession } from '../../lib/auth';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
 import type { StudentAllInOnePassResult, Announcement } from '@campusone/contracts';
+import { REAL_BAKE_SALE_TASKS, sanitizeOperationsTasks, type RichFundraiserTask } from './FundraiserScene';
 
 function checkIsMember(session: any, passPayload?: any): boolean {
   if (!session) return false;
@@ -37,6 +38,19 @@ export default function StudentPortalScene() {
   const [studentPhoto, setStudentPhoto] = useState<string>('/avatars/student-academic.jpg');
   const [photoToast, setPhotoToast] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Assigned Volunteer Duties for this Student Account
+  const [volunteerTasks, setVolunteerTasks] = useState<RichFundraiserTask[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('skylinesos:operations_tasks');
+        if (stored) return sanitizeOperationsTasks(JSON.parse(stored));
+      } catch {}
+    }
+    return REAL_BAKE_SALE_TASKS;
+  });
+  const [taskFeedbackInputs, setTaskFeedbackInputs] = useState<Record<string, string>>({});
+  const [feedbackSuccessToast, setFeedbackSuccessToast] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -119,11 +133,90 @@ export default function StudentPortalScene() {
         }
       }
     };
+    const handleTasksUpdated = () => {
+      try {
+        const local = localStorage.getItem('skylinesos:operations_tasks');
+        if (local) setVolunteerTasks(sanitizeOperationsTasks(JSON.parse(local)));
+      } catch {}
+    };
+
     window.addEventListener('campusone:auth_changed' as any, handleAuthChange);
+    window.addEventListener('storage', handleTasksUpdated);
+    window.addEventListener('skylinesos:tasks_updated' as any, handleTasksUpdated);
     return () => {
       window.removeEventListener('campusone:auth_changed' as any, handleAuthChange);
+      window.removeEventListener('storage', handleTasksUpdated);
+      window.removeEventListener('skylinesos:tasks_updated' as any, handleTasksUpdated);
     };
   }, []);
+
+  // Handle student updating their assigned task status (To Do, In Progress, Complete)
+  const handleUpdateStudentTaskStatus = async (taskId: string, newStatus: 'todo' | 'in_progress' | 'done', percent: number) => {
+    const updated = volunteerTasks.map((t) => {
+      if (t.id === taskId) {
+        const statusNote = {
+          id: `msg-status-${Date.now()}`,
+          author: session?.fullName || 'Student Member',
+          text: `Duty updated to ${newStatus.replace('_', ' ').toUpperCase()} (${percent}% done)`,
+          timestamp: new Date().toISOString(),
+        };
+        return {
+          ...t,
+          status: newStatus as any,
+          progressPercent: percent,
+          messages: [...(t.messages || []), statusNote],
+        };
+      }
+      return t;
+    });
+
+    setVolunteerTasks(updated);
+    try {
+      localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(updated));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('skylinesos:tasks_updated', { detail: updated }));
+      }
+      api.updateTaskStatus(taskId, newStatus as any).catch(() => {});
+    } catch {}
+
+    setFeedbackSuccessToast(`Task updated to ${newStatus.replace('_', ' ').toUpperCase()}! Notice passed to Admin.`);
+    setTimeout(() => setFeedbackSuccessToast(null), 3500);
+  };
+
+  // Handle student passing feedback to admin
+  const handlePassFeedbackToAdmin = (taskId: string) => {
+    const text = (taskFeedbackInputs[taskId] || '').trim();
+    if (!text) return;
+
+    const newMsg = {
+      id: `msg-${Date.now()}`,
+      author: session?.fullName || 'Student Member',
+      text,
+      timestamp: new Date().toISOString(),
+    };
+
+    const updated = volunteerTasks.map((t) => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          messages: [...(t.messages || []), newMsg],
+        };
+      }
+      return t;
+    });
+
+    setVolunteerTasks(updated);
+    setTaskFeedbackInputs((prev) => ({ ...prev, [taskId]: '' }));
+    try {
+      localStorage.setItem('skylinesos:operations_tasks', JSON.stringify(updated));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('skylinesos:tasks_updated', { detail: updated }));
+      }
+    } catch {}
+
+    setFeedbackSuccessToast('Feedback passed to Chapter Admin successfully!');
+    setTimeout(() => setFeedbackSuccessToast(null), 3500);
+  };
 
   const handleRenew = async () => {
     setIsRenewing(true);
@@ -433,6 +526,258 @@ export default function StudentPortalScene() {
           </div>
         </div>
       </div>
+
+      {/* ─── MY ASSIGNED VOLUNTEER DUTIES (Student Role Options & Feedback to Admin) ─── */}
+      {/* User Request: "students tasks only students acconut inside task to do or proccess or complete options add feed back pass admin what are task complete todo status show" */}
+      {(() => {
+        const studentName = session?.fullName?.trim().toLowerCase() || '';
+        const myAssignedDuties = volunteerTasks.filter((t) => {
+          if (!studentName || !t.assignee_name) return false;
+          const aName = t.assignee_name.trim().toLowerCase();
+          return aName.includes(studentName) || studentName.includes(aName);
+        });
+
+        return (
+          <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--color-hairline-soft)]">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Volunteer Duties & Tasks
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                    Student Account Exclusive
+                  </span>
+                </div>
+                <h2 className="text-2xl font-bold text-[var(--color-ink-deep)]">
+                  My Assigned Volunteer Duties
+                </h2>
+                <p className="text-[13px] text-[var(--color-steel)] mt-0.5">
+                  Bake sale duties assigned to your student pass. Update duty status (To Do, In Progress, Complete) and pass live feedback directly to chapter administrators.
+                </p>
+              </div>
+              <span className="self-start sm:self-center px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                {myAssignedDuties.length} Active Duties
+              </span>
+            </div>
+
+            {feedbackSuccessToast && (
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold text-center">
+                ✓ {feedbackSuccessToast}
+              </div>
+            )}
+
+            {myAssignedDuties.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
+                <p className="text-sm font-bold text-slate-800">
+                  No volunteer duties currently assigned to your student account.
+                </p>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  When chapter administrators schedule a bake sale duty for your name, it will appear here with To Do, In Progress, and Complete options.
+                </p>
+                <div className="pt-2">
+                  <a
+                    href="/volunteering"
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-900 transition-colors"
+                  >
+                    <span>View Bake Sale Volunteering Board</span>
+                    <span>→</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5">
+                {myAssignedDuties.map((duty) => {
+                  const percent =
+                    duty.progressPercent ??
+                    (duty.status === 'done' ? 100 : duty.status === 'in_progress' ? 50 : 0);
+
+                  const getPriorityBadgeClass = (p: string) => {
+                    switch (p) {
+                      case 'urgent':
+                        return 'bg-rose-100 text-rose-800 border border-rose-200';
+                      case 'high':
+                        return 'bg-amber-100 text-amber-800 border border-amber-200';
+                      case 'medium':
+                        return 'bg-slate-100 text-slate-800 border border-slate-200';
+                      default:
+                        return 'bg-slate-50 text-slate-600 border border-slate-200';
+                    }
+                  };
+
+                  const getStatusBadgeClass = (s: string) => {
+                    switch (s) {
+                      case 'done':
+                        return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                      case 'in_progress':
+                        return 'bg-amber-100 text-amber-800 border border-amber-200';
+                      default:
+                        return 'bg-slate-100 text-slate-700 border border-slate-200';
+                    }
+                  };
+
+                  const getStationName = (st?: string) => {
+                    switch (st) {
+                      case 'baking':
+                        return 'Baking Station';
+                      case 'supplies':
+                        return 'Supplies & Logistics';
+                      case 'table':
+                        return 'Quad Table Ops';
+                      default:
+                        return 'Station Duty';
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={duty.id}
+                      className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-2xs space-y-4"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                              {getStationName(duty.station)}
+                            </span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityBadgeClass(duty.priority)}`}>
+                              {duty.priority} Priority
+                            </span>
+                          </div>
+                          <h3 className="text-base sm:text-lg font-bold text-[#0f172a]">
+                            {duty.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Due: {duty.due_at ? new Date(duty.due_at).toLocaleDateString() : 'Bake Sale Day'} · Assigned to your student pass
+                          </p>
+                        </div>
+
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider self-start sm:self-auto ${getStatusBadgeClass(duty.status)}`}>
+                          {duty.status.replace('_', ' ')} ({percent}%)
+                        </span>
+                      </div>
+
+                      {/* Progress Bar & Student Status Buttons */}
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-bold">
+                          <span className="text-slate-700">Duty Execution Progress:</span>
+                          <span className="text-black font-mono">{percent}% Complete</span>
+                        </div>
+
+                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              percent === 100
+                                ? 'bg-emerald-500'
+                                : percent > 0
+                                ? 'bg-black'
+                                : 'bg-slate-300'
+                            }`}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+
+                        {/* Student Options: To Do, In Progress, Complete */}
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[11px] font-bold text-slate-700 uppercase">
+                            Update Duty Status (Student Option):
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStudentTaskStatus(duty.id, 'todo', 0)}
+                              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                duty.status === 'todo'
+                                  ? 'bg-black text-white shadow-xs'
+                                  : 'bg-white text-slate-700 border border-slate-200 hover:border-black'
+                              }`}
+                            >
+                              To Do (0%)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStudentTaskStatus(duty.id, 'in_progress', 50)}
+                              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                duty.status === 'in_progress'
+                                  ? 'bg-amber-600 text-white shadow-xs'
+                                  : 'bg-white text-amber-800 border border-amber-200 hover:bg-amber-50'
+                              }`}
+                            >
+                              In Progress / Process (50%)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStudentTaskStatus(duty.id, 'done', 100)}
+                              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                duty.status === 'done'
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : 'bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-50'
+                              }`}
+                            >
+                              Complete (100%)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Feedback Passed to Admin History & Input */}
+                      <div className="space-y-2 pt-1">
+                        {duty.messages && duty.messages.length > 0 && (
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-bold text-slate-600 uppercase flex items-center justify-between">
+                              <span>Feedback Passed to Admin:</span>
+                              <span className="text-[10px] text-slate-400 font-mono">{duty.messages.length} Entries</span>
+                            </span>
+                            {duty.messages.map((m: any) => (
+                              <div
+                                key={m.id}
+                                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 flex justify-between items-start gap-2"
+                              >
+                                <p className="leading-relaxed">
+                                  <strong className="text-slate-900">{m.author}:</strong> "{m.text}"
+                                </p>
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap font-mono">
+                                  {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Pass Feedback to Admin Input */}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={taskFeedbackInputs[duty.id] || ''}
+                            onChange={(e) =>
+                              setTaskFeedbackInputs({ ...taskFeedbackInputs, [duty.id]: e.target.value })
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handlePassFeedbackToAdmin(duty.id);
+                              }
+                            }}
+                            placeholder="Pass feedback or progress note to Chapter Admin..."
+                            className="flex-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs focus:outline-none focus:border-black"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handlePassFeedbackToAdmin(duty.id)}
+                            className="px-4 py-2 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs whitespace-nowrap"
+                          >
+                            Pass Feedback to Admin
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 4 Pillars Grid (Student Goals) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
