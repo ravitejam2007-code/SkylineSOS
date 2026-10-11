@@ -3,12 +3,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Button from '../../components/ui/Button.astro';
 
 const url = Astro.url;
-const reason = url.searchParams.get('reason') || 'Transaction declined by issuer or cancelled by user.';
-const returnUrl = url.searchParams.get('return_url') || '/events';
+const reason = url.searchParams.get('reason') || 'Transaction declined by bank or cancelled in checkout modal.';
+const amount = url.searchParams.get('amount') || '319.20';
+const item = url.searchParams.get('item') || 'Skyline Official Merchandise (Club T-Shirt / Hoodie)';
+const type = url.searchParams.get('type') || (item.toLowerCase().includes('ticket') || item.toLowerCase().includes('pass') || item.toLowerCase().includes('gala') ? 'event' : 'merch');
+const returnUrl = url.searchParams.get('return_url') || (type === 'merch' ? '/merch' : '/events');
 ---
 
 <BaseLayout
-  title="Payment Not Completed — SkylineSOS"
+  title="Payment Not Confirmed — SkylineSOS"
   description="Payment could not be processed for Skyline Student Association."
 >
   <div class="min-h-[calc(85vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -22,7 +25,7 @@ const returnUrl = url.searchParams.get('return_url') || '/events';
         </div>
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[12px] font-bold">
           <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-          Payment Failed · No Funds Debited
+          Payment Not Confirmed · Zero Funds Debited
         </div>
         <h1 class="text-3xl sm:text-4xl font-extrabold text-[var(--color-ink-deep)]">
           Payment Not Completed
@@ -32,21 +35,47 @@ const returnUrl = url.searchParams.get('return_url') || '/events';
         </p>
       </div>
 
-      <!-- Diagnostic Card -->
+      <!-- Diagnostic & Failure Reason Card -->
       <div class="p-6 sm:p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-md space-y-4">
-        <div class="space-y-1">
-          <span class="text-[11px] font-mono font-bold text-[var(--color-steel)] uppercase">FAILURE REASON</span>
-          <p class="text-[14px] font-bold text-rose-600">
-            {reason}
-          </p>
+        <div class="flex items-center justify-between pb-3 border-b border-[var(--color-hairline-soft)]">
+          <div>
+            <span class="text-[11px] font-mono font-bold text-[var(--color-steel)] uppercase">UNPROCESSED AMOUNT</span>
+            <div class="text-3xl font-extrabold text-rose-600 mt-0.5">
+              ₹{amount}
+            </div>
+          </div>
+          <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold uppercase tracking-wider">
+            {type === 'merch' ? 'Merchandise Order' : 'Event Ticket Order'}
+          </span>
+        </div>
+
+        <div class="space-y-2.5 text-[13px]">
+          <div class="flex justify-between py-1 border-b border-[var(--color-hairline-soft)]">
+            <span class="text-[var(--color-steel)]">Category / Item</span>
+            <span class="font-bold text-[var(--color-ink-deep)]">{item}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-[var(--color-hairline-soft)]">
+            <span class="text-[var(--color-steel)]">Order Type</span>
+            <span class="font-semibold text-[var(--color-ink-deep)] capitalize">
+              {type === 'merch' ? 'Club Merchandise Store' : 'Campus Event Ticketing'}
+            </span>
+          </div>
+          <div class="py-1 border-b border-[var(--color-hairline-soft)]">
+            <span class="text-[var(--color-steel)] block mb-0.5">Failure Reason</span>
+            <span class="font-bold text-rose-600 block">{reason}</span>
+          </div>
+          <div class="flex justify-between py-1">
+            <span class="text-[var(--color-steel)]">Payment Gateway</span>
+            <span class="text-[var(--color-slate)] font-mono text-[12px]">Razorpay Test Mode</span>
+          </div>
         </div>
 
         <div class="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] text-[12px] text-[var(--color-steel)] space-y-2">
           <p class="font-bold text-[var(--color-ink)]">What can you do next?</p>
           <ul class="list-disc pl-4 space-y-1">
-            <li>Check that your UPI app or payment card has sufficient balance.</li>
-            <li>Verify your campus network or mobile internet connectivity.</li>
-            <li>You can also pay staff via cash or manual UPI at the campus table.</li>
+            <li>Ensure sufficient balance or credit limit in your UPI app / card.</li>
+            <li>Retry the checkout transaction directly using test UPI credentials.</li>
+            <li>For event tickets and merchandise, you can also pay staff via cash at the desk.</li>
           </ul>
         </div>
       </div>
@@ -54,11 +83,11 @@ const returnUrl = url.searchParams.get('return_url') || '/events';
       <!-- Action Navigation Buttons -->
       <div class="space-y-3">
         <Button variant="buy-cta" size="lg" href={returnUrl} class="w-full">
-          Retry Checkout Now
+          Retry {type === 'merch' ? 'Merchandise' : 'Event'} Checkout
         </Button>
         <div class="flex gap-3">
-          <Button variant="secondary" size="md" href="/memberships" class="flex-1">
-            Membership Desk
+          <Button variant="secondary" size="md" href={type === 'merch' ? '/events' : '/merch'} class="flex-1">
+            {type === 'merch' ? 'Browse Events' : 'Browse Merch'}
           </Button>
           <Button variant="ghost" size="md" href="/" class="flex-1">
             Return Home

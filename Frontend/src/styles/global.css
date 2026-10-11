@@ -9,14 +9,14 @@
 
 @theme {
   /* Brand & Accents */
-  --color-primary: #0064e0;
-  --color-primary-deep: #0457cb;
-  --color-primary-soft: #0091ff;
+  --color-primary: #000000;
+  --color-primary-deep: #18181b;
+  --color-primary-soft: #27272a;
   --color-ink-button: #000000;
   --color-on-ink-button: #ffffff;
-  --color-fb-blue: #1876f2;
-  --color-meta-link: #385898;
-  --color-oculus-purple: #a121ce;
+  --color-fb-blue: #000000;
+  --color-meta-link: #000000;
+  --color-oculus-purple: #18181b;
 
   /* Surfaces & Canvas */
   --color-canvas: #ffffff;

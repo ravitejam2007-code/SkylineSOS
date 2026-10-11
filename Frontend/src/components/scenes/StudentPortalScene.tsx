@@ -1,8 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../lib/api';
 import { getCurrentUserSession } from '../../lib/auth';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
+import AuthGuard from '../auth/AuthGuard';
 import type { StudentAllInOnePassResult, Announcement } from '@campusone/contracts';
+
+function checkIsMember(session: any, passPayload?: any): boolean {
+  if (!session) return false;
+  if (session.role === 'admin' || session.role === 'staff' || session.role === 'treasurer' || session.role === 'volunteer') return true;
+  if (passPayload?.membership?.status === 'active') return true;
+  if (typeof window !== 'undefined') {
+    try {
+      const rawApps = localStorage.getItem('skylinesos:membership_applications');
+      if (rawApps) {
+        const apps = JSON.parse(rawApps);
+        const userApp = apps.find(
+          (a: any) =>
+            (a.applicant_email && session.email && a.applicant_email.toLowerCase() === session.email.toLowerCase()) ||
+            (a.applicant_id && session.userId && a.applicant_id === session.userId)
+        );
+        if (userApp?.status === 'approved') return true;
+      }
+    } catch {}
+  }
+  return false;
+}
 
 export default function StudentPortalScene() {
   const [session, setSession] = useState<any>(null);
@@ -12,43 +34,63 @@ export default function StudentPortalScene() {
   const [isRenewing, setIsRenewing] = useState(false);
   const [renewSuccess, setRenewSuccess] = useState<string | null>(null);
 
-  // 6-digit dynamic verification pass state
-  const [sixDigitCode, setSixDigitCode] = useState<string>('482915');
-  const [countdown, setCountdown] = useState<number>(60);
-  const [isRefreshingCode, setIsRefreshingCode] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
-
-  const fetchRotatingCode = async () => {
-    try {
-      setIsRefreshingCode(true);
-      const codeRes = await api.getRotatingDoorPass();
-      if (codeRes?.code) {
-        setSixDigitCode(codeRes.code);
-        setCountdown(codeRes.ttlSeconds || 60);
+  // Real user-generated tickets from localStorage
+  const [userTickets, setUserTickets] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      const active = getActiveSession();
+      if (active?.email) {
+        try {
+          const stored = localStorage.getItem(`skylinesos:tickets_${active.email.trim().toLowerCase()}`);
+          if (stored) return JSON.parse(stored);
+        } catch {}
       }
-    } catch (e) {
-      console.warn('Could not refresh 6-digit code:', e);
-    } finally {
-      setIsRefreshingCode(false);
+    }
+    return [];
+  });
+
+  const syncUserTickets = (email?: string | null) => {
+    if (typeof window === 'undefined') return;
+    const targetEmail = email || getActiveSession()?.email;
+    if (!targetEmail) {
+      setUserTickets([]);
+      return;
+    }
+    try {
+      const stored = localStorage.getItem(`skylinesos:tickets_${targetEmail.trim().toLowerCase()}`);
+      setUserTickets(stored ? JSON.parse(stored) : []);
+    } catch {
+      setUserTickets([]);
     }
   };
+
+  // Student Profile Photo state with user input & presets
+  const [studentPhoto, setStudentPhoto] = useState<string>('/avatars/student-academic.jpg');
+  const [photoToast, setPhotoToast] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     try {
       const currentSession = await getCurrentUserSession();
       setSession(currentSession);
-      const [passRes, annList, codeRes] = await Promise.all([
+      syncUserTickets(currentSession?.email);
+      if (!currentSession) {
+        setLoading(false);
+        return;
+      }
+      const [passRes, annList] = await Promise.all([
         api.generateAllInOnePass(currentSession?.userId),
         api.getAnnouncements('all_members'),
-        api.getRotatingDoorPass().catch(() => null),
       ]);
       setPass(passRes);
       setAnnouncements(annList);
-      if (codeRes?.code) {
-        setSixDigitCode(codeRes.code);
-        setCountdown(codeRes.ttlSeconds || 60);
-      } else if (passRes?.payload.door_verification_code) {
-        setSixDigitCode(passRes.payload.door_verification_code);
+
+      // Load persisted student photo for current user
+      if (currentSession && typeof window !== 'undefined') {
+        const userKey = currentSession.userId || currentSession.email || 'default';
+        const savedPhoto = localStorage.getItem('skylinesos_student_photo_' + userKey);
+        if (savedPhoto) {
+          setStudentPhoto(savedPhoto);
+        }
       }
     } catch (err) {
       console.error('Error loading student portal data:', err);
@@ -57,29 +99,43 @@ export default function StudentPortalScene() {
     }
   };
 
-  // 1-second countdown interval with automatic rotation
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          fetchRotatingCode();
-          return 60;
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Please select an image smaller than 5MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setStudentPhoto(result);
+        const userKey = session?.userId || session?.email || 'default';
+        try {
+          localStorage.setItem('skylinesos_student_photo_' + userKey, result);
+          setPhotoToast('Photo selected! Click "Save Photo" to confirm.');
+          setTimeout(() => setPhotoToast(null), 3000);
+        } catch (err) {
+          console.warn('Could not save photo to storage:', err);
         }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleRefreshCode = () => {
-    fetchRotatingCode();
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleCopyCode = () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(sixDigitCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleSavePhoto = () => {
+    const userKey = session?.userId || session?.email || 'default';
+    try {
+      localStorage.setItem('skylinesos_student_photo_' + userKey, studentPhoto);
+      setPhotoToast('Photo saved successfully!');
+      setTimeout(() => setPhotoToast(null), 3000);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('skylinesos:photo_saved', { detail: studentPhoto }));
+      }
+    } catch (err) {
+      console.warn('Could not save photo to storage:', err);
+      setPhotoToast('Failed to save photo to local storage.');
     }
   };
 
@@ -88,15 +144,27 @@ export default function StudentPortalScene() {
     const handleAuthChange = async (e: CustomEvent) => {
       const updated = e.detail;
       setSession(updated);
+      syncUserTickets(updated?.email);
       if (updated?.userId) {
         const passRes = await api.generateAllInOnePass(updated.userId);
         setPass(passRes);
-        fetchRotatingCode();
+        if (typeof window !== 'undefined') {
+          const userKey = updated.userId || updated.email || 'default';
+          const savedPhoto = localStorage.getItem('skylinesos_student_photo_' + userKey);
+          if (savedPhoto) setStudentPhoto(savedPhoto);
+        }
       }
     };
+
+    const handleTicketsUpdated = () => {
+      syncUserTickets(session?.email);
+    };
+
     window.addEventListener('campusone:auth_changed' as any, handleAuthChange);
+    window.addEventListener('campusone:tickets_updated' as any, handleTicketsUpdated);
     return () => {
       window.removeEventListener('campusone:auth_changed' as any, handleAuthChange);
+      window.removeEventListener('campusone:tickets_updated' as any, handleTicketsUpdated);
     };
   }, []);
 
@@ -129,24 +197,40 @@ export default function StudentPortalScene() {
   }
 
   const membership = pass?.payload.membership;
-  const upcomingEvents = pass?.payload.upcoming_events || [];
+  const myRealTickets = userTickets;
 
-  // Authoritatively use the authenticated user's real credentials, falling back to pass payload
-  const displayName = session?.fullName || pass?.payload.student?.full_name || 'Rahul Sharma';
-  const displayEmail = session?.email || pass?.payload.student?.email || 'member@skyline.edu';
-  const displayStudentId = session?.studentId || pass?.payload.student?.student_id || 'SKY-2026-1042';
+  // Scoped strictly to authenticated user session
+  const displayName = session?.fullName || 'Student Member';
+  const displayEmail = session?.email || '';
+  const displayStudentId = session?.studentId || `SKY-2026-${String(session?.userId || 'NEW').slice(0, 4)}`;
+
+  // Check if user has an approved membership application or is executive admin
+  const isApprovedMember = checkIsMember(session, pass?.payload);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
-      {/* Top Banner / Welcome Card */}
-      <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <AuthGuard requiredRole="authenticated" pageTitle="Student Portal" requiredRoleLabel="Student Member">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
+        {/* Top Banner / Welcome Card */}
+        <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Active Member · Skyline Student Association
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-bold ${
+              isApprovedMember
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                : 'bg-amber-50 border border-amber-200 text-amber-800'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isApprovedMember ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            />
+            {isApprovedMember
+              ? 'Active Member · Skyline Student Association'
+              : 'Membership Inactive · Not Enrolled'}
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[var(--color-ink-deep)]">
-            Welcome back, {displayName.split(' ')[0]}!
+            Welcome, {displayName.split(' ')[0]}!
           </h1>
           <p className="text-[14px] text-[var(--color-steel)]">
             Student ID: <span className="font-mono font-bold text-[var(--color-ink)]">{displayStudentId}</span> · {displayEmail}
@@ -154,20 +238,31 @@ export default function StudentPortalScene() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleRenew}
-            disabled={isRenewing}
-            className="px-6 py-3 rounded-full bg-[var(--color-ink-deep)] text-white text-[13px] font-bold hover:bg-black transition-all cursor-pointer t-button-action flex items-center gap-2 disabled:opacity-50"
-          >
-            {isRenewing ? <ButtonSpinner size={14} /> : 'Renew for 2027'}
-          </button>
-          <a
-            href="/events"
-            className="px-6 py-3 rounded-full bg-[var(--color-primary)] text-white text-[13px] font-bold hover:bg-[var(--color-primary-deep)] transition-all cursor-pointer t-button-action"
-          >
-            Buy Gala Tickets (15% Off)
-          </a>
+          {isApprovedMember ? (
+            <>
+              <button
+                type="button"
+                onClick={handleRenew}
+                disabled={isRenewing}
+                className="px-6 py-3 rounded-full bg-[var(--color-ink-deep)] text-white text-[13px] font-bold hover:bg-black transition-all cursor-pointer t-button-action flex items-center gap-2 disabled:opacity-50"
+              >
+                {isRenewing ? <ButtonSpinner size={14} /> : 'Renew for 2027'}
+              </button>
+              <a
+                href="/events"
+                className="px-6 py-3 rounded-full bg-[var(--color-primary)] text-white text-[13px] font-bold hover:bg-[var(--color-primary-deep)] transition-all cursor-pointer t-button-action"
+              >
+                Reserve Event Passes
+              </a>
+            </>
+          ) : (
+            <a
+              href="/memberships"
+              className="px-6 py-3 rounded-full bg-[var(--color-primary)] text-white text-[13px] font-bold hover:bg-[var(--color-primary-deep)] transition-all cursor-pointer t-button-action"
+            >
+              Join Membership Tier →
+            </a>
+          )}
         </div>
       </div>
 
@@ -177,82 +272,97 @@ export default function StudentPortalScene() {
         </div>
       )}
 
-      {/* Hero Section: All-in-One Digital Student Pass */}
+      {/* Hero Section: All-in-One Digital Student Pass with Photo ID */}
       <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--color-hairline-soft)]">
           <div>
             <span className="text-[11px] font-mono font-bold text-[var(--color-steel)] uppercase">
-              ALL-IN-ONE DIGITAL CREDENTIAL · DYNAMIC IDENTITY CODE
+              ALL-IN-ONE DIGITAL CREDENTIAL · VERIFIED STUDENT IDENTITY CARD
             </span>
             <h2 className="text-2xl font-bold text-[var(--color-ink-deep)] mt-1">
-              Official Digital Student Pass & 6-Digit Verification Code
+              Official Digital Student Identity Pass
             </h2>
             <p className="text-[13px] text-[var(--color-steel)]">
-              High-speed rotating 6-digit pass consolidating annual membership, gala admissions, and campus privileges.
+              Verified campus identity card consolidating student portrait badge, annual membership, gala admissions, and privileges.
             </p>
           </div>
-          <span className="self-start sm:self-center px-3.5 py-1.5 rounded-full text-[12px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            {membership?.tier_name || 'Active Member'}
+          <span
+            className={`self-start sm:self-center px-3.5 py-1.5 rounded-full text-[12px] font-bold ${
+              isApprovedMember
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-slate-100 text-slate-600 border border-slate-200'
+            }`}
+          >
+            {isApprovedMember ? membership?.tier_name || 'Active Member' : 'Membership Not Joined'}
           </span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-          {/* 6-Digit Rotating Identity Pass Column */}
-          <div className="flex flex-col items-center justify-between p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-zinc-950 text-white border border-slate-800 shadow-xl space-y-5 text-center">
-            <div className="w-full flex items-center justify-between pb-3 border-b border-slate-800/80">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Live Identity Pass
-              </span>
-              <span className="text-[11px] font-mono text-slate-400">
-                TTL: <span className="font-bold text-white">{countdown}s</span>
-              </span>
-            </div>
-
-            <div className="space-y-2 py-2">
-              <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                6-Digit Door Verification Code
-              </div>
-              <div className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-emerald-400 py-2 select-all drop-shadow-[0_0_16px_rgba(52,211,153,0.35)]">
-                {sixDigitCode.slice(0, 3)} {sixDigitCode.slice(3, 6)}
-              </div>
-              <p className="text-[11px] text-slate-400 max-w-[210px] mx-auto">
-                Read or present this 6-digit code at event gates & club desks.
-              </p>
-            </div>
-
-            {/* Countdown Progress Bar */}
-            <div className="w-full space-y-1.5">
-              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-linear"
-                  style={{ width: `${(countdown / 60) * 100}%` }}
+          {/* Minimalist Student Photo Card (User Request: Enlarged photo, upload button, save button, clean & minimalist) */}
+          <div className="flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl bg-white border border-[var(--color-hairline-soft)] shadow-sm space-y-5 text-center">
+            {/* Enlarged Photo */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="relative group cursor-pointer"
+              title="Click to choose or change photo"
+            >
+              <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-3xl overflow-hidden bg-slate-100 border-2 border-slate-200 group-hover:border-[#0064e0] transition-all duration-300 shadow-sm flex items-center justify-center">
+                <img
+                  src={studentPhoto}
+                  alt="Student portrait"
+                  className="w-full h-full object-cover rounded-[22px] transition-transform duration-300 group-hover:scale-102"
                 />
               </div>
-              <div className="flex justify-between items-center text-[10px] font-mono text-slate-500">
-                <span>Auto-rotates</span>
-                <span>{countdown}s remaining</span>
+
+              {/* Subtle hover overlay */}
+              <div className="absolute inset-0 rounded-3xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-white text-xs font-bold gap-1.5 backdrop-blur-[2px]">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Change Photo</span>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="w-full flex items-center gap-2 pt-1">
+            {/* Hidden File Input for User Choosing Photo */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+
+            {/* Dual CTA: Upload Button & Save Button (DESIGN-meta.md specifications) */}
+            <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
               <button
                 type="button"
-                onClick={handleCopyCode}
-                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-[var(--color-hairline)] hover:border-black text-[var(--color-ink-deep)] font-bold text-xs sm:text-sm bg-white hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
               >
-                {copied ? '✓ Copied' : '📋 Copy Code'}
+                <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Upload Photo</span>
               </button>
+
               <button
                 type="button"
-                onClick={handleRefreshCode}
-                disabled={isRefreshingCode}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                onClick={handleSavePhoto}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0457cb] text-white font-bold text-xs sm:text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
-                {isRefreshingCode ? <ButtonSpinner size={12} /> : '↻ Refresh Code'}
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Save Photo</span>
               </button>
             </div>
+
+            {photoToast && (
+              <div className="text-xs font-bold text-emerald-600 animate-fadeIn">
+                ✓ {photoToast}
+              </div>
+            )}
           </div>
 
           {/* Pass Details & Member Benefits */}
@@ -298,30 +408,38 @@ export default function StudentPortalScene() {
             {/* Registered Admissions on Pass */}
             <div className="space-y-3">
               <h4 className="text-[12px] font-bold uppercase tracking-wider text-[var(--color-steel)]">
-                Active Admissions Linked to This Pass ({upcomingEvents.length})
+                Active Admissions Linked to This Pass ({myRealTickets.length})
               </h4>
               <div className="space-y-2">
-                {upcomingEvents.length > 0 ? (
-                  upcomingEvents.map((ev) => (
-                    <div
-                      key={ev.ticket_id}
-                      className="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="text-[14px] font-bold text-[var(--color-ink-deep)]">{ev.event_title}</p>
-                        <p className="text-[11px] text-[var(--color-steel)]">{ev.venue} · {ev.ticket_type_name}</p>
+                {myRealTickets.length > 0 ? (
+                  myRealTickets.map((ev: any, idx: number) => {
+                    const ticketIdStr = String(ev?.code || ev?.ticket_id || ev?.id || `TKT-${idx + 1}`);
+                    const displayCode = ticketIdStr.length > 16 ? `${ticketIdStr.slice(0, 16)}...` : ticketIdStr;
+                    return (
+                      <div
+                        key={ev?.id || ev?.code || idx}
+                        className="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="text-[14px] font-bold text-[var(--color-ink-deep)]">
+                            {ev?.event_title || ev?.title || 'Skyline Event'}
+                          </p>
+                          <p className="text-[11px] text-[var(--color-steel)]">
+                            {ev?.seat || 'Reserved Seat'} · {ev?.tier_name || 'Standard Pass'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            {ev?.status === 'approved' ? 'Admitted' : 'Ticket Issued'}
+                          </span>
+                          <span className="text-[11px] font-mono text-[var(--color-steel)]">{displayCode}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                          Seat Confirmed
-                        </span>
-                        <span className="text-[11px] font-mono text-[var(--color-steel)]">{ev.ticket_id.slice(0, 8)}...</span>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="p-3.5 rounded-2xl bg-[var(--color-surface-soft)] text-center text-[12px] text-[var(--color-steel)]">
-                    No event tickets purchased yet. <a href="/events" className="text-[var(--color-primary)] font-bold underline">Browse Spring Gala tickets</a>.
+                    No event tickets purchased yet. <a href="/events" className="text-[var(--color-primary)] font-bold underline">Browse and reserve event tickets →</a>
                   </div>
                 )}
               </div>
@@ -361,34 +479,44 @@ export default function StudentPortalScene() {
           </div>
         </div>
 
-        {/* 2. Spring Gala Tickets */}
+        {/* 2. Event Tickets */}
         <div className="p-6 rounded-3xl bg-white/85 backdrop-blur-md border border-[var(--color-hairline-soft)] shadow-xs space-y-4 t-card-interactive">
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-mono font-bold text-[var(--color-steel)]">02 · EVENT ACCESS</span>
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold">
-              {upcomingEvents.length} Ticket Issued
+            <span className={`px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${
+              myRealTickets.length > 0
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                : 'bg-slate-100 text-black border-slate-200'
+            }`}>
+              {myRealTickets.length} Ticket{myRealTickets.length === 1 ? '' : 's'} Issued
             </span>
           </div>
           <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">
-            Spring Gala: Masquerade Night
+            {myRealTickets.length > 0 ? myRealTickets[0].event_title : 'Campus Event Passes'}
           </h3>
           <p className="text-[13px] text-[var(--color-steel)] leading-relaxed">
-            Friday, April 24, 2026 at 7:00 PM IST · Skyline Grand Ballroom, Student Activity Center.
+            {myRealTickets.length > 0
+              ? `You have ${myRealTickets.length} active event pass${myRealTickets.length === 1 ? '' : 'es'} linked to your student wallet. Present QR pass at entrance.`
+              : 'Browse upcoming campus events and reserve your individual entry passes.'}
           </p>
           <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] flex items-center justify-between">
             <div>
               <p className="text-[11px] font-bold text-[var(--color-steel)]">TICKET PASS</p>
               <p className="text-[14px] font-mono font-bold text-[var(--color-ink-deep)]">
-                {upcomingEvents[0]?.ticket_id ? `TKT-GALA-${upcomingEvents[0].ticket_id.slice(0, 4).toUpperCase()}` : 'TKT-GALA-8819'}
+                {myRealTickets.length > 0 ? (myRealTickets[0].code || myRealTickets[0].id) : 'NONE RESERVED'}
               </p>
             </div>
-            <div className="px-3 py-1 rounded-full bg-black text-white text-[11px] font-mono font-bold">
-              Ready for Door Scan
+            <div className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold ${
+              myRealTickets.length > 0
+                ? 'bg-black text-white'
+                : 'bg-slate-200 text-slate-600'
+            }`}>
+              {myRealTickets.length > 0 ? 'Ready for Door Scan' : 'No Active Pass'}
             </div>
           </div>
           <div className="pt-2 flex items-center justify-between">
             <a href="/events" className="text-[13px] font-bold text-[var(--color-primary)] hover:underline">
-              View Event Details & Guests →
+              {myRealTickets.length > 0 ? 'View All Tickets & QR Codes →' : 'Browse & Reserve Tickets →'}
             </a>
           </div>
         </div>
@@ -446,6 +574,8 @@ export default function StudentPortalScene() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }
+
 

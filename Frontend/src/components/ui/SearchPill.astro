@@ -4,14 +4,16 @@ interface Props {
   name?: string;
   id?: string;
   class?: string;
+  isExpandable?: boolean;
   [key: string]: any;
 }
 
 const {
-  placeholder = 'Search events, members, merch...',
+  placeholder = 'Search events, merch, news...',
   name = 'q',
   id = 'search-pill',
   class: className = '',
+  isExpandable = true,
   ...rest
 } = Astro.props;
 ---
@@ -19,29 +21,48 @@ const {
 <form
   action="/events"
   method="get"
-  class={`relative flex items-center w-full max-w-[280px] h-[40px] rounded-full bg-[var(--color-surface-soft)] px-3.5 border border-transparent focus-within:border-[var(--color-hairline)] transition-colors ${className}`}
+  class={`search-pill-container group relative flex items-center h-[38px] rounded-full bg-slate-100/90 hover:bg-white focus-within:bg-white border border-slate-200/90 hover:border-slate-300 focus-within:border-black shadow-2xs focus-within:shadow-md transition-all duration-300 ease-in-out overflow-hidden ${
+    isExpandable
+      ? 'w-[38px] hover:w-[220px] sm:hover:w-[260px] focus-within:w-[220px] sm:focus-within:w-[260px]'
+      : 'w-full max-w-[280px]'
+  } ${className}`}
+  title="Search SkylineSOS (Hover or click to type)"
 >
-  <svg
-    class="w-4 h-4 text-[var(--color-steel)] shrink-0"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
+  <!-- Q-type search magnifying glass symbol (always visible at left) -->
+  <button
+    type="submit"
+    aria-label="Search site"
+    class="w-[38px] h-[38px] shrink-0 flex items-center justify-center text-slate-500 group-hover:text-black focus-within:text-black transition-colors cursor-pointer"
   >
-    <path
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-    />
-  </svg>
+    <svg
+      class="w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-110"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2.3"
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      />
+    </svg>
+  </button>
+
+  <!-- Expandable Input field revealing smoothly on cursor hover or focus -->
   <input
     type="search"
     id={id}
     name={name}
     placeholder={placeholder}
-    aria-label="Search site"
-    class="w-full bg-transparent border-none outline-none pl-2.5 text-[14px] text-[var(--color-ink)] placeholder-[var(--color-steel)] font-normal"
+    aria-label="Search events, merch, news"
+    class={`bg-transparent border-none outline-none pr-3 text-[13px] text-[#0f172a] placeholder-slate-400 font-medium transition-all duration-300 ease-in-out ${
+      isExpandable
+        ? 'w-0 opacity-0 group-hover:w-full group-hover:opacity-100 focus-within:w-full focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto focus-within:pointer-events-auto'
+        : 'w-full pl-1'
+    }`}
     {...rest}
   />
 </form>
+

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signUp } from '../../lib/auth';
+import { signUp, verifyAdminSecretCode } from '../../lib/auth';
 
 export default function SignUpScene() {
   const [fullName, setFullName] = useState('');
@@ -7,6 +7,8 @@ export default function SignUpScene() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [accountType, setAccountType] = useState<'student' | 'admin'>('student');
+  const [adminSecretCode, setAdminSecretCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -26,27 +28,43 @@ export default function SignUpScene() {
       return;
     }
 
+    if (accountType === 'admin') {
+      if (!verifyAdminSecretCode(adminSecretCode)) {
+        setErrorMsg('Access Denied: Valid Admin Secret Security Code is mandatory to register an Administrator account. Use: SKYLINE_ADMIN_2026');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
+      const selectedRole = accountType === 'admin' ? 'admin' : 'member';
       const session = await signUp({
-        email,
+        email: email.trim(),
         password,
-        fullName,
+        fullName: fullName.trim(),
         studentId: studentId.trim() || undefined,
+        role: selectedRole,
       });
 
-      if (session.rateLimitNotice) {
-        setSuccessMsg(
-          `Welcome, ${session.fullName}! Account created directly in database (email verification rate limit bypassed). Redirecting to memberships...`
-        );
-      } else {
-        setSuccessMsg(`Welcome, ${session.fullName}! Your student account has been created. Redirecting to memberships...`);
+      if (accountType === 'admin') {
+        localStorage.setItem('campusone_demo_role', 'admin');
+        window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: 'admin' }));
+        setSuccessMsg(`Welcome Administrator, ${session.fullName}! Executive security code verified. Redirecting to admin panel...`);
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 900);
+        return;
       }
 
+      setSuccessMsg(`Welcome, ${session.fullName}! Your student account has been created. Redirecting to your student portal...`);
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const redirect = params?.get('redirect') || params?.get('next');
+      const target = (redirect && redirect.startsWith('/') && !redirect.startsWith('/admin')) ? redirect : '/portal';
+
       setTimeout(() => {
-        window.location.href = '/memberships';
-      }, 1200);
+        window.location.href = target;
+      }, 900);
     } catch (err: any) {
       if (err?.message?.toLowerCase().includes('rate limit') || err?.status === 429) {
         setErrorMsg('Supabase email verification rate limit exceeded (3/hr on free tier). Sign in via Demo Persona or try again shortly.');
@@ -81,11 +99,63 @@ export default function SignUpScene() {
 
         {errorMsg && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-[14px] flex items-center gap-2">
-            <span className="font-bold">⚠</span> {errorMsg}
+            <svg className="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1.5">
+              Account Type / Role
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setAccountType('student')}
+                className={`py-2.5 px-3 rounded-2xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                  accountType === 'student'
+                    ? 'border-black bg-black text-white ring-1 ring-black'
+                    : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
+                }`}
+              >
+                Student Member
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('admin')}
+                className={`py-2.5 px-3 rounded-2xl border text-xs font-bold text-center transition-all cursor-pointer ${
+                  accountType === 'admin'
+                    ? 'border-[#0f172a] bg-slate-900 text-white ring-1 ring-slate-900'
+                    : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
+                }`}
+              >
+                Executive Admin
+              </button>
+            </div>
+          </div>
+
+          {accountType === 'admin' && (
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
+                <span>Admin Secret Security Code Required *</span>
+              </div>
+              <input
+                type="password"
+                required
+                value={adminSecretCode}
+                onChange={(e) => setAdminSecretCode(e.target.value)}
+                placeholder="Enter admin secret code"
+                className="w-full px-4 py-2 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-black font-mono"
+              />
+              <span className="block text-[11px] text-amber-700">
+                Organization Master Key: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded font-bold">SKYLINE_ADMIN_2026</code>
+              </span>
+            </div>
+          )}
+
           <div>
             <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">
               Full Name

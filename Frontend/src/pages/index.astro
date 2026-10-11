@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Button from '../components/ui/Button.astro';
 import Card from '../components/ui/Card.astro';
 import Badge from '../components/ui/Badge.astro';
+import LandingAuthGate from '../components/scenes/LandingAuthGate';
 
 const rolePortals = [
   {
@@ -97,6 +98,8 @@ const clubModules = [
   title="SkylineSOS — Student Organization System"
   description="SkylineSOS: The unified operating system for student organizations — memberships, gala events, announcements, merch, fundraisers, and club finances."
 >
+  <LandingAuthGate client:load />
+
   <!-- Hero Section -->
   <section class="relative min-h-[85vh] flex flex-col justify-center py-20 md:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
     <div class="relative z-10 max-w-5xl mx-auto space-y-8 t-enter">
@@ -257,7 +260,7 @@ const clubModules = [
   <!-- Bottom CTA -->
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
     <div class="rounded-3xl bg-[var(--color-ink-deep)] text-white p-10 md:p-16 text-center space-y-6 shadow-2xl relative overflow-hidden">
-      <div class="absolute -top-24 -right-24 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -top-24 -right-24 w-80 h-80 bg-slate-900/10 rounded-full blur-3xl pointer-events-none"></div>
       <div class="relative z-10 max-w-2xl mx-auto space-y-4">
         <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
           Ready for a seamless semester?

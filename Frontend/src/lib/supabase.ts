@@ -14,15 +14,30 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 /**
  * Standard browser client for React Islands and client-side interactions.
+ * Uses a strict window singleton pattern to prevent multiple GoTrueClient instances in the browser context.
  */
 export function getBrowserClient() {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  });
+  if (typeof window === 'undefined') {
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    });
+  }
+
+  const win = window as any;
+  if (!win.__supabase_browser_client__) {
+    win.__supabase_browser_client__ = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+  }
+  return win.__supabase_browser_client__;
 }
 
 /**

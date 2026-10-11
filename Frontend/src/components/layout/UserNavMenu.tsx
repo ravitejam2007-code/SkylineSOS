@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getActiveSession, logoutUser, loginAsPersona, AUTH_PERSONAS, type UserSession } from '../../lib/auth';
+import { getActiveSession, logoutUser, formatRoleLabel, type UserSession } from '../../lib/auth';
 
 export default function UserNavMenu() {
   const [session, setSession] = useState<UserSession | null>(() => {
@@ -14,7 +14,7 @@ export default function UserNavMenu() {
   useEffect(() => {
     // Sync on mount
     const current = getActiveSession();
-    if (current?.userId !== session?.userId || current?.fullName !== session?.fullName) {
+    if (current?.userId !== session?.userId || current?.fullName !== session?.fullName || current?.role !== session?.role) {
       setSession(current);
     }
 
@@ -44,23 +44,16 @@ export default function UserNavMenu() {
     };
   }, []);
 
-  const handleSelectPersona = (id: 'student' | 'volunteer' | 'admin' | 'treasurer') => {
-    const newSession = loginAsPersona(id);
-    setSession(newSession);
-    setDropdownOpen(false);
-    window.location.href = newSession.destination || '/portal';
-  };
-
   const handleLogout = () => {
     logoutUser();
     setSession(null);
     setDropdownOpen(false);
-    window.location.href = '/';
+    window.location.href = '/?logged_out=true';
   };
 
   if (!session) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <a
           href="/login"
           className="text-[13px] font-bold text-[var(--color-ink)] hover:text-black px-3.5 py-1.5 rounded-full hover:bg-[var(--color-surface-soft)] transition-all t-button-action"
@@ -68,25 +61,17 @@ export default function UserNavMenu() {
           Sign In
         </a>
         <a
-          href="/memberships"
+          href="/signup"
           className="text-[13px] font-bold bg-[var(--color-ink-deep)] text-white hover:bg-black px-4 py-2 rounded-full transition-all shadow-sm t-button-action"
         >
-          Join Club
+          Sign Up
         </a>
       </div>
     );
   }
 
   const currentRole = session.role || 'member';
-  const roleBadgeLabel = (
-    {
-      member: 'Member',
-      volunteer: 'Volunteer',
-      door_staff: 'Volunteer',
-      admin: 'President / Admin',
-      treasurer: 'Treasurer',
-    } as Record<string, string>
-  )[currentRole] || 'Member';
+  const roleBadgeLabel = formatRoleLabel(currentRole);
 
   const destinationLabel = (
     {
@@ -96,14 +81,18 @@ export default function UserNavMenu() {
       admin: 'Admin Dashboard',
       treasurer: 'Finance Dashboard',
     } as Record<string, string>
-  )[currentRole] || 'Dashboard';
+  )[currentRole] || 'Portal';
 
-  const avatarInitials = session.fullName
+  const avatarInitials = (session.fullName || 'User')
     .split(' ')
     .map((n) => n[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+  const isAdmin = currentRole === 'admin' || session.roles?.includes('admin');
+  const isVolunteer = currentRole === 'volunteer' || currentRole === 'door_staff';
+  const isTreasurer = currentRole === 'treasurer';
 
   return (
     <div className="relative flex items-center gap-3" ref={dropdownRef}>
@@ -148,54 +137,142 @@ export default function UserNavMenu() {
         </svg>
       </button>
 
-      {/* Glassmorphic Dropdown Panel */}
-      {dropdownOpen && (
-        <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl glass-dropdown border border-[var(--color-hairline-soft)] shadow-xl p-3 z-50 t-enter space-y-2">
+      {/* Glassmorphic Dropdown Panel with transitions-dev animation */}
+      <div
+        data-origin="top-right"
+        className={`t-dropdown absolute right-0 top-full mt-2 w-72 rounded-2xl glass-dropdown border border-[var(--color-hairline-soft)] shadow-xl p-3 z-50 space-y-2 ${
+          dropdownOpen ? 'is-open' : ''
+        }`}
+      >
           {/* Header Info */}
           <div className="px-3 py-2 border-b border-[var(--color-hairline-soft)]">
             <p className="text-[13px] font-bold text-[var(--color-ink-deep)]">{session.fullName}</p>
             <p className="text-[11px] text-[var(--color-steel)] truncate">{session.email}</p>
-            <div className="mt-1.5 inline-block px-2 py-0.5 rounded-full bg-[var(--color-surface-soft)] text-[10px] font-bold text-[var(--color-primary)]">
-              {session.title || roleBadgeLabel}
+            <div className="mt-1.5 inline-block px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-bold text-slate-800 border border-slate-200">
+              Role: {roleBadgeLabel}
             </div>
           </div>
 
-          {/* Quick Destination Link */}
-          <a
-            href={session.destination}
-            onClick={() => setDropdownOpen(false)}
-            className="flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-bold text-[var(--color-ink-deep)] hover:bg-[var(--color-surface-soft)] transition-colors"
-          >
-            <span>Go to {destinationLabel}</span>
-            <span className="text-xs">→</span>
-          </a>
-
-          {/* Switch Persona Section */}
-          <div className="pt-2 border-t border-[var(--color-hairline-soft)]">
-            <p className="text-[10px] font-bold text-[var(--color-steel)] uppercase tracking-wider px-3 mb-1">
-              Switch Persona (Test Roles)
-            </p>
-            <div className="space-y-0.5">
-              {(Object.keys(AUTH_PERSONAS) as Array<keyof typeof AUTH_PERSONAS>).map((pKey) => {
-                const p = AUTH_PERSONAS[pKey];
-                const isActive = session.role === p.role;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleSelectPersona(p.id)}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-left text-[12px] font-semibold transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-[var(--color-surface-soft)] text-[var(--color-primary)] font-bold'
-                        : 'text-[var(--color-ink)] hover:bg-black/5'
-                    }`}
-                  >
-                    <span>{p.title}</span>
-                    {isActive && <span className="text-[10px] font-bold">● Active</span>}
-                  </button>
-                );
-              })}
-            </div>
+          {/* Role-Specific Navigation Links */}
+          <div className="space-y-1 py-1">
+            {isAdmin ? (
+              <>
+                <a
+                  href="/admin"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-bold text-black bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  <span>Admin Dashboard</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/portal"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>Student Portal (Preview)</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/operations"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>Event Operations</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/treasurer"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>Treasury & Ledger</span>
+                  <span className="text-xs">→</span>
+                </a>
+              </>
+            ) : isVolunteer ? (
+              <>
+                <a
+                  href="/operations"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-bold text-black bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  <span>Event Operations</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/fundraiser"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>Volunteering Duties</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/portal"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>Student Portal</span>
+                  <span className="text-xs">→</span>
+                </a>
+              </>
+            ) : isTreasurer ? (
+              <>
+                <a
+                  href="/treasurer"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-bold text-black bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  <span>Treasury & Ledger</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/portal"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>Student Portal</span>
+                  <span className="text-xs">→</span>
+                </a>
+              </>
+            ) : (
+              /* Student Member Navigation */
+              <>
+                <a
+                  href="/portal"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-bold text-black bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  <span>Student Portal Hub</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/memberships"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>My Membership & Dues</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/events"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>My Event Tickets</span>
+                  <span className="text-xs">→</span>
+                </a>
+                <a
+                  href="/merch"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center justify-between px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <span>Merchandise Orders</span>
+                  <span className="text-xs">→</span>
+                </a>
+              </>
+            )}
           </div>
 
           {/* Sign Out */}
@@ -209,7 +286,6 @@ export default function UserNavMenu() {
             </button>
           </div>
         </div>
-      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { api } from '../../lib/api';
 import { generateQrDataUrl } from '../../lib/qr';
 import { ButtonSpinner } from '../ui/LoadingState';
 import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
+import AuthGuard from '../auth/AuthGuard';
 import type { Event, EventSummaryResult, FundraiserTask } from '@campusone/contracts';
 
 function playAudioChime(success: boolean) {
@@ -74,6 +75,12 @@ export default function EventOperationsScene() {
 
   const loadData = async () => {
     try {
+      const current = await getCurrentUserSession();
+      setSession(current);
+      const allowed = ['volunteer', 'door_staff', 'admin'];
+      if (!current || (!allowed.includes(current.role) && !current.roles?.some((r) => allowed.includes(r)))) {
+        return;
+      }
       const [evts, fList] = await Promise.all([
         api.getEvents(),
         api.getActiveFundraisers(),
@@ -279,8 +286,9 @@ export default function EventOperationsScene() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
-      {/* Top Banner */}
+    <AuthGuard requiredRole={['door_staff', 'volunteer', 'admin']} pageTitle="Event Operations Console" requiredRoleLabel="Event Operations & Volunteer Staff">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 t-enter">
+        {/* Top Banner */}
       <div className="p-8 rounded-3xl glass-card border border-[var(--color-hairline-soft)] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[12px] font-bold">
@@ -336,7 +344,7 @@ export default function EventOperationsScene() {
                       : 'text-[var(--color-steel)] hover:text-black'
                   }`}
                 >
-                  🔢 6-Digit Member Pass
+                  6-Digit Member Pass
                 </button>
                 <button
                   type="button"
@@ -350,7 +358,7 @@ export default function EventOperationsScene() {
                       : 'text-[var(--color-steel)] hover:text-black'
                   }`}
                 >
-                  ⌨️ Ticket Barcode
+                  Ticket Barcode
                 </button>
                 <button
                   type="button"
@@ -363,7 +371,7 @@ export default function EventOperationsScene() {
                       : 'text-[var(--color-steel)] hover:text-black'
                   }`}
                 >
-                  📷 Camera
+                  Camera Scanner
                 </button>
               </div>
             </div>
@@ -457,8 +465,11 @@ export default function EventOperationsScene() {
 
                 {!cameraActive ? (
                   <div className="p-8 sm:p-12 rounded-3xl bg-[var(--color-surface-soft)] border-2 border-dashed border-[var(--color-hairline)] text-center space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center mx-auto text-2xl">
-                      📷
+                    <div className="w-16 h-16 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center mx-auto">
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-[var(--color-ink-deep)]">
@@ -717,5 +728,7 @@ export default function EventOperationsScene() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }
+

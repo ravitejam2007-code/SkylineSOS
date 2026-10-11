@@ -1,13 +1,28 @@
 import { useState, useEffect } from 'react';
-import { signInWithPassword, signInAsDemoRole, DEMO_ACCOUNTS, getCurrentUserSession, signOut, type UserSession } from '../../lib/auth';
+import {
+  signInWithPassword,
+  signInAsDemoRole,
+  DEMO_ACCOUNTS,
+  getCurrentUserSession,
+  signOut,
+  verifyAdminSecretCode,
+  type UserSession,
+} from '../../lib/auth';
 
 export default function LoginScene() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'member' | 'volunteer' | 'admin' | 'treasurer'>('member');
+  const [adminSecretCode, setAdminSecretCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentSession, setCurrentSession] = useState<UserSession | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Admin Security Prompt Modal
+  const [pendingDemoRole, setPendingDemoRole] = useState<string | null>(null);
+  const [modalAdminSecret, setModalAdminSecret] = useState('');
+  const [modalError, setModalError] = useState<string | null>(null);
 
   useEffect(() => {
     getCurrentUserSession().then((session) => {
@@ -30,15 +45,29 @@ export default function LoginScene() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // If logging into an admin account or admin role selected, require secret code
+    if (selectedRole === 'admin' || email.toLowerCase().includes('admin')) {
+      if (!verifyAdminSecretCode(adminSecretCode)) {
+        setErrorMsg('Access Denied: Valid Admin Secret Security Code is mandatory for administrator sign-in. Use code: SKYLINE_ADMIN_2026');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
-      const session = await signInWithPassword(email, password);
+      const session = await signInWithPassword(email, password, selectedRole);
       setCurrentSession(session);
       setSuccessMsg(`Welcome back, ${session.fullName}! Signed in as [${session.roles.join(', ') || 'member'}].`);
       localStorage.setItem('campusone_demo_role', session.roles[0] || 'member');
       window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: session.roles[0] || 'member' }));
+      
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const redirect = params?.get('redirect') || params?.get('next');
+      const target = (redirect && redirect.startsWith('/')) ? redirect : (session.destination || '/portal');
+
       setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
+        window.location.href = target;
+      }, 700);
     } catch (err: any) {
       if (err?.message?.toLowerCase().includes('rate limit') || err?.status === 429) {
         setErrorMsg('Email verification rate limited (3/hr on free tier). Try signing in with 1-Click Demo accounts or retry in a few moments.');
@@ -50,7 +79,7 @@ export default function LoginScene() {
     }
   };
 
-  const handleQuickDemo = async (roleKey: string) => {
+  const executeDemoLogin = async (roleKey: string) => {
     setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -61,13 +90,39 @@ export default function LoginScene() {
       setSuccessMsg(`Authenticated as ${session.fullName} (${DEMO_ACCOUNTS[roleKey]?.label}) via Supabase Auth!`);
       localStorage.setItem('campusone_demo_role', roleKey);
       window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: roleKey }));
+      
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const redirect = params?.get('redirect') || params?.get('next');
+      const target = (redirect && redirect.startsWith('/')) ? redirect : (session.destination || '/portal');
+
       setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
+        window.location.href = target;
+      }, 700);
     } catch (err: any) {
       setErrorMsg(err.message || 'Demo authentication failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQuickDemo = (roleKey: string) => {
+    if (roleKey === 'admin') {
+      setPendingDemoRole('admin');
+      setModalAdminSecret('');
+      setModalError(null);
+      return;
+    }
+    executeDemoLogin(roleKey);
+  };
+
+  const handleConfirmModalSecret = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verifyAdminSecretCode(modalAdminSecret)) {
+      setPendingDemoRole(null);
+      setModalError(null);
+      executeDemoLogin('admin');
+    } else {
+      setModalError('Invalid Admin Secret Security Code. Access denied.');
     }
   };
 
@@ -114,7 +169,10 @@ export default function LoginScene() {
       {/* Error feedback */}
       {errorMsg && (
         <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-[14px] flex items-center gap-2">
-          <span className="font-bold">⚠</span> {errorMsg}
+          <svg className="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>{errorMsg}</span>
         </div>
       )}
 
@@ -135,6 +193,34 @@ export default function LoginScene() {
 
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
+              <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1.5">
+                Choose Account Role *
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { key: 'member', label: 'Student Member' },
+                  { key: 'volunteer', label: 'Operations & Lead' },
+                  { key: 'admin', label: 'Executive Admin' },
+                  { key: 'treasurer', label: 'Club Treasurer' },
+                ].map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setSelectedRole(opt.key as any)}
+                    className={`p-2.5 rounded-2xl border text-xs font-bold text-left transition-all cursor-pointer flex items-center justify-between ${
+                      selectedRole === opt.key
+                        ? 'border-black bg-black text-white shadow-xs'
+                        : 'border-slate-200 text-slate-700 bg-white hover:border-slate-400'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {selectedRole === opt.key && <span className="text-[10px]">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <label className="block text-[13px] font-bold text-[var(--color-ink-deep)] mb-1">
                 Student Email
               </label>
@@ -144,7 +230,7 @@ export default function LoginScene() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="e.g. yourname@skyline.edu"
-                className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-[14px] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-[14px] focus:outline-none focus:border-black transition-colors"
               />
             </div>
 
@@ -158,16 +244,35 @@ export default function LoginScene() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-[14px] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] bg-[var(--color-surface-soft)] text-[14px] focus:outline-none focus:border-black transition-colors"
               />
             </div>
+
+            {(selectedRole === 'admin' || email.toLowerCase().includes('admin')) && (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
+                  <span>Admin Secret Security Code Required *</span>
+                </div>
+                <input
+                  type="password"
+                  required
+                  value={adminSecretCode}
+                  onChange={(e) => setAdminSecretCode(e.target.value)}
+                  placeholder="Enter admin secret code"
+                  className="w-full px-4 py-2 rounded-full border border-amber-300 bg-white text-[13px] focus:outline-none focus:border-black font-mono"
+                />
+                <span className="block text-[11px] text-amber-700">
+                  Default Organization Master Key: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded font-bold">SKYLINE_ADMIN_2026</code>
+                </span>
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
               className="w-full py-3 px-6 rounded-full bg-[var(--color-ink-deep)] text-white text-[14px] font-bold hover:bg-black transition-colors disabled:opacity-50"
             >
-              {loading ? 'Authenticating...' : 'Sign In'}
+              {loading ? 'Authenticating...' : `Sign In as ${selectedRole.toUpperCase()}`}
             </button>
           </form>
 
@@ -227,6 +332,75 @@ export default function LoginScene() {
           </div>
         </div>
       </div>
+
+      {/* Admin Secret Verification Modal for Quick Demo */}
+      {pendingDemoRole === 'admin' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs text-[var(--color-ink-deep)] animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative border border-slate-100">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-pink-100 text-pink-700">
+                  Security Clearance Required
+                </span>
+                <h3 className="text-xl font-bold text-[#0f172a] mt-1">Admin Panel Secret Code</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPendingDemoRole(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-black flex items-center justify-center cursor-pointer text-base"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Logging into <strong>Arjun Mehta (Admin Console)</strong> requires the organization secret code. Only authorized admins may enter.
+            </p>
+
+            {modalError && (
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleConfirmModalSecret} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Enter Admin Secret Code *
+                </label>
+                <input
+                  type="password"
+                  required
+                  autoFocus
+                  value={modalAdminSecret}
+                  onChange={(e) => setModalAdminSecret(e.target.value)}
+                  placeholder="Enter secret code (e.g. SKYLINE_ADMIN_2026)"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-xs text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:border-black font-mono"
+                />
+                <span className="block text-[10px] text-slate-400 mt-1">
+                  Master Organization Key: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono">SKYLINE_ADMIN_2026</code>
+                </span>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPendingDemoRole(null)}
+                  className="flex-1 py-2.5 rounded-full border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-full bg-[#0f172a] hover:bg-black text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  Verify & Unlock Admin
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

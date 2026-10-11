@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { formatPaise } from '../../lib/formatters';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
+import { getCurrentUserSession } from '../../lib/auth';
+import AuthGuard from '../auth/AuthGuard';
 import type { TreasurerOverviewResult, LedgerEntry, ActionQueueItem } from '@campusone/contracts';
 
 export default function TreasurerScene() {
@@ -18,6 +20,12 @@ export default function TreasurerScene() {
 
   const loadData = async () => {
     try {
+      const current = await getCurrentUserSession();
+      const allowed = ['treasurer', 'admin'];
+      if (!current || (!allowed.includes(current.role) && !current.roles?.some((r) => allowed.includes(r)))) {
+        setLoading(false);
+        return;
+      }
       const [ov, le, aq] = await Promise.all([
         api.getTreasurerOverview(),
         api.getLedgerEntries(activeFilter),
@@ -89,15 +97,16 @@ export default function TreasurerScene() {
       case 'high':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'medium':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-slate-100 text-slate-800 border-slate-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   return (
-    <div className="space-y-12 t-enter">
-      {actionSuccess && (
+    <AuthGuard requiredRole={['treasurer', 'admin']} pageTitle="Treasury & Ledger Dashboard" requiredRoleLabel="Chief Treasurer / Executive Admin">
+      <div className="space-y-12 t-enter">
+        {actionSuccess && (
         <div className="p-4 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-success)] text-[var(--color-success)] flex justify-between items-center text-[14px] t-toast is-open">
           <span>✓ {actionSuccess}</span>
           <button onClick={() => setActionSuccess(null)} className="font-bold underline ml-4 text-[12px] cursor-pointer">Dismiss</button>
@@ -365,5 +374,7 @@ export default function TreasurerScene() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }
+
