@@ -233,6 +233,7 @@ export function saveRegisteredAccount(record: RegisteredAccountRecord): void {
     );
     accounts.push(record);
     localStorage.setItem(REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
+    window.dispatchEvent(new CustomEvent('skylinesos:registered_accounts_updated', { detail: accounts }));
   } catch (err) {
     console.warn('Failed to save registered account:', err);
   }

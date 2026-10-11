@@ -79,7 +79,7 @@ export default function StudentPortalScene() {
         const userKey = session?.userId || session?.email || 'default';
         try {
           localStorage.setItem('skylinesos_student_photo_' + userKey, result);
-          setPhotoToast('Student photo updated successfully!');
+          setPhotoToast('Photo selected! Click "Save Photo" to confirm.');
           setTimeout(() => setPhotoToast(null), 3000);
         } catch (err) {
           console.warn('Could not save photo to storage:', err);
@@ -89,15 +89,18 @@ export default function StudentPortalScene() {
     reader.readAsDataURL(file);
   };
 
-  const handleSelectPreset = (presetUrl: string) => {
-    setStudentPhoto(presetUrl);
+  const handleSavePhoto = () => {
     const userKey = session?.userId || session?.email || 'default';
     try {
-      localStorage.setItem('skylinesos_student_photo_' + userKey, presetUrl);
-      setPhotoToast('Profile photo updated!');
+      localStorage.setItem('skylinesos_student_photo_' + userKey, studentPhoto);
+      setPhotoToast('Photo saved successfully!');
       setTimeout(() => setPhotoToast(null), 3000);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('skylinesos:photo_saved', { detail: studentPhoto }));
+      }
     } catch (err) {
       console.warn('Could not save photo to storage:', err);
+      setPhotoToast('Failed to save photo to local storage.');
     }
   };
 
@@ -281,150 +284,69 @@ export default function StudentPortalScene() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-          {/* Official Digital Student Identity Pass Column with Decent Photo */}
-          <div className="flex flex-col items-center justify-between p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-zinc-950 text-white border border-slate-800 shadow-xl space-y-4 text-center relative overflow-hidden">
-            {isApprovedMember ? (
-              <>
-                <div className="w-full flex items-center justify-between pb-3 border-b border-slate-800/80">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold tracking-widest uppercase text-emerald-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    Verified Student Pass
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800/80 text-slate-300 border border-slate-700/60">
-                    {displayStudentId}
-                  </span>
-                </div>
-
-                {/* Student Photo Card Frame with Change Option */}
-                <div className="space-y-3 py-1 w-full flex flex-col items-center">
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="relative group cursor-pointer"
-                    title="Click to choose or upload your photo"
-                  >
-                    <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-emerald-500 via-slate-700 to-emerald-400 shadow-[0_0_24px_rgba(16,185,129,0.25)] border-2 border-slate-700/80 group-hover:border-emerald-400 transition-all duration-300">
-                      <img
-                        src={studentPhoto}
-                        alt={displayName}
-                        className="w-full h-full object-cover rounded-xl transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                    {/* Hover Camera Overlay */}
-                    <div className="absolute inset-0 rounded-2xl bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-white text-[11px] font-bold gap-1 backdrop-blur-xs">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span>Change Photo</span>
-                    </div>
-                    <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500 text-black border border-emerald-400 shadow-xs font-mono">
-                      ACTIVE
-                    </span>
-                  </div>
-
-                  {/* Student Credentials */}
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-bold text-white tracking-tight truncate max-w-[220px]">
-                      {displayName}
-                    </h3>
-                    <p className="text-[11px] font-mono text-emerald-400 truncate max-w-[220px]">
-                      {displayEmail || 'student@skyline.edu'}
-                    </p>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                      Skyline Student Association · 2026-27
-                    </p>
-                  </div>
-                </div>
-
-                {/* Hidden File Input for User Choosing Photo */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="hidden"
+          {/* Minimalist Student Photo Card (User Request: Enlarged photo, upload button, save button, clean & minimalist) */}
+          <div className="flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl bg-white border border-[var(--color-hairline-soft)] shadow-sm space-y-5 text-center">
+            {/* Enlarged Photo */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="relative group cursor-pointer"
+              title="Click to choose or change photo"
+            >
+              <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-3xl overflow-hidden bg-slate-100 border-2 border-slate-200 group-hover:border-[#0064e0] transition-all duration-300 shadow-sm flex items-center justify-center">
+                <img
+                  src={studentPhoto}
+                  alt="Student portrait"
+                  className="w-full h-full object-cover rounded-[22px] transition-transform duration-300 group-hover:scale-102"
                 />
+              </div>
 
-                {/* Photo Selector Controls (User Input Upload & Him/Her Presets) */}
-                <div className="w-full space-y-2 pt-1 border-t border-slate-800/80">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-2 border border-slate-700/80 hover:border-slate-600 shadow-xs"
-                  >
-                    <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Choose / Upload Photo</span>
-                  </button>
+              {/* Subtle hover overlay */}
+              <div className="absolute inset-0 rounded-3xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-white text-xs font-bold gap-1.5 backdrop-blur-[2px]">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Change Photo</span>
+              </div>
+            </div>
 
-                  {/* Quick Preset Buttons: Him, Her, Academic */}
-                  <div className="flex items-center gap-1.5 w-full">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPreset('/avatars/student-academic.jpg')}
-                      className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
-                        studentPhoto === '/avatars/student-academic.jpg'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60'
-                          : 'bg-slate-800/60 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
-                      }`}
-                      title="Set Male Student Portrait"
-                    >
-                      Him
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPreset('/avatars/student-female.jpg')}
-                      className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
-                        studentPhoto === '/avatars/student-female.jpg'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60'
-                          : 'bg-slate-800/60 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
-                      }`}
-                      title="Set Female Student Portrait"
-                    >
-                      Her
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPreset('/avatars/student-male.jpg')}
-                      className={`flex-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
-                        studentPhoto === '/avatars/student-male.jpg'
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60'
-                          : 'bg-slate-800/60 text-slate-400 hover:text-white border-slate-800 hover:bg-slate-800'
-                      }`}
-                      title="Set Campus Fellow Portrait"
-                    >
-                      Fellow
-                    </button>
-                  </div>
+            {/* Hidden File Input for User Choosing Photo */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
 
-                  {photoToast && (
-                    <div className="text-[10px] font-bold text-emerald-400 animate-pulse">
-                      ✓ {photoToast}
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="py-6 space-y-4 text-center">
-                <div className="w-12 h-12 mx-auto rounded-full bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-700">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-sm font-bold text-white">Digital Pass Inactive</div>
-                  <p className="text-xs text-slate-400 max-w-[210px] mx-auto">
-                    Verified student identity photo pass is activated once you join an annual chapter membership.
-                  </p>
-                </div>
-                <a
-                  href="/memberships"
-                  className="inline-block px-4 py-2 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold transition-colors shadow-xs"
-                >
-                  Join Membership →
-                </a>
+            {/* Dual CTA: Upload Button & Save Button (DESIGN-meta.md specifications) */}
+            <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-full border border-[var(--color-hairline)] hover:border-black text-[var(--color-ink-deep)] font-bold text-xs sm:text-sm bg-white hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+              >
+                <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Upload Photo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSavePhoto}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0457cb] text-white font-bold text-xs sm:text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Save Photo</span>
+              </button>
+            </div>
+
+            {photoToast && (
+              <div className="text-xs font-bold text-emerald-600 animate-fadeIn">
+                ✓ {photoToast}
               </div>
             )}
           </div>

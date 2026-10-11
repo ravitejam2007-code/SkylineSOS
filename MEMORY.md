@@ -473,5 +473,30 @@
     - Ran full regex scan across `Frontend/src` verifying 0 cartoon emojis remain in the application.
     - Executed `npm test`: 79/79 invariant and route tests passed with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: All 20 static pages built cleanly with zero errors.
+- **Student Identity Pass Minimalist Redesign ([`StudentPortalScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/StudentPortalScene.tsx)):**
+  - **Minimalist Aesthetic per Screenshots `051229.png` & `051655.png`:**
+    - Removed redundant credential text, student pass badges (`VERIFIED STUDENT PASS`, `SKY-2026-3523`), active indicator pill, and presets ("Him", "Her", "Fellow").
+    - Enlarged student photo container to `w-56 h-56 sm:w-64 sm:h-64 rounded-3xl` with hairline borders.
+    - Created clean dual-control action buttons: "Upload Photo" (outlined pill button) and "Save Photo" (`#0064e0` Meta cobalt pill with confirmation toast).
+    - Persisted student portrait data to `localStorage.setItem('skylinesos_student_photo_' + userKey, photo)` with automatic reload on user switch.
+- **Operations Task Assignment & Real-Time Registered Students Roster ([`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx)):**
+  - **Modernized Task Assignment UI (Addressing Screenshot `052542.png`):**
+    - Eliminated raw HTML `<select>` dropdowns for task creation.
+    - **Priority Selector:** Replaced with modern segmented pill buttons (`Urgent`, `High`, `Medium`, `Low`) with distinctive active state badges.
+    - **Assign Personnel Picker:** Built custom interactive popover matching Meta UI (`DESIGN-meta.md`):
+      - Trigger button displaying selected person's initial avatar, full name, role/student ID, and `Realtime Student` pill.
+      - Popover featuring search bar, category tabs (`All`, `🟢 Registered Students`, `Staff & Leads`), member list with real-time badges and checkmarks, and custom volunteer input field.
+      - Full outside-click dismissal and Escape key support.
+  - **Real-Time Data Display for Registered Students Without Admin Approval:**
+    - Integrated `getDynamicPersonnel()` combining base staff with real-time self-registered accounts (`getRegisteredAccounts()`), membership applications (`skylinesos:membership_applications`), and active session.
+    - Dispatched `skylinesos:registered_accounts_updated` from `auth.ts` upon new account registration + 2.5s polling interval for real-time synchronization across browser tabs without reloading.
+    - Added dedicated **"Real-time Registered Students & Volunteers"** roster card on the page displaying all self-registered students with student IDs, roles, active duties, and direct `+ Assign Task` button.
+    - Removed admin-only gating on operations tasks so unauthenticated visitors, students, and volunteers can view real-time operations, see task progress, send live notes, and create tasks.
+    - Added task filter tabs: `All Tasks (${tasks.length})`, `Assigned to Me`, `🟢 Registered Students`, `To Do`, `In Progress`, `Complete`.
+    - Added bright emerald `REGISTERED STUDENT` / `REALTIME` badges to assignees in both task cards and the Operations Master Board table.
+  - **Verification:**
+    - Executed `npm test`: 79/79 invariant and route tests passed across 24 suites with 100% pass rate.
+    - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
+
 
 

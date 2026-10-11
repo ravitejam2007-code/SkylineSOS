@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { formatPaise } from '../../lib/formatters';
 import { LoadingCard, ButtonSpinner } from '../ui/LoadingState';
-import { getActiveSession, getCurrentUserSession, type UserSession } from '../../lib/auth';
+import { getActiveSession, getCurrentUserSession, getRegisteredAccounts, type UserSession } from '../../lib/auth';
 import { openRazorpayCheckout } from '../../lib/razorpay';
 import type { Fundraiser, FundraiserTask, TaskStatus, TaskPriority } from '@campusone/contracts';
 
@@ -16,6 +16,101 @@ export interface OperationsTaskMessage {
 export interface RichFundraiserTask extends FundraiserTask {
   progressPercent?: number;
   messages?: OperationsTaskMessage[];
+}
+
+export interface PersonnelOption {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  studentId?: string;
+  isRealtime?: boolean;
+}
+
+export function getDynamicPersonnel(): PersonnelOption[] {
+  const map = new Map<string, PersonnelOption>();
+
+  // 1. Base chapter staff & leads
+  const defaults: PersonnelOption[] = [
+    { id: 'p1', name: 'Sarah Student', role: 'Active Member · Quad Table Lead', email: 'student@studentorg.edu', studentId: 'SKY-2026-1190' },
+    { id: 'p2', name: 'Rahul Sharma', role: 'Core Member · Logistics Lead', email: 'rahul.s@skyline.edu', studentId: 'SKY-2026-4401' },
+    { id: 'p3', name: 'Maya Deshmukh', role: 'Plus Member · Design Lead', email: 'maya.d@skyline.edu', studentId: 'SKY-2026-8812' },
+    { id: 'p4', name: 'Arjun Mehta', role: 'Lead Administrator', email: 'arjun.admin@skyline.edu', studentId: 'SKY-2026-0001' },
+    { id: 'p5', name: 'Priya Patel', role: 'Treasurer · Finance Desk', email: 'priya.treasurer@skyline.edu', studentId: 'SKY-2026-0002' },
+    { id: 'p6', name: 'Vikram Singh', role: 'Door Staff · Entrance Lead', email: 'vikram.door@skyline.edu', studentId: 'SKY-2026-0003' },
+    { id: 'p7', name: 'Ananya Rao', role: 'Volunteer Coordinator', email: 'ananya.volunteer@skyline.edu', studentId: 'SKY-2026-0004' },
+  ];
+  defaults.forEach((p) => map.set(p.name.toLowerCase(), p));
+
+  if (typeof window !== 'undefined') {
+    // 2. Real-time registered student accounts from SignUpScene / auth storage
+    try {
+      const regList = getRegisteredAccounts();
+      if (Array.isArray(regList)) {
+        regList.forEach((acc) => {
+          if (acc.fullName || acc.email) {
+            const name = (acc.fullName || acc.email.split('@')[0]).trim();
+            const key = name.toLowerCase();
+            map.set(key, {
+              id: acc.userId || `reg-${acc.email}`,
+              name,
+              role: acc.role === 'admin' ? 'Executive Admin' : 'Registered Student Member',
+              email: acc.email,
+              studentId: acc.studentId || 'SKY-2026-REG',
+              isRealtime: true,
+            });
+          }
+        });
+      }
+    } catch {}
+
+    // 3. Real-time student membership applications
+    try {
+      const rawApps = localStorage.getItem('skylinesos:membership_applications');
+      if (rawApps) {
+        const apps = JSON.parse(rawApps);
+        if (Array.isArray(apps)) {
+          apps.forEach((app: any) => {
+            if (app.applicant_name) {
+              const name = String(app.applicant_name).trim();
+              const key = name.toLowerCase();
+              if (!map.has(key) || !map.get(key)?.isRealtime) {
+                map.set(key, {
+                  id: app.applicant_id || app.id || `app-${name}`,
+                  name,
+                  role: app.status === 'approved' ? 'Verified Chapter Member' : 'Registered Student Applicant',
+                  email: app.applicant_email || `${name.toLowerCase().replace(/\s+/g, '.')}@skyline.edu`,
+                  studentId: app.student_id || 'SKY-2026-APP',
+                  isRealtime: true,
+                });
+              }
+            }
+          });
+        }
+      }
+    } catch {}
+
+    // 4. Current active user session (student or staff)
+    try {
+      const activeSession = getActiveSession();
+      if (activeSession && activeSession.fullName) {
+        const name = activeSession.fullName.trim();
+        const key = name.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            id: activeSession.userId || `sess-${activeSession.email}`,
+            name,
+            role: activeSession.role === 'admin' ? 'Executive Admin' : 'Registered Student',
+            email: activeSession.email || '',
+            studentId: activeSession.studentId || 'SKY-2026-SESS',
+            isRealtime: true,
+          });
+        }
+      }
+    } catch {}
+  }
+
+  return Array.from(map.values());
 }
 
 export const REGISTERED_PERSONNEL = [
@@ -139,8 +234,18 @@ export default function FundraiserScene() {
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('high');
-  const [newTaskAssignee, setNewTaskAssignee] = useState<string>(REGISTERED_PERSONNEL[0].name);
-  const [taskViewFilter, setTaskViewFilter] = useState<'all' | 'mine'>('all');
+  const [newTaskAssignee, setNewTaskAssignee] = useState<string>(() => {
+    const list = getDynamicPersonnel();
+    return list[0]?.name || 'Sarah Student';
+  });
+  const [taskViewFilter, setTaskViewFilter] = useState<'all' | 'mine' | 'registered' | 'todo' | 'in_progress' | 'done'>('all');
+
+  // Real-time Personnel state & Custom Member Picker UI
+  const [personnelList, setPersonnelList] = useState<PersonnelOption[]>(() => getDynamicPersonnel());
+  const [isAssigneePickerOpen, setIsAssigneePickerOpen] = useState(false);
+  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
+  const [assigneeCategory, setAssigneeCategory] = useState<'all' | 'realtime' | 'staff'>('all');
+  const [customVolunteerName, setCustomVolunteerName] = useState('');
 
   const loadData = async () => {
     try {
@@ -184,13 +289,27 @@ export default function FundraiserScene() {
       if (s) setSession(s);
     });
 
+    const refreshPersonnel = () => {
+      setPersonnelList(getDynamicPersonnel());
+    };
+
     const handleAuthChange = (e: CustomEvent) => {
       setSession(e.detail);
+      refreshPersonnel();
     };
 
     window.addEventListener('campusone:auth_changed' as any, handleAuthChange);
+    window.addEventListener('storage', refreshPersonnel);
+    window.addEventListener('skylinesos:registered_accounts_updated' as any, refreshPersonnel);
+
+    // Real-time poll (every 2.5s) to auto-detect any newly registered students/applicants without reload
+    const pollTimer = setInterval(refreshPersonnel, 2500);
+
     return () => {
       window.removeEventListener('campusone:auth_changed' as any, handleAuthChange);
+      window.removeEventListener('storage', refreshPersonnel);
+      window.removeEventListener('skylinesos:registered_accounts_updated' as any, refreshPersonnel);
+      clearInterval(pollTimer);
     };
   }, []);
 
@@ -198,13 +317,14 @@ export default function FundraiserScene() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowAddTask(false);
+        setIsAssigneePickerOpen(false);
       }
     };
-    if (showAddTask) {
+    if (showAddTask || isAssigneePickerOpen) {
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [showAddTask]);
+  }, [showAddTask, isAssigneePickerOpen]);
 
   // Handle Cash Contribution Submit
   const handleCashEntry = async (e: React.FormEvent) => {
@@ -331,13 +451,14 @@ export default function FundraiserScene() {
     if (!newTaskTitle) return;
     setIsCreatingTask(true);
     try {
+      const assignedName = newTaskAssignee || personnelList[0]?.name || 'Sarah Student';
       const newTask: RichFundraiserTask = {
         id: `task-${Date.now()}`,
         organization_id: 'a0000000-0000-0000-0000-000000000001',
         fundraiser_id: fundraiser?.id || 'fr-1',
         title: newTaskTitle,
         priority: newTaskPriority,
-        assignee_name: newTaskAssignee || REGISTERED_PERSONNEL[0].name,
+        assignee_name: assignedName,
         status: 'todo',
         progressPercent: 0,
         due_at: new Date(Date.now() + 7 * 86400000).toISOString(),
@@ -354,14 +475,15 @@ export default function FundraiserScene() {
             fundraiser_id: fundraiser.id,
             title: newTaskTitle,
             priority: newTaskPriority,
-            assignee_name: newTaskAssignee,
+            assignee_name: assignedName,
           }).catch(() => {});
         }
       } catch {}
 
       setShowAddTask(false);
+      setIsAssigneePickerOpen(false);
       setNewTaskTitle('');
-      setNewTaskAssignee(REGISTERED_PERSONNEL[0].name);
+      setNewTaskAssignee(personnelList[0]?.name || 'Sarah Student');
     } catch (err: any) {
       alert(err.message || 'Failed to create task');
     } finally {
@@ -402,6 +524,72 @@ export default function FundraiserScene() {
         return 'bg-amber-100 text-amber-800';
       default:
         return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  // Filter personnel for custom member selector
+  const filteredPersonnel = personnelList.filter((p) => {
+    const q = assigneeSearchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.role.toLowerCase().includes(q) ||
+      p.email.toLowerCase().includes(q) ||
+      (p.studentId && p.studentId.toLowerCase().includes(q));
+
+    if (!matchesSearch) return false;
+
+    if (assigneeCategory === 'realtime') return Boolean(p.isRealtime);
+    if (assigneeCategory === 'staff') return !p.isRealtime;
+    return true;
+  });
+
+  const selectedPerson =
+    personnelList.find((p) => p.name.toLowerCase() === (newTaskAssignee || '').toLowerCase()) ||
+    personnelList[0] || {
+      id: 'p-sel',
+      name: newTaskAssignee || 'Sarah Student',
+      role: 'Active Member · Quad Table Lead',
+      email: 'student@studentorg.edu',
+    };
+
+  const realtimePersonnel = personnelList.filter((p) => p.isRealtime);
+  const realtimeCount = realtimePersonnel.length;
+
+  const myTasks = tasks.filter(
+    (t) =>
+      session?.fullName &&
+      t.assignee_name &&
+      (t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
+        session.fullName.toLowerCase().includes(t.assignee_name.toLowerCase()))
+  );
+
+  const registeredStudentTasks = tasks.filter((t) =>
+    personnelList.some((p) => p.isRealtime && p.name.toLowerCase() === (t.assignee_name || '').toLowerCase())
+  );
+
+  const displayedTasks = (() => {
+    switch (taskViewFilter) {
+      case 'mine':
+        return myTasks;
+      case 'registered':
+        return registeredStudentTasks;
+      case 'todo':
+        return tasks.filter((t) => t.status === 'todo');
+      case 'in_progress':
+        return tasks.filter((t) => t.status === 'in_progress');
+      case 'done':
+        return tasks.filter((t) => t.status === 'done');
+      default:
+        return tasks;
+    }
+  })();
+
+  const handleAssignToPerson = (personName: string) => {
+    setNewTaskAssignee(personName);
+    setShowAddTask(true);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 380, behavior: 'smooth' });
     }
   };
 
@@ -483,630 +671,712 @@ export default function FundraiserScene() {
         </div>
       </div>
 
-      {/* ─── 2. ADMIN ONLY: TASK BOARDS, CASH INCOME & OPERATIONS MASTER BOARD ─── */}
-      {session?.role === 'admin' ? (
-        <div className="space-y-10">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Volunteer Task Board (2 Cols) - Screenshot 010849 */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[var(--color-hairline-soft)]">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-pink-100 text-pink-700">
-                      Admin Only
-                    </span>
-                    <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Bake Sale Task Board</h3>
-                  </div>
-                  <p className="text-[12px] text-[var(--color-steel)]">Organize volunteer tasks and table assignments</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAddTask(!showAddTask)}
-                  className="px-4 py-1.5 rounded-full bg-[var(--color-ink-deep)] text-white text-[12px] font-bold hover:bg-black cursor-pointer t-button-action"
-                >
-                  + Add Task
-                </button>
+      {/* ─── 2. OPERATIONS TASK BOARD & REAL-TIME VOLUNTEER ASSIGNMENTS ─── */}
+      <div className="space-y-10">
+        {/* Operations & Volunteer Task Board Card */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-800 border border-slate-200">
+                  Operations Task Board
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Real-Time Sync Active
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-slate-600 bg-slate-50 border border-slate-200">
+                  {personnelList.length} Personnel ({realtimeCount} Registered Students)
+                </span>
               </div>
-
-              {/* Add Task Drawer */}
-              {showAddTask && (
-                <div className="p-6 rounded-2xl bg-[var(--color-surface-soft)] border border-[var(--color-hairline-soft)] space-y-3 t-card-interactive">
-                  <h4 className="font-bold text-[16px] text-[var(--color-ink-deep)]">New Volunteer Task</h4>
-                  <form onSubmit={handleCreateTask} className="space-y-3">
-                    <input
-                      type="text"
-                      required
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      placeholder="Task title (e.g. Pick up folding tables)"
-                      className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] text-[14px] bg-white focus:outline-none focus:border-[var(--color-fb-blue)]"
-                    />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                          Priority Level
-                        </label>
-                        <select
-                          value={newTaskPriority}
-                          onChange={(e) => setNewTaskPriority(e.target.value as any)}
-                          className="w-full px-4 py-2 rounded-full border border-[var(--color-hairline)] text-[13px] bg-white cursor-pointer"
-                        >
-                          <option value="urgent">Urgent</option>
-                          <option value="high">High</option>
-                          <option value="medium">Medium</option>
-                          <option value="low">Low</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                          Assign Personnel *
-                        </label>
-                        <select
-                          value={newTaskAssignee}
-                          onChange={(e) => setNewTaskAssignee(e.target.value)}
-                          className="w-full px-4 py-2 rounded-full border border-[var(--color-hairline)] text-[13px] bg-white cursor-pointer font-medium"
-                        >
-                          {REGISTERED_PERSONNEL.map((person) => (
-                            <option key={person.name} value={person.name}>
-                              {person.name} — {person.role}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowAddTask(false)}
-                        className="px-4 py-1.5 rounded-full border border-[var(--color-hairline)] text-[12px] font-bold bg-white t-button-action cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isCreatingTask}
-                        className="px-5 py-1.5 rounded-full bg-[var(--color-ink-deep)] text-white text-[12px] font-bold hover:bg-black cursor-pointer t-button-action inline-flex items-center gap-2"
-                      >
-                        {isCreatingTask ? <ButtonSpinner size={12} /> : 'Create Task'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {/* Task Items */}
-              <div className="space-y-3">
-                {tasks.map((t) => (
-                  <div
-                    key={t.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleToggleTask(t.id, t.status)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleToggleTask(t.id, t.status);
-                      }
-                    }}
-                    className="p-4 rounded-2xl border border-[var(--color-hairline-soft)] bg-[var(--color-canvas)] flex items-center justify-between gap-4 cursor-pointer hover:border-[var(--color-ink-deep)] transition-all t-card-interactive focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                    title="Click to toggle status (Todo -> In Progress -> Done)"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-3 h-3 rounded-full border ${t.status === 'done' ? 'bg-green-600 border-green-600' : 'border-gray-400'}`} />
-                        <h4 className={`font-bold text-[15px] ${t.status === 'done' ? 'line-through text-[var(--color-stone)]' : 'text-[var(--color-ink-deep)]'}`}>
-                          {t.title}
-                        </h4>
-                      </div>
-                      <div className="flex items-center gap-2 text-[12px] text-[var(--color-steel)] pl-5">
-                        <span>Assignee: {t.assignee_name || 'Unassigned'}</span>
-                        <span>·</span>
-                        <span>Due: {t.due_at ? new Date(t.due_at).toLocaleDateString() : 'Today'}</span>
-                        <span>·</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityBadge(t.priority)}`}>
-                          {t.priority}
-                        </span>
-                      </div>
-                    </div>
-
-                    <span className={`px-3 py-1 rounded-full text-[12px] font-bold uppercase tracking-wider ${getStatusBadge(t.status)}`}>
-                      {t.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Record Cash Bake Sale Entry (1 Col) - Screenshot 010559 */}
-            <div className="space-y-6">
-              <div className="p-6 rounded-2xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] shadow-sm space-y-4 t-card-interactive">
-                <div className="border-b border-[var(--color-hairline-soft)] pb-3">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-pink-100 text-pink-700">
-                    Admin Only
-                  </span>
-                  <h3 className="font-bold text-[18px] text-[var(--color-ink-deep)] mt-1">Record Cash Income</h3>
-                  <p className="text-[12px] text-[var(--color-steel)]">Bake sale quad table cash collection desk</p>
-                </div>
-
-                <form onSubmit={handleCashEntry} className="space-y-3.5">
-                  <div>
-                    <label className="block text-[12px] font-bold text-[var(--color-ink-deep)] mb-1">
-                      Amount Collected (₹)
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      value={cashAmount}
-                      onChange={(e) => setCashAmount(e.target.value)}
-                      placeholder="e.g. 1200"
-                      className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-black"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[var(--color-ink-deep)] mb-1">
-                      Source / Table Description
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={cashDesc}
-                      onChange={(e) => setCashDesc(e.target.value)}
-                      placeholder="Quad table afternoon cookie sales"
-                      className="w-full px-4 py-2.5 rounded-full border border-[var(--color-hairline)] text-[14px] focus:outline-none focus:border-[var(--color-fb-blue)]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[var(--color-ink-deep)] mb-1">Volunteer Actor</label>
-                    <input
-                      type="text"
-                      disabled
-                      value={session?.fullName ? `${session.fullName} (Officer)` : 'Ananya P. (Quad Staff Desk)'}
-                      className="w-full px-4 py-2 rounded-full border border-[var(--color-hairline-soft)] text-[13px] bg-[var(--color-surface-soft)] text-[var(--color-steel)] cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={isPostingCash}
-                      className="w-full py-3 rounded-full bg-[var(--color-ink-deep)] text-white text-[13px] font-bold hover:bg-black transition-all cursor-pointer t-button-action flex items-center justify-center gap-2"
-                    >
-                      {isPostingCash ? <ButtonSpinner size={16} /> : 'Post Cash Entry to Ledger'}
-                    </button>
-                  </div>
-
-                  <p className="text-[11px] text-[var(--color-stone)] text-center">
-                    Updates campaign total & creates immutable audit record.
-                  </p>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          {/* Operations Master Board / Assign Task Table (Screenshot 010659) */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-              <div>
-                <div className="flex items-center gap-2.5 mb-1">
-                  <span className="px-3 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">
-                    Operations Master Board
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-pink-100 text-pink-700">
-                    Admin Only
-                  </span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a]">
-                  All Chapter Operations Tasks
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => loadData()}
-                className="px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
-              >
-                Refresh Master Board
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-[#64748b] uppercase font-bold tracking-wider">
-                    <th className="py-3 px-4">TASK & CAMPAIGN</th>
-                    <th className="py-3 px-4">ASSIGNEE</th>
-                    <th className="py-3 px-4">PRIORITY</th>
-                    <th className="py-3 px-4">WORK PROGRESS</th>
-                    <th className="py-3 px-4">STATUS ACTION</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {tasks.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400">
-                        No operations tasks currently scheduled.
-                      </td>
-                    </tr>
-                  ) : (
-                    tasks.map((task) => {
-                      const percent =
-                        task.progressPercent ??
-                        (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
-
-                      return (
-                        <tr key={task.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-3.5 px-4 font-bold text-[#0f172a] max-w-xs">
-                            <div>{task.title}</div>
-                            <div className="text-[11px] font-normal text-[#64748b]">
-                              {fundraiser?.title || 'Spring Semester Bake Sale'}
-                            </div>
-                            {/* Message Log */}
-                            {task.messages && task.messages.length > 0 && (
-                              <div className="mt-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-900 font-normal">
-                                <span className="font-semibold text-black">Latest Message:</span> "
-                                {task.messages[task.messages.length - 1].text}" —{' '}
-                                <em className="text-slate-500 font-sans">
-                                  {task.messages[task.messages.length - 1].author}
-                                </em>
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-4 text-[#334155] font-medium whitespace-nowrap">
-                            <span className="bg-slate-100 px-2.5 py-1 rounded-full text-slate-700 font-semibold border border-slate-200/80">
-                              {task.assignee_name || 'Unassigned'}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityBadge(
-                                task.priority
-                              )}`}
-                            >
-                              {task.priority}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 min-w-[150px]">
-                            <div className="flex items-center justify-between text-[11px] font-bold mb-1">
-                              <span className="text-slate-600">Progress</span>
-                              <span className="text-black font-mono">{percent}%</span>
-                            </div>
-                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
-                              <div
-                                className={`h-full transition-all duration-300 ${
-                                  percent === 100
-                                    ? 'bg-emerald-500'
-                                    : percent > 0
-                                    ? 'bg-black'
-                                    : 'bg-slate-300'
-                                }`}
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
-                                  task.status === 'todo'
-                                    ? 'bg-slate-700 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
-                              >
-                                To Do
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
-                                  task.status === 'in_progress'
-                                    ? 'bg-amber-600 text-white'
-                                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                }`}
-                              >
-                                Progress
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
-                                  task.status === 'done'
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                }`}
-                              >
-                                Complete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Member / Student View: Display operations tasks with filter tabs so tasks list matches total tasks count */
-        <div className="space-y-8">
-          {session ? (
-            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-black border border-slate-200">
-                    Operations Task Board
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a] mt-1">
-                    Volunteer & Chapter Operations Tasks
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Live operational duties for {fundraiser?.title || 'Chapter Campaign'}. Review tasks, update work progress, and send live notes.
-                  </p>
-                </div>
-
-                {/* Filter Tabs: All Tasks vs Assigned to Me */}
-                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-full border border-slate-200 self-start sm:self-auto">
-                  <button
-                    type="button"
-                    onClick={() => setTaskViewFilter('all')}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                      taskViewFilter === 'all'
-                        ? 'bg-black text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    All Tasks ({tasks.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTaskViewFilter('mine')}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                      taskViewFilter === 'mine'
-                        ? 'bg-black text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Assigned to Me ({
-                      tasks.filter(
-                        (t) =>
-                          session?.fullName &&
-                          t.assignee_name &&
-                          (t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
-                            session.fullName.toLowerCase().includes(t.assignee_name.toLowerCase()))
-                      ).length
-                    })
-                  </button>
-                </div>
-              </div>
-
-              {/* Tasks List */}
-              {(() => {
-                const myAssignedTasks = tasks.filter(
-                  (t) =>
-                    session?.fullName &&
-                    t.assignee_name &&
-                    (t.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
-                      session.fullName.toLowerCase().includes(t.assignee_name.toLowerCase()))
-                );
-                const displayedTasks = taskViewFilter === 'mine' ? myAssignedTasks : tasks;
-
-                if (displayedTasks.length === 0) {
-                  return (
-                    <div className="py-10 text-center space-y-2">
-                      <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-800">
-                        {taskViewFilter === 'mine'
-                          ? 'No operations tasks assigned to your account yet'
-                          : 'No active operations tasks'}
-                      </p>
-                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                        {taskViewFilter === 'mine'
-                          ? 'Click "All Tasks" above to review all active operations duties for this chapter fundraiser.'
-                          : 'Tasks will appear here once added by administrators.'}
-                      </p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="space-y-4">
-                    {displayedTasks.map((task) => {
-                      const percent =
-                        task.progressPercent ??
-                        (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
-                      const isAssignedToMe = Boolean(
-                        session?.fullName &&
-                        task.assignee_name &&
-                        (task.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
-                          session.fullName.toLowerCase().includes(task.assignee_name.toLowerCase()))
-                      );
-
-                      return (
-                        <div
-                          key={task.id}
-                          className={`p-5 rounded-2xl border bg-slate-50/50 space-y-4 hover:shadow-xs transition-shadow ${
-                            isAssignedToMe ? 'border-black ring-1 ring-black/20' : 'border-slate-200'
-                          }`}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-bold text-sm sm:text-base text-[#0f172a]">{task.title}</h4>
-                                {isAssignedToMe && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-black border border-slate-200 uppercase">
-                                    Assigned to You
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-500 font-mono mt-0.5">
-                                Assignee: <strong className="text-slate-800">{task.assignee_name || 'Unassigned'}</strong> · Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Today'} · Priority:{' '}
-                                <span className="font-bold uppercase text-slate-700">{task.priority}</span>
-                              </p>
-                            </div>
-                            <span
-                              className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider self-start sm:self-auto ${getStatusBadge(
-                                task.status
-                              )}`}
-                            >
-                              {task.status.replace('_', ' ')} ({percent}%)
-                            </span>
-                          </div>
-
-                          {/* Progress options */}
-                          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5">
-                            <div className="flex items-center justify-between text-xs font-bold">
-                              <span className="text-slate-700">How much work is done:</span>
-                              <span className="text-black font-mono">{percent}% Complete</span>
-                            </div>
-
-                            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
-                              <div
-                                className={`h-full transition-all duration-300 ${
-                                  percent === 100
-                                    ? 'bg-emerald-500'
-                                    : percent > 0
-                                    ? 'bg-black'
-                                    : 'bg-slate-300'
-                                }`}
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-
-                            <div className="flex items-center gap-2 pt-1">
-                              <button
-                                type="button"
-                                onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                  task.status === 'todo'
-                                    ? 'bg-slate-800 text-white'
-                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                }`}
-                              >
-                                To Do (0%)
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                  task.status === 'in_progress'
-                                    ? 'bg-amber-600 text-white'
-                                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                                }`}
-                              >
-                                In Progress (50%)
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                  task.status === 'done'
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                                }`}
-                              >
-                                Complete (100%)
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Student message input and history (User Request) */}
-                          <div className="space-y-2">
-                            {task.messages && task.messages.length > 0 && (
-                              <div className="space-y-1.5">
-                                <span className="text-[11px] font-bold text-slate-600 uppercase">Updates & Notes:</span>
-                                {task.messages.map((m) => (
-                                  <div
-                                    key={m.id}
-                                    className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 flex justify-between items-start gap-2"
-                                  >
-                                    <p className="leading-relaxed">
-                                      <strong>{m.author}:</strong> "{m.text}"
-                                    </p>
-                                    <span className="text-[10px] text-slate-400 whitespace-nowrap font-mono">
-                                      {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            <div className="flex gap-2 pt-1">
-                              <input
-                                type="text"
-                                value={taskMessageInputs[task.id] || ''}
-                                onChange={(e) =>
-                                  setTaskMessageInputs({ ...taskMessageInputs, [task.id]: e.target.value })
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleSendTaskMessage(task.id);
-                                  }
-                                }}
-                                placeholder="Send message (e.g. Complete setup, need 2 more volunteers)..."
-                                className="flex-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs focus:outline-none focus:border-black"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleSendTaskMessage(task.id)}
-                                className="px-4 py-2 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold cursor-pointer transition-colors"
-                              >
-                                Send Update
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-          ) : (
-            <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-3 shadow-2xs">
-              <p className="text-sm font-semibold text-slate-800">Sign in to access your assigned volunteer tasks</p>
-              <a
-                href="/login"
-                className="inline-block px-5 py-2 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-900"
-              >
-                Sign In
-              </a>
-            </div>
-          )}
-
-          {/* Campaign Support Information & Online Razorpay Donation */}
-          <div className="p-8 rounded-3xl bg-[var(--color-canvas)] border border-[var(--color-hairline-soft)] text-center space-y-6 shadow-2xs">
-            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-[var(--color-ink-deep)]">Support the Spring Semester Bake Sale</h3>
-              <p className="text-sm text-[var(--color-steel)] max-w-lg mx-auto leading-relaxed">
-                Student contributions directly fund engineering supplies, club workshops, and subsidized gala tickets.
+              <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a]">
+                Bake Sale Operations & Volunteer Tasks
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Live duties for {fundraiser?.title || 'Chapter Campaign'}. Assign tasks to registered students and update progress in real time.
               </p>
             </div>
 
-            {/* Online Donation via Razorpay (Test Mode) */}
-            <div className="max-w-md mx-auto p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 text-left">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-black">
-                  Contribute Online (Test Gateway)
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setShowAddTask(!showAddTask)}
+                className="px-4 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <span>{showAddTask ? '− Close Drawer' : '+ Add Task'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => loadData()}
+                className="px-3.5 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+                title="Refresh tasks from server"
+              >
+                ↻ Refresh
+              </button>
+            </div>
+          </div>
+
+          {/* New Volunteer Task Form Drawer (Updated Modern UI per User Request) */}
+          {showAddTask && (
+            <div className="p-6 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-4 transition-all">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
+                <h4 className="font-bold text-base text-[#0f172a] flex items-center gap-2">
+                  <span>New Volunteer Task</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700 uppercase">
+                    Live Assignment
+                  </span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setShowAddTask(false)}
+                  className="text-xs text-slate-400 hover:text-slate-700 cursor-pointer"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateTask} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                    Task Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    placeholder="Task title (e.g. Pick up folding tables from Student Union)"
+                    className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-sm bg-white focus:outline-none focus:border-black transition-colors"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Modern Priority Selector Pills (No ugly native select) */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                      Priority Level
+                    </label>
+                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-white rounded-full border border-slate-200">
+                      {(['urgent', 'high', 'medium', 'low'] as TaskPriority[]).map((p) => {
+                        const isSelected = newTaskPriority === p;
+                        const getActiveBadgeStyle = () => {
+                          switch (p) {
+                            case 'urgent': return 'bg-rose-600 text-white shadow-xs';
+                            case 'high': return 'bg-amber-500 text-white shadow-xs';
+                            case 'medium': return 'bg-slate-800 text-white shadow-xs';
+                            case 'low': return 'bg-sky-600 text-white shadow-xs';
+                          }
+                        };
+                        return (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setNewTaskPriority(p)}
+                            className={`py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                              isSelected ? getActiveBadgeStyle() : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Modern Interactive Member / Registered Student Picker (User Request) */}
+                  <div className="relative">
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5 flex items-center justify-between">
+                      <span>Assign Personnel *</span>
+                      <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        {realtimeCount} Real-time Registered
+                      </span>
+                    </label>
+
+                    {/* Interactive Picker Trigger Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsAssigneePickerOpen(!isAssigneePickerOpen)}
+                      className="w-full px-3.5 py-2 rounded-full border border-slate-300 hover:border-black bg-white flex items-center justify-between transition-all cursor-pointer shadow-2xs text-left"
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <div className={`w-6 h-6 rounded-full text-white font-bold text-[10px] flex items-center justify-center shrink-0 ${selectedPerson.isRealtime ? 'bg-emerald-600' : 'bg-slate-900'}`}>
+                          {selectedPerson.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="truncate">
+                          <span className="text-[13px] font-bold text-[#0f172a] truncate">
+                            {selectedPerson.name}
+                          </span>
+                          <span className="text-[11px] text-slate-500 ml-1.5 font-normal truncate">
+                            · {selectedPerson.role}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {selectedPerson.isRealtime && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase">
+                            Realtime Student
+                          </span>
+                        )}
+                        <svg className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isAssigneePickerOpen ? 'rotate-180 text-black' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+
+                    {/* Outside click backdrop */}
+                    {isAssigneePickerOpen && (
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsAssigneePickerOpen(false)}
+                      />
+                    )}
+
+                    {/* Modern Dropdown Popover */}
+                    {isAssigneePickerOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white rounded-2xl border border-slate-200 shadow-xl p-3 space-y-2.5">
+                        {/* Search Bar */}
+                        <div className="relative">
+                          <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                          <input
+                            type="text"
+                            placeholder="Search registered students, members, or IDs..."
+                            value={assigneeSearchQuery}
+                            onChange={(e) => setAssigneeSearchQuery(e.target.value)}
+                            className="w-full pl-8 pr-3 py-1.5 rounded-full border border-slate-200 text-xs focus:outline-none focus:border-black"
+                          />
+                        </div>
+
+                        {/* Category Filter Tabs */}
+                        <div className="flex items-center gap-1 pb-1 border-b border-slate-100 text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => setAssigneeCategory('all')}
+                            className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${assigneeCategory === 'all' ? 'bg-black text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                          >
+                            All ({personnelList.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAssigneeCategory('realtime')}
+                            className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer flex items-center gap-1 ${assigneeCategory === 'realtime' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            Registered Students ({realtimeCount})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAssigneeCategory('staff')}
+                            className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${assigneeCategory === 'staff' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                          >
+                            Staff & Leads
+                          </button>
+                        </div>
+
+                        {/* Personnel Items List */}
+                        <div className="overflow-y-auto space-y-1 max-h-52 pr-1">
+                          {filteredPersonnel.length === 0 ? (
+                            <div className="py-4 text-center text-xs text-slate-400">
+                              No registered personnel matching search.
+                            </div>
+                          ) : (
+                            filteredPersonnel.map((person) => {
+                              const isSelected = newTaskAssignee.toLowerCase() === person.name.toLowerCase();
+                              return (
+                                <div
+                                  key={person.id + person.name}
+                                  onClick={() => {
+                                    setNewTaskAssignee(person.name);
+                                    setIsAssigneePickerOpen(false);
+                                  }}
+                                  className={`p-2 rounded-xl flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'bg-slate-100 text-black font-bold' : 'hover:bg-slate-50 text-slate-700'}`}
+                                >
+                                  <div className="flex items-center gap-2 truncate">
+                                    <div className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${person.isRealtime ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white'}`}>
+                                      {person.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="truncate text-left">
+                                      <div className="text-xs font-bold text-[#0f172a] truncate flex items-center gap-1.5">
+                                        <span>{person.name}</span>
+                                        {person.isRealtime && (
+                                          <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            REALTIME
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-[10px] text-slate-500 truncate">
+                                        {person.role} {person.studentId ? `· ${person.studentId}` : ''}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {isSelected && (
+                                    <span className="text-emerald-600 font-bold text-xs shrink-0">✓</span>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Quick Add Custom Volunteer Name Input */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            placeholder="Or enter custom student/volunteer name..."
+                            value={customVolunteerName}
+                            onChange={(e) => setCustomVolunteerName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (customVolunteerName.trim()) {
+                                  setNewTaskAssignee(customVolunteerName.trim());
+                                  setCustomVolunteerName('');
+                                  setIsAssigneePickerOpen(false);
+                                }
+                              }
+                            }}
+                            className="flex-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs focus:outline-none focus:border-black"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (customVolunteerName.trim()) {
+                                setNewTaskAssignee(customVolunteerName.trim());
+                                setCustomVolunteerName('');
+                                setIsAssigneePickerOpen(false);
+                              }
+                            }}
+                            className="px-3.5 py-1.5 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
+                          >
+                            Select
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddTask(false)}
+                    className="px-5 py-2 rounded-full border border-slate-300 text-xs font-bold bg-white hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreatingTask}
+                    className="px-6 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
+                  >
+                    {isCreatingTask ? <ButtonSpinner size={12} /> : 'Create Task'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Filter Tabs Bar: All, Assigned to Me, Registered Students, Statuses */}
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-full border border-slate-200 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setTaskViewFilter('all')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                taskViewFilter === 'all'
+                  ? 'bg-black text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              All Tasks ({tasks.length})
+            </button>
+            {session && (
+              <button
+                type="button"
+                onClick={() => setTaskViewFilter('mine')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  taskViewFilter === 'mine'
+                    ? 'bg-black text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Assigned to Me ({myTasks.length})
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setTaskViewFilter('registered')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                taskViewFilter === 'registered'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              Registered Students ({registeredStudentTasks.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setTaskViewFilter('todo')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                taskViewFilter === 'todo'
+                  ? 'bg-slate-800 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              To Do ({tasks.filter((t) => t.status === 'todo').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setTaskViewFilter('in_progress')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                taskViewFilter === 'in_progress'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              In Progress ({tasks.filter((t) => t.status === 'in_progress').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setTaskViewFilter('done')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                taskViewFilter === 'done'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Complete ({tasks.filter((t) => t.status === 'done').length})
+            </button>
+          </div>
+
+          {/* Tasks List Cards */}
+          {displayedTasks.length === 0 ? (
+            <div className="py-12 text-center space-y-2">
+              <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-slate-800">
+                {taskViewFilter === 'mine'
+                  ? 'No operations tasks assigned to your account yet'
+                  : taskViewFilter === 'registered'
+                  ? 'No tasks currently assigned to self-registered students'
+                  : 'No active operations tasks matching filter'}
+              </p>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                {taskViewFilter === 'mine'
+                  ? 'Click "All Tasks" above or click "+ Add Task" to volunteer for a bake sale station.'
+                  : 'Click "+ Add Task" above to schedule a new duty and assign it to any student.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {displayedTasks.map((task) => {
+                const percent =
+                  task.progressPercent ??
+                  (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
+                const isAssignedToMe = Boolean(
+                  session?.fullName &&
+                  task.assignee_name &&
+                  (task.assignee_name.toLowerCase().includes(session.fullName.toLowerCase()) ||
+                    session.fullName.toLowerCase().includes(task.assignee_name.toLowerCase()))
+                );
+                const isRealtimeAssignee = personnelList.some(
+                  (p) => p.isRealtime && p.name.toLowerCase() === (task.assignee_name || '').toLowerCase()
+                );
+
+                return (
+                  <div
+                    key={task.id}
+                    className={`p-5 sm:p-6 rounded-2xl border bg-slate-50/50 space-y-4 hover:shadow-xs transition-shadow ${
+                      isAssignedToMe ? 'border-black ring-1 ring-black/20 bg-slate-50' : 'border-slate-200'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-sm sm:text-base text-[#0f172a]">{task.title}</h4>
+                          {isAssignedToMe && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-black text-white uppercase">
+                              Assigned to You
+                            </span>
+                          )}
+                          {isRealtimeAssignee && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase">
+                              Registered Student
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 font-mono mt-0.5">
+                          Assignee: <strong className="text-slate-900">{task.assignee_name || 'Unassigned'}</strong> · Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Today'} · Priority:{' '}
+                          <span className={`px-2 py-0.2 rounded-full font-bold uppercase text-[10px] ${getPriorityBadge(task.priority)}`}>
+                            {task.priority}
+                          </span>
+                        </p>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider self-start sm:self-auto ${getStatusBadge(
+                          task.status
+                        )}`}
+                      >
+                        {task.status.replace('_', ' ')} ({percent}%)
+                      </span>
+                    </div>
+
+                    {/* Progress options */}
+                    <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-slate-700">How much work is done:</span>
+                        <span className="text-black font-mono">{percent}% Complete</span>
+                      </div>
+
+                      <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            percent === 100
+                              ? 'bg-emerald-500'
+                              : percent > 0
+                              ? 'bg-black'
+                              : 'bg-slate-300'
+                          }`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            task.status === 'todo'
+                              ? 'bg-slate-800 text-white'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          To Do (0%)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            task.status === 'in_progress'
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                          }`}
+                        >
+                          In Progress (50%)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            task.status === 'done'
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                          }`}
+                        >
+                          Complete (100%)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Student message input and history */}
+                    <div className="space-y-2">
+                      {task.messages && task.messages.length > 0 && (
+                        <div className="space-y-1.5">
+                          <span className="text-[11px] font-bold text-slate-600 uppercase">Updates & Notes:</span>
+                          {task.messages.map((m) => (
+                            <div
+                              key={m.id}
+                              className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 flex justify-between items-start gap-2"
+                            >
+                              <p className="leading-relaxed">
+                                <strong>{m.author}:</strong> "{m.text}"
+                              </p>
+                              <span className="text-[10px] text-slate-400 whitespace-nowrap font-mono">
+                                {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={taskMessageInputs[task.id] || ''}
+                          onChange={(e) =>
+                            setTaskMessageInputs({ ...taskMessageInputs, [task.id]: e.target.value })
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleSendTaskMessage(task.id);
+                            }
+                          }}
+                          placeholder="Send message (e.g. Completed pickup, tables placed in quad)..."
+                          className="flex-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs focus:outline-none focus:border-black"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSendTaskMessage(task.id)}
+                          className="px-4 py-2 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold cursor-pointer transition-colors"
+                        >
+                          Send Update
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ─── 3. LIVE REGISTERED MEMBERS & VOLUNTEERS ROSTER (User Request: Real-time data show without admin) ─── */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Roster (Real-time Sync)
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 text-black font-semibold">
-                  rzp_test_T8GBnZ6P23gRoO
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                  Auto-Updates Without Admin Approval
                 </span>
               </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a]">
+                Real-time Registered Students & Volunteers
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Students and members registered directly on CampusOne. Click "+ Assign Task" on any registered student to immediately schedule an operational duty.
+              </p>
+            </div>
+
+            <div className="text-right self-start sm:self-auto">
+              <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                {realtimeCount} Registered Students
+              </span>
+            </div>
+          </div>
+
+          {/* Registered Personnel Grid */}
+          {realtimePersonnel.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
+              <p className="text-sm font-semibold text-slate-800">
+                No self-registered students detected yet
+              </p>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                When new students sign up on the portal (via /signup or membership registration), their real-time profile, student ID, and live task assignment status will immediately display here.
+              </p>
+              <div className="pt-2">
+                <a
+                  href="/signup"
+                  className="inline-block px-5 py-2 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-900 transition-colors"
+                >
+                  Register New Student Account
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {realtimePersonnel.map((person) => {
+                const assignedCount = tasks.filter(
+                  (t) => t.assignee_name && t.assignee_name.toLowerCase() === person.name.toLowerCase()
+                ).length;
+
+                return (
+                  <div
+                    key={person.id + person.name}
+                    className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-slate-400 hover:shadow-xs transition-all space-y-3.5 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 truncate">
+                          <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                            {person.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="truncate">
+                            <h4 className="font-bold text-sm text-[#0f172a] truncate">
+                              {person.name}
+                            </h4>
+                            <span className="text-[11px] text-slate-500 truncate block font-mono">
+                              {person.studentId || 'SKY-2026-REG'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase whitespace-nowrap">
+                          Realtime
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span className="text-slate-400">Role:</span>
+                          <span className="font-semibold text-slate-800">{person.role}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span className="text-slate-400">Email:</span>
+                          <span className="font-mono text-[11px] text-slate-700 truncate max-w-[170px]" title={person.email}>
+                            {person.email}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span className="text-slate-400">Assigned Duties:</span>
+                          <span className={`font-bold ${assignedCount > 0 ? 'text-black' : 'text-slate-400'}`}>
+                            {assignedCount > 0 ? `${assignedCount} Active Task(s)` : 'Available'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleAssignToPerson(person.name)}
+                        className="w-full py-2 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <span>+ Assign Task</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ─── 4. AUDITED FINANCIAL OPERATIONS & CONTRIBUTIONS ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Online Donation via Razorpay (Test Mode rzp_test_T8GBnZ6P23gRoO) */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-slate-100 text-slate-800 border border-slate-200">
+                  Online Payment Gateway
+                </span>
+                <h3 className="text-lg sm:text-xl font-bold text-[#0f172a] mt-1">
+                  Support the Spring Semester Bake Sale
+                </h3>
+              </div>
+              <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                rzp_test_T8GBnZ6P23gRoO
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Student contributions directly fund engineering supplies, club workshops, and subsidized gala tickets. Settles via live test gateway.
+            </p>
+
+            <div className="space-y-3">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                Choose Contribution Amount
+              </label>
 
               {/* Amount Presets */}
               <div className="grid grid-cols-4 gap-2">
@@ -1117,7 +1387,7 @@ export default function FundraiserScene() {
                     onClick={() => setOnlineAmount(preset)}
                     className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       onlineAmount === preset
-                        ? 'bg-black text-white border-black'
+                        ? 'bg-black text-white border-black shadow-xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:border-black'
                     }`}
                   >
@@ -1126,7 +1396,7 @@ export default function FundraiserScene() {
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-1">
                 <div className="relative flex-1">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
                   <input
@@ -1142,7 +1412,7 @@ export default function FundraiserScene() {
                   type="button"
                   disabled={isPostingOnline || !onlineAmount || Number(onlineAmount) <= 0}
                   onClick={() => handleOnlineDonation(Number(onlineAmount))}
-                  className="px-6 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                  className="px-6 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shadow-xs"
                 >
                   {isPostingOnline ? (
                     <>
@@ -1150,23 +1420,240 @@ export default function FundraiserScene() {
                       <span>Opening...</span>
                     </>
                   ) : (
-                    `Donate ₹${onlineAmount || 0} via Razorpay`
+                    `Donate ₹${onlineAmount || 0}`
                   )}
                 </button>
               </div>
             </div>
+          </div>
 
-            <div className="pt-2">
-              <a
-                href="/memberships"
-                className="inline-block px-6 py-2.5 rounded-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
-              >
-                Explore Membership Benefits →
-              </a>
+          {/* Record Cash Income Form (Audited Cash Ledger) */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-pink-100 text-pink-700">
+                  Audited Cash Ledger
+                </span>
+                <h3 className="text-lg sm:text-xl font-bold text-[#0f172a] mt-1">
+                  Record Cash Intake
+                </h3>
+              </div>
             </div>
+
+            <p className="text-xs text-slate-500">
+              Bake sale quad table cash collection desk. Posts immutable audit entries to chapter treasury.
+            </p>
+
+            <form onSubmit={handleCashEntry} className="space-y-3.5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Amount Collected (₹) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  placeholder="e.g. 1200"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Source / Table Description *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={cashDesc}
+                  onChange={(e) => setCashDesc(e.target.value)}
+                  placeholder="Quad table afternoon cookie sales"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-200 text-sm focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Volunteer Actor
+                </label>
+                <input
+                  type="text"
+                  disabled
+                  value={session?.fullName ? `${session.fullName} (Officer)` : 'Quad Staff Desk'}
+                  className="w-full px-4 py-2 rounded-full border border-slate-200 text-xs bg-slate-50 text-slate-500 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={isPostingCash}
+                  className="w-full py-2.5 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {isPostingCash ? <ButtonSpinner size={14} /> : 'Post Cash Entry to Ledger'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      )}
+
+        {/* ─── 5. OPERATIONS MASTER BOARD (All Chapter Operations Tasks & Real-time Audit Table) ─── */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <div className="flex items-center gap-2.5 mb-1">
+                <span className="px-3 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">
+                  Operations Master Board
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Live Transparency
+                </span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a]">
+                All Chapter Operations Tasks & Audit Board
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Real-time operational overview. Inspect active duties, registered student assignees, and live task completion.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => loadData()}
+              className="px-4 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 transition-colors shadow-2xs self-start sm:self-auto cursor-pointer"
+            >
+              Refresh Master Board
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-[#64748b] uppercase font-bold tracking-wider">
+                  <th className="py-3 px-4">TASK & CAMPAIGN</th>
+                  <th className="py-3 px-4">ASSIGNEE</th>
+                  <th className="py-3 px-4">PRIORITY</th>
+                  <th className="py-3 px-4">WORK PROGRESS</th>
+                  <th className="py-3 px-4">STATUS ACTION</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {tasks.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-400">
+                      No operations tasks currently scheduled.
+                    </td>
+                  </tr>
+                ) : (
+                  tasks.map((task) => {
+                    const percent =
+                      task.progressPercent ??
+                      (task.status === 'done' ? 100 : task.status === 'in_progress' ? 50 : 0);
+                    const isRealtime = personnelList.some(
+                      (p) => p.isRealtime && p.name.toLowerCase() === (task.assignee_name || '').toLowerCase()
+                    );
+
+                    return (
+                      <tr key={task.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-[#0f172a] max-w-xs">
+                          <div>{task.title}</div>
+                          <div className="text-[11px] font-normal text-[#64748b]">
+                            {fundraiser?.title || 'Spring Semester Bake Sale'}
+                          </div>
+                          {/* Message Log */}
+                          {task.messages && task.messages.length > 0 && (
+                            <div className="mt-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-900 font-normal">
+                              <span className="font-semibold text-black">Latest Message:</span> "
+                              {task.messages[task.messages.length - 1].text}" —{' '}
+                              <em className="text-slate-500 font-sans">
+                                {task.messages[task.messages.length - 1].author}
+                              </em>
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-[#334155] font-medium whitespace-nowrap">
+                          <span className="bg-slate-100 px-2.5 py-1 rounded-full text-slate-700 font-semibold border border-slate-200/80 inline-flex items-center gap-1.5">
+                            <span>{task.assignee_name || 'Unassigned'}</span>
+                            {isRealtime && (
+                              <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                REALTIME
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityBadge(
+                              task.priority
+                            )}`}
+                          >
+                            {task.priority}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 min-w-[150px]">
+                          <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+                            <span className="text-slate-600">Progress</span>
+                            <span className="text-black font-mono">{percent}%</span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+                            <div
+                              className={`h-full transition-all duration-300 ${
+                                percent === 100
+                                  ? 'bg-emerald-500'
+                                  : percent > 0
+                                  ? 'bg-black'
+                                  : 'bg-slate-300'
+                              }`}
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleSetTaskStatus(task.id, 'todo', 0)}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
+                                task.status === 'todo'
+                                  ? 'bg-slate-700 text-white'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              }`}
+                            >
+                              To Do
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetTaskStatus(task.id, 'in_progress', 50)}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
+                                task.status === 'in_progress'
+                                  ? 'bg-amber-600 text-white'
+                                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                              }`}
+                            >
+                              Progress
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetTaskStatus(task.id, 'done', 100)}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase cursor-pointer ${
+                                task.status === 'done'
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                              }`}
+                            >
+                              Complete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
