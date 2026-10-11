@@ -9,7 +9,6 @@
 
 > **Event:** Odoo × NMIT 2026 Hackathon  
 > **Organization:** Skyline Student Association  
-> **Live API Base:** `https://xwwkpwzartndbjlzpttc.supabase.co/functions/v1/api/v1`  
 > **Repository:** [https://github.com/ravitejam2007-code/SkylineSOS.git](https://github.com/ravitejam2007-code/SkylineSOS.git)
 
 ---
