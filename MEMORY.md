@@ -494,9 +494,25 @@
     - Removed admin-only gating on operations tasks so unauthenticated visitors, students, and volunteers can view real-time operations, see task progress, send live notes, and create tasks.
     - Added task filter tabs: `All Tasks (${tasks.length})`, `Assigned to Me`, `🟢 Registered Students`, `To Do`, `In Progress`, `Complete`.
     - Added bright emerald `REGISTERED STUDENT` / `REALTIME` badges to assignees in both task cards and the Operations Master Board table.
+- **Front-Side Permanently Visible Assign Students Block & Direct Student Details Display ([`FundraiserScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/FundraiserScene.tsx)):**
+  - **Permanently Visible Front-Side Assignment Block:**
+    - Removed `showAddTask` conditional rendering that previously hid the task creation / assignment drawer. The "Assign Students to Operations Duty" block is now permanently rendered on the front side of the operations board and cannot be hidden.
+    - Updated header CTA to "+ Assign Duty" which smoothly focuses the task title input (`id="assign-task-title-input"`).
+  - **Direct Student Details Display Under Labels (Cannot Hide):**
+    - Under the `ASSIGN STUDENT / PERSONNEL *` label, eliminated the collapsed popover trigger button.
+    - Rendered the complete, searchable students list directly inside the front-side card:
+      - Search bar to filter students, names, and student IDs.
+      - Category filter pills (`All`, `🟢 Registered Students`, `Staff & Leads`).
+      - Scrollable container directly displaying each student's avatar circle, full name, student ID, role, email, and real-time registered badge.
+      - Direct click selection with active dark pill highlighting and checkmark confirmation.
+      - "Assigned To:" confirmation banner directly under the list showing the selected student's full credentials.
+      - Quick custom name entry for walk-in or unregistered volunteers.
+  - **Task Cards Front-Side Assigned Student Details:**
+    - Displayed full student assignee details directly under the task title and labels in each task card (initial avatar, student full name, student ID tag, role description, and real-time student badge).
   - **Verification:**
     - Executed `npm test`: 79/79 invariant and route tests passed across 24 suites with 100% pass rate.
     - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly with zero errors.
+
 
 
 

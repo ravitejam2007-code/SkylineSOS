@@ -700,10 +700,13 @@ export default function FundraiserScene() {
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <button
                 type="button"
-                onClick={() => setShowAddTask(!showAddTask)}
+                onClick={() => {
+                  const el = document.getElementById('assign-task-title-input');
+                  if (el) el.focus();
+                }}
                 className="px-4 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
               >
-                <span>{showAddTask ? '− Close Drawer' : '+ Add Task'}</span>
+                <span>+ Assign Duty</span>
               </button>
               <button
                 type="button"
@@ -716,267 +719,259 @@ export default function FundraiserScene() {
             </div>
           </div>
 
-          {/* New Volunteer Task Form Drawer (Updated Modern UI per User Request) */}
-          {showAddTask && (
-            <div className="p-6 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-4 transition-all">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
+          {/* Assign Student to Operations Duty (Permanently Front-Side — CANNOT HIDE) */}
+          <div className="p-6 rounded-2xl bg-slate-50/90 border border-slate-200/90 space-y-4 shadow-2xs">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
+              <div>
                 <h4 className="font-bold text-base text-[#0f172a] flex items-center gap-2">
-                  <span>New Volunteer Task</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700 uppercase">
+                  <span>Assign Students to Operations Duty</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase">
                     Live Assignment
                   </span>
                 </h4>
-                <button
-                  type="button"
-                  onClick={() => setShowAddTask(false)}
-                  className="text-xs text-slate-400 hover:text-slate-700 cursor-pointer"
-                >
-                  ✕ Close
-                </button>
+                <p className="text-xs text-slate-500">
+                  Select any registered student below to immediately schedule and assign campaign duties.
+                </p>
+              </div>
+              <span className="text-xs text-emerald-600 font-bold hidden sm:inline-flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {realtimeCount} Students Registered in Real-time
+              </span>
+            </div>
+
+            <form onSubmit={handleCreateTask} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
+                  Task Title *
+                </label>
+                <input
+                  id="assign-task-title-input"
+                  type="text"
+                  required
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder="Task title (e.g. Pick up folding tables from Student Union Room 204)"
+                  className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-sm bg-white focus:outline-none focus:border-black transition-colors"
+                />
               </div>
 
-              <form onSubmit={handleCreateTask} className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Priority Selector Pills */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
-                    Task Title *
+                    Priority Level
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                    placeholder="Task title (e.g. Pick up folding tables from Student Union)"
-                    className="w-full px-4 py-2.5 rounded-full border border-slate-300 text-sm bg-white focus:outline-none focus:border-black transition-colors"
-                  />
+                  <div className="grid grid-cols-4 gap-1.5 p-1 bg-white rounded-full border border-slate-200">
+                    {(['urgent', 'high', 'medium', 'low'] as TaskPriority[]).map((p) => {
+                      const isSelected = newTaskPriority === p;
+                      const getActiveBadgeStyle = () => {
+                        switch (p) {
+                          case 'urgent': return 'bg-rose-600 text-white shadow-xs';
+                          case 'high': return 'bg-amber-500 text-white shadow-xs';
+                          case 'medium': return 'bg-slate-800 text-white shadow-xs';
+                          case 'low': return 'bg-sky-600 text-white shadow-xs';
+                        }
+                      };
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setNewTaskPriority(p)}
+                          className={`py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                            isSelected ? getActiveBadgeStyle() : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Modern Priority Selector Pills (No ugly native select) */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5">
-                      Priority Level
+                {/* Assign Students Details Under Labels Inside Show (Front-Side Visible) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase">
+                      Assign Student / Personnel *
                     </label>
-                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-white rounded-full border border-slate-200">
-                      {(['urgent', 'high', 'medium', 'low'] as TaskPriority[]).map((p) => {
-                        const isSelected = newTaskPriority === p;
-                        const getActiveBadgeStyle = () => {
-                          switch (p) {
-                            case 'urgent': return 'bg-rose-600 text-white shadow-xs';
-                            case 'high': return 'bg-amber-500 text-white shadow-xs';
-                            case 'medium': return 'bg-slate-800 text-white shadow-xs';
-                            case 'low': return 'bg-sky-600 text-white shadow-xs';
-                          }
-                        };
-                        return (
-                          <button
-                            key={p}
-                            type="button"
-                            onClick={() => setNewTaskPriority(p)}
-                            className={`py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                              isSelected ? getActiveBadgeStyle() : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {personnelList.length} Personnel ({realtimeCount} Realtime)
+                    </span>
                   </div>
 
-                  {/* Modern Interactive Member / Registered Student Picker (User Request) */}
-                  <div className="relative">
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1.5 flex items-center justify-between">
-                      <span>Assign Personnel *</span>
-                      <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        {realtimeCount} Real-time Registered
-                      </span>
-                    </label>
+                  {/* Student Details Search & Categories */}
+                  <div className="space-y-2 p-3 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Search registered students, names, or IDs..."
+                        value={assigneeSearchQuery}
+                        onChange={(e) => setAssigneeSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 rounded-full border border-slate-200 text-xs focus:outline-none focus:border-black"
+                      />
+                    </div>
 
-                    {/* Interactive Picker Trigger Button */}
-                    <button
-                      type="button"
-                      onClick={() => setIsAssigneePickerOpen(!isAssigneePickerOpen)}
-                      className="w-full px-3.5 py-2 rounded-full border border-slate-300 hover:border-black bg-white flex items-center justify-between transition-all cursor-pointer shadow-2xs text-left"
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <div className={`w-6 h-6 rounded-full text-white font-bold text-[10px] flex items-center justify-center shrink-0 ${selectedPerson.isRealtime ? 'bg-emerald-600' : 'bg-slate-900'}`}>
+                    {/* Category Filter Tabs */}
+                    <div className="flex items-center gap-1 pb-1 border-b border-slate-100 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => setAssigneeCategory('all')}
+                        className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${assigneeCategory === 'all' ? 'bg-black text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        All ({personnelList.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAssigneeCategory('realtime')}
+                        className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer flex items-center gap-1 ${assigneeCategory === 'realtime' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        Registered Students ({realtimeCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAssigneeCategory('staff')}
+                        className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${assigneeCategory === 'staff' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        Staff & Leads
+                      </button>
+                    </div>
+
+                    {/* Students Details List (Front Side Visible Under Label Inside Container) */}
+                    <div className="overflow-y-auto space-y-1.5 max-h-48 pr-1">
+                      {filteredPersonnel.length === 0 ? (
+                        <div className="py-4 text-center text-xs text-slate-400">
+                          No registered students or personnel matching search.
+                        </div>
+                      ) : (
+                        filteredPersonnel.map((person) => {
+                          const isSelected = newTaskAssignee.toLowerCase() === person.name.toLowerCase();
+                          return (
+                            <div
+                              key={person.id + person.name}
+                              onClick={() => setNewTaskAssignee(person.name)}
+                              className={`p-2 rounded-xl flex items-center justify-between cursor-pointer transition-all ${
+                                isSelected
+                                  ? 'bg-slate-900 text-white shadow-xs'
+                                  : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 truncate">
+                                <div className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${
+                                  isSelected
+                                    ? 'bg-white text-slate-900'
+                                    : person.isRealtime
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-slate-800 text-white'
+                                }`}>
+                                  {person.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="truncate text-left">
+                                  <div className="text-xs font-bold truncate flex items-center gap-1.5">
+                                    <span>{person.name}</span>
+                                    {person.isRealtime && (
+                                      <span className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase border ${
+                                        isSelected
+                                          ? 'bg-emerald-500 text-white border-emerald-400'
+                                          : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                      }`}>
+                                        REALTIME
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className={`text-[10px] truncate ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
+                                    {person.role} {person.studentId ? `· ${person.studentId}` : ''}
+                                  </div>
+                                </div>
+                              </div>
+                              {isSelected ? (
+                                <span className="text-[10px] font-bold bg-white text-slate-900 px-2 py-0.5 rounded-full shrink-0">
+                                  ✓ Assigned
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-semibold shrink-0">
+                                  Select
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Selected Student Details Confirmation Banner */}
+                    <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="text-emerald-800 font-bold uppercase text-[10px] shrink-0">Assigned To:</span>
+                        <div className={`w-5 h-5 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0 ${selectedPerson.isRealtime ? 'bg-emerald-600' : 'bg-slate-800'}`}>
                           {selectedPerson.name.charAt(0).toUpperCase()}
                         </div>
-                        <div className="truncate">
-                          <span className="text-[13px] font-bold text-[#0f172a] truncate">
-                            {selectedPerson.name}
-                          </span>
-                          <span className="text-[11px] text-slate-500 ml-1.5 font-normal truncate">
-                            · {selectedPerson.role}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {selectedPerson.isRealtime && (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase">
-                            Realtime Student
+                        <strong className="text-emerald-950 font-bold truncate">{selectedPerson.name}</strong>
+                        <span className="text-emerald-700 text-[11px] truncate">· {selectedPerson.role}</span>
+                        {selectedPerson.studentId && (
+                          <span className="font-mono text-[10px] text-emerald-800 bg-emerald-100 px-1 rounded shrink-0">
+                            {selectedPerson.studentId}
                           </span>
                         )}
-                        <svg className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isAssigneePickerOpen ? 'rotate-180 text-black' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
                       </div>
-                    </button>
+                      {selectedPerson.isRealtime && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold bg-emerald-200 text-emerald-900 uppercase shrink-0">
+                          Realtime Student
+                        </span>
+                      )}
+                    </div>
 
-                    {/* Outside click backdrop */}
-                    {isAssigneePickerOpen && (
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setIsAssigneePickerOpen(false)}
+                    {/* Quick Add Custom Volunteer Name Input */}
+                    <div className="pt-1.5 border-t border-slate-100 flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        placeholder="Or enter custom student/volunteer name..."
+                        value={customVolunteerName}
+                        onChange={(e) => setCustomVolunteerName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (customVolunteerName.trim()) {
+                              setNewTaskAssignee(customVolunteerName.trim());
+                              setCustomVolunteerName('');
+                            }
+                          }
+                        }}
+                        className="flex-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs focus:outline-none focus:border-black"
                       />
-                    )}
-
-                    {/* Modern Dropdown Popover */}
-                    {isAssigneePickerOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white rounded-2xl border border-slate-200 shadow-xl p-3 space-y-2.5">
-                        {/* Search Bar */}
-                        <div className="relative">
-                          <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                          <input
-                            type="text"
-                            placeholder="Search registered students, members, or IDs..."
-                            value={assigneeSearchQuery}
-                            onChange={(e) => setAssigneeSearchQuery(e.target.value)}
-                            className="w-full pl-8 pr-3 py-1.5 rounded-full border border-slate-200 text-xs focus:outline-none focus:border-black"
-                          />
-                        </div>
-
-                        {/* Category Filter Tabs */}
-                        <div className="flex items-center gap-1 pb-1 border-b border-slate-100 text-[10px]">
-                          <button
-                            type="button"
-                            onClick={() => setAssigneeCategory('all')}
-                            className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${assigneeCategory === 'all' ? 'bg-black text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                          >
-                            All ({personnelList.length})
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setAssigneeCategory('realtime')}
-                            className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer flex items-center gap-1 ${assigneeCategory === 'realtime' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            Registered Students ({realtimeCount})
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setAssigneeCategory('staff')}
-                            className={`px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${assigneeCategory === 'staff' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                          >
-                            Staff & Leads
-                          </button>
-                        </div>
-
-                        {/* Personnel Items List */}
-                        <div className="overflow-y-auto space-y-1 max-h-52 pr-1">
-                          {filteredPersonnel.length === 0 ? (
-                            <div className="py-4 text-center text-xs text-slate-400">
-                              No registered personnel matching search.
-                            </div>
-                          ) : (
-                            filteredPersonnel.map((person) => {
-                              const isSelected = newTaskAssignee.toLowerCase() === person.name.toLowerCase();
-                              return (
-                                <div
-                                  key={person.id + person.name}
-                                  onClick={() => {
-                                    setNewTaskAssignee(person.name);
-                                    setIsAssigneePickerOpen(false);
-                                  }}
-                                  className={`p-2 rounded-xl flex items-center justify-between cursor-pointer transition-colors ${isSelected ? 'bg-slate-100 text-black font-bold' : 'hover:bg-slate-50 text-slate-700'}`}
-                                >
-                                  <div className="flex items-center gap-2 truncate">
-                                    <div className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${person.isRealtime ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white'}`}>
-                                      {person.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="truncate text-left">
-                                      <div className="text-xs font-bold text-[#0f172a] truncate flex items-center gap-1.5">
-                                        <span>{person.name}</span>
-                                        {person.isRealtime && (
-                                          <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                            REALTIME
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="text-[10px] text-slate-500 truncate">
-                                        {person.role} {person.studentId ? `· ${person.studentId}` : ''}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {isSelected && (
-                                    <span className="text-emerald-600 font-bold text-xs shrink-0">✓</span>
-                                  )}
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-
-                        {/* Quick Add Custom Volunteer Name Input */}
-                        <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5">
-                          <input
-                            type="text"
-                            placeholder="Or enter custom student/volunteer name..."
-                            value={customVolunteerName}
-                            onChange={(e) => setCustomVolunteerName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (customVolunteerName.trim()) {
-                                  setNewTaskAssignee(customVolunteerName.trim());
-                                  setCustomVolunteerName('');
-                                  setIsAssigneePickerOpen(false);
-                                }
-                              }
-                            }}
-                            className="flex-1 px-3 py-1.5 rounded-full border border-slate-200 text-xs focus:outline-none focus:border-black"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (customVolunteerName.trim()) {
-                                setNewTaskAssignee(customVolunteerName.trim());
-                                setCustomVolunteerName('');
-                                setIsAssigneePickerOpen(false);
-                              }
-                            }}
-                            className="px-3.5 py-1.5 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
-                          >
-                            Select
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customVolunteerName.trim()) {
+                            setNewTaskAssignee(customVolunteerName.trim());
+                            setCustomVolunteerName('');
+                          }
+                        }}
+                        className="px-3.5 py-1.5 rounded-full bg-black text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
+                      >
+                        Select
+                      </button>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex gap-2 pt-2 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddTask(false)}
-                    className="px-5 py-2 rounded-full border border-slate-300 text-xs font-bold bg-white hover:bg-slate-50 transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isCreatingTask}
-                    className="px-6 py-2 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
-                  >
-                    {isCreatingTask ? <ButtonSpinner size={12} /> : 'Create Task'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
+              <div className="flex gap-2 pt-2 justify-end">
+                <button
+                  type="submit"
+                  disabled={isCreatingTask}
+                  className="px-7 py-2.5 rounded-full bg-[#0064e0] hover:bg-[#0052b8] text-white text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-2"
+                >
+                  {isCreatingTask ? <ButtonSpinner size={12} /> : 'Assign Student & Schedule Task'}
+                </button>
+              </div>
+            </form>
+          </div>
 
           {/* Filter Tabs Bar: All, Assigned to Me, Registered Students, Statuses */}
           <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-full border border-slate-200 flex-wrap">
@@ -1110,12 +1105,40 @@ export default function FundraiserScene() {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 font-mono mt-0.5">
-                          Assignee: <strong className="text-slate-900">{task.assignee_name || 'Unassigned'}</strong> · Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Today'} · Priority:{' '}
-                          <span className={`px-2 py-0.2 rounded-full font-bold uppercase text-[10px] ${getPriorityBadge(task.priority)}`}>
-                            {task.priority}
-                          </span>
-                        </p>
+
+                        {/* Assigned Student Details Directly Under Task Labels (Front Side — Cannot Hide) */}
+                        {(() => {
+                          const assigneePerson = personnelList.find(
+                            (p) => p.name.toLowerCase() === (task.assignee_name || '').toLowerCase()
+                          );
+                          return (
+                            <div className="mt-2 flex items-center gap-2.5 flex-wrap text-xs">
+                              <span className="text-slate-400 font-bold uppercase text-[10px]">Assigned Student:</span>
+                              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs">
+                                <div className={`w-5 h-5 rounded-full text-[9px] font-bold text-white flex items-center justify-center shrink-0 ${
+                                  assigneePerson?.isRealtime ? 'bg-emerald-600' : 'bg-slate-800'
+                                }`}>
+                                  {(task.assignee_name || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <strong className="text-slate-900 font-bold">{task.assignee_name || 'Unassigned'}</strong>
+                                {assigneePerson?.studentId && (
+                                  <span className="font-mono text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
+                                    {assigneePerson.studentId}
+                                  </span>
+                                )}
+                                {assigneePerson?.role && (
+                                  <span className="text-[11px] text-slate-500">· {assigneePerson.role}</span>
+                                )}
+                              </div>
+                              <span className="text-slate-300">·</span>
+                              <span className="text-slate-500">Due: {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'Today'}</span>
+                              <span className="text-slate-300">·</span>
+                              <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${getPriorityBadge(task.priority)}`}>
+                                {task.priority}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <span
                         className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider self-start sm:self-auto ${getStatusBadge(
