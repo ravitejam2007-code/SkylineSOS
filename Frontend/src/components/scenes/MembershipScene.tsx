@@ -162,6 +162,7 @@ export default function MembershipScene() {
 
   // Application Modal/Form state
   const [applyTier, setApplyTier] = useState<CuratedTier | null>(null);
+  const [signInFirstModal, setSignInFirstModal] = useState<{ isOpen: boolean; tier?: CuratedTier } | null>(null);
   const [applicantName, setApplicantName] = useState(() => {
     const s = typeof window !== 'undefined' ? getActiveSession() : null;
     return s?.fullName || '';
@@ -261,13 +262,14 @@ export default function MembershipScene() {
         setApplyTier(null);
         setReapplyApp(null);
         setRejectModalApp(null);
+        setSignInFirstModal(null);
       }
     };
-    if (applyTier || reapplyApp || rejectModalApp) {
+    if (applyTier || reapplyApp || rejectModalApp || signInFirstModal) {
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [applyTier, reapplyApp, rejectModalApp]);
+  }, [applyTier, reapplyApp, rejectModalApp, signInFirstModal]);
 
   // Handle Application Submit with Razorpay Payment Gateway
   const handleApply = async (e: React.FormEvent) => {
@@ -468,15 +470,26 @@ export default function MembershipScene() {
 
             {!session ? (
               <div className="pt-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">
+                    GUEST VISITOR · NOT SIGNED IN
+                  </span>
+                </div>
                 <p className="text-xs sm:text-sm text-[#64748b]">
-                  Please sign in to check your active membership status or submit an application.
+                  Please sign in to check your active membership status or select any plan below. If you click a plan without logging in or registering, the <strong>Sign In First</strong> command prompt will be displayed.
                 </p>
-                <div>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
                   <a
                     href="/login"
                     className="inline-block px-5 py-2.5 rounded-full bg-black hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
                   >
-                    Sign In to View
+                    Sign In to Account →
+                  </a>
+                  <a
+                    href="/signup"
+                    className="inline-block px-4 py-2 rounded-full border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                  >
+                    Register Account
                   </a>
                 </div>
               </div>
@@ -578,9 +591,65 @@ export default function MembershipScene() {
                 </a>
               </div>
             )}
+
+            {session && (
+              <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-slate-500">
+                  Auto-login active: <strong>{session.email}</strong> ({session.role || 'Admin'})
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logoutUser();
+                      setSession(null);
+                    }}
+                    className="px-3 py-1 rounded-full border border-slate-300 hover:border-black text-slate-700 hover:text-black hover:bg-slate-50 text-[11px] font-bold cursor-pointer transition-colors"
+                  >
+                    Test Guest Mode (Log Out)
+                  </button>
+                  <span className="text-[11px] text-slate-400 hidden md:inline">
+                    (Refresh page anytime to auto-restore Sanjay session)
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}
+
+      {/* ─── PROMINENT SIGN IN FIRST NOTIFICATION BANNER (WHEN BROWSING WITHOUT LOGIN) ─── */}
+      {!session && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-950 shadow-2xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="p-2 rounded-xl bg-amber-200/70 border border-amber-300 text-amber-900 font-bold text-sm leading-none shrink-0">
+              🔒
+            </span>
+            <div>
+              <p className="text-xs sm:text-sm font-extrabold tracking-tight text-amber-950">
+                Sign In First Command: Authentication Required
+              </p>
+              <p className="text-xs text-amber-800">
+                You are browsing membership plans without login or register. Click any plan below to see the Sign In First command prompt, or sign in now.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="/login"
+              className="px-4 py-2 rounded-full bg-black hover:bg-slate-900 text-white text-xs font-bold transition-all shadow-xs"
+            >
+              Sign In
+            </a>
+            <a
+              href="/signup"
+              className="px-3.5 py-2 rounded-full bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold border border-amber-300 transition-all"
+            >
+              Register
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* ─── 1. TIER SELECTION & 3 ROW-WISE PLANS (MATCHING SCREENSHOT 004724) ─── */}
       <div id="plans-section" className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
@@ -651,16 +720,111 @@ export default function MembershipScene() {
               <div className="pt-6 mt-6 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setApplyTier(t)}
+                  onClick={() => {
+                    if (!session) {
+                      setSignInFirstModal({
+                        isOpen: true,
+                        tier: t,
+                      });
+                    } else {
+                      setApplyTier(t);
+                    }
+                  }}
                   className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-black hover:bg-slate-900 active:scale-[0.99] transition-all text-xs sm:text-sm shadow-sm cursor-pointer"
                 >
-                  Apply & Pay Dues ({formatPaise(t.fee_paise)})
+                  {!session
+                    ? `Sign In First to Apply (${formatPaise(t.fee_paise)})`
+                    : `Apply & Pay Dues (${formatPaise(t.fee_paise)})`}
                 </button>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* ─── MODAL: SIGN IN FIRST COMMAND (WHEN WITHOUT LOGIN OR REGISTER) ─── */}
+      {signInFirstModal?.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 t-modal-backdrop is-open bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setSignInFirstModal(null)}
+              className="absolute top-5 right-5 text-2xl font-bold text-slate-400 hover:text-black cursor-pointer leading-none"
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            {/* Icon & Title */}
+            <div className="text-center space-y-3 pt-2">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shadow-xs">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200 inline-block mb-1.5">
+                  Sign In First Command
+                </span>
+                <h3 className="text-2xl font-black text-[#0f172a] tracking-tight">
+                  Sign In First
+                </h3>
+              </div>
+
+              <p className="text-xs sm:text-sm text-[#475569] leading-relaxed max-w-xs mx-auto">
+                You are currently browsing without login or registration. Please{' '}
+                <strong className="text-black">sign in to your account</strong> or{' '}
+                <strong className="text-black">register a new student account</strong> before selecting the{' '}
+                <span className="font-bold text-black">{signInFirstModal.tier?.name || 'Membership'}</span> plan.
+              </p>
+            </div>
+
+            {/* Plan Info Pill */}
+            {signInFirstModal.tier && (
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
+                <div>
+                  <p className="font-bold text-slate-900">{signInFirstModal.tier.name} Plan</p>
+                  <p className="text-slate-500">{signInFirstModal.tier.duration_days} Days Access</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-extrabold text-slate-900">{formatPaise(signInFirstModal.tier.fee_paise)}</p>
+                  <p className="text-[11px] text-amber-700 font-semibold">Sign in to activate</p>
+                </div>
+              </div>
+            )}
+
+            {/* Command Action Buttons */}
+            <div className="space-y-2.5 pt-1">
+              <a
+                href="/login"
+                className="w-full py-3.5 px-6 rounded-full font-bold text-white bg-black hover:bg-slate-900 active:scale-[0.99] text-center block text-sm shadow-sm transition-all t-button-action"
+              >
+                Sign In to Account →
+              </a>
+              <a
+                href="/signup"
+                className="w-full py-3 px-6 rounded-full font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 active:scale-[0.99] text-center block text-sm border border-slate-200 transition-all t-button-action"
+              >
+                Register New Student Account
+              </a>
+              <button
+                type="button"
+                onClick={() => setSignInFirstModal(null)}
+                className="w-full py-2.5 text-xs font-semibold text-slate-500 hover:text-black cursor-pointer transition-colors"
+              >
+                Dismiss / Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── MODAL: APPLICATION SUBMIT FORM ─── */}
       {applyTier && (

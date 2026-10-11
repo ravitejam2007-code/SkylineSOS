@@ -149,7 +149,15 @@ export const DEMO_ACCOUNTS: Record<string, {
     role: 'member',
     label: 'Active Member',
     fullName: 'Demo Member',
-    studentId: '4GT23AI005',
+    studentId: '4GT23AI045',
+  },
+  sanjay: {
+    email: 'sanjaydsanjay042@gmail.com',
+    password: 'Skyline@2026',
+    role: 'admin',
+    label: 'Executive Admin (Sanjay)',
+    fullName: 'Sanjay D',
+    studentId: '4GT23AI042',
   },
 };
 
@@ -179,30 +187,6 @@ export function getRoleDestination(role: string): string {
   }
 }
 
-/**
- * Retrieve active session synchronously from client storage.
- */
-export function getActiveSession(): UserSession | null {
-  if (typeof window !== 'undefined') {
-    try {
-      const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch {}
-  }
-  return null;
-}
-
-export const PERSONA_USER_IDS: Record<'student' | 'volunteer' | 'admin' | 'treasurer', string> = {
-  student: 'c75b16e0-4d97-4411-909f-6322d84e393d',
-  volunteer: '89b83322-8c80-4891-9bc2-293b04548d08',
-  admin: '1bbe8b10-6424-4f22-bb13-2a15dfc0e3b9',
-  treasurer: '26a93189-6866-4f85-ba75-54c1c9b3b927',
-};
-
-/**
- * Client Registry for user accounts registered on this instance.
- * Ensures instant, fault-tolerant sign-in regardless of Supabase email rate limits or unconfirmed emails.
- */
 export interface RegisteredAccountRecord {
   userId: string;
   email: string;
@@ -215,13 +199,108 @@ export interface RegisteredAccountRecord {
 
 const REGISTERED_ACCOUNTS_KEY = 'skylinesos_registered_accounts';
 
+/**
+ * Sanjay Account Profile and Default Session
+ */
+export const SANJAY_DEFAULT_SESSION: UserSession = {
+  userId: '1bbe8b10-6424-4f22-bb13-2a15dfc0e3b9',
+  email: 'sanjaydsanjay042@gmail.com',
+  fullName: 'Sanjay D',
+  studentId: '4GT23AI042',
+  role: 'admin',
+  roles: ['admin', 'member'],
+  title: 'Executive Admin',
+  destination: '/admin',
+};
+
+export const SANJAY_REGISTERED_ACCOUNT: RegisteredAccountRecord = {
+  userId: '1bbe8b10-6424-4f22-bb13-2a15dfc0e3b9',
+  email: 'sanjaydsanjay042@gmail.com',
+  passwordHash: 'Skyline@2026',
+  fullName: 'Sanjay D',
+  studentId: '4GT23AI042',
+  role: 'admin',
+  createdAt: '2026-10-10T00:00:00Z',
+};
+
+export function isBrowserReload(): boolean {
+  if (typeof window === 'undefined' || !window.performance) return false;
+  try {
+    const navEntries = window.performance.getEntriesByType('navigation');
+    if (navEntries.length > 0) {
+      const nav = navEntries[0] as PerformanceNavigationTiming;
+      return nav.type === 'reload';
+    }
+    return (window.performance as any).navigation?.type === 1;
+  } catch {
+    return false;
+  }
+}
+
+export function autoLoginSanjay(): UserSession {
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.removeItem('skylinesos_guest_mode');
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(SANJAY_DEFAULT_SESSION));
+      localStorage.setItem('campusone_demo_role', 'admin');
+    } catch {}
+  }
+  return SANJAY_DEFAULT_SESSION;
+}
+
+/**
+ * Retrieve active session synchronously from client storage.
+ * Automatically logs in sanjaydsanjay042@gmail.com on page refresh.
+ */
+export function getActiveSession(): UserSession | null {
+  if (typeof window !== 'undefined') {
+    try {
+      // 1. If page was refreshed/reloaded, automatically log in sanjaydsanjay042@gmail.com
+      if (isBrowserReload()) {
+        return autoLoginSanjay();
+      }
+
+      // 2. If user explicitly signed out in current tab, stay in guest mode until reload
+      if (sessionStorage.getItem('skylinesos_guest_mode') === 'true') {
+        return null;
+      }
+
+      // 3. Read current session from localStorage
+      const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.email) {
+          return parsed;
+        }
+      }
+
+      // 4. Default: Auto-login sanjaydsanjay042@gmail.com
+      return autoLoginSanjay();
+    } catch {
+      return SANJAY_DEFAULT_SESSION;
+    }
+  }
+  return null;
+}
+
+export const PERSONA_USER_IDS: Record<'student' | 'volunteer' | 'admin' | 'treasurer', string> = {
+  student: 'c75b16e0-4d97-4411-909f-6322d84e393d',
+  volunteer: '89b83322-8c80-4891-9bc2-293b04548d08',
+  admin: '1bbe8b10-6424-4f22-bb13-2a15dfc0e3b9',
+  treasurer: '26a93189-6866-4f85-ba75-54c1c9b3b927',
+};
+
 export function getRegisteredAccounts(): RegisteredAccountRecord[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return [SANJAY_REGISTERED_ACCOUNT];
   try {
     const raw = localStorage.getItem(REGISTERED_ACCOUNTS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const list: RegisteredAccountRecord[] = raw ? JSON.parse(raw) : [];
+    if (!list.some((a) => a.email.toLowerCase() === SANJAY_REGISTERED_ACCOUNT.email.toLowerCase())) {
+      list.push(SANJAY_REGISTERED_ACCOUNT);
+    }
+    return list;
   } catch {
-    return [];
+    return [SANJAY_REGISTERED_ACCOUNT];
   }
 }
 
@@ -277,6 +356,7 @@ export function logoutUser(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(SESSION_STORAGE_KEY);
     localStorage.setItem('campusone_demo_role', 'guest');
+    sessionStorage.setItem('skylinesos_guest_mode', 'true');
     window.dispatchEvent(new CustomEvent('campusone:auth_changed', { detail: null }));
     window.dispatchEvent(new CustomEvent('campusone:role_changed', { detail: 'guest' }));
   }
@@ -383,6 +463,9 @@ export async function signInWithPassword(email: string, password: string, prefer
       }
     }
 
+    if (matchedKey === 'sanjay') {
+      return autoLoginSanjay();
+    }
     const personaKey = matchedKey === 'door_staff' ? 'volunteer' : matchedKey === 'member' ? 'student' : matchedKey;
     return loginAsPersona(personaKey as 'student' | 'volunteer' | 'admin' | 'treasurer');
   }

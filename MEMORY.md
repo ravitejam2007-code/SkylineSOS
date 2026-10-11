@@ -560,7 +560,38 @@
   - **Verification:**
     - Executed `npm test`: 79/79 invariant and route tests passed.
     - Executed `npm --prefix Frontend run build`: 20/20 static pages compiled cleanly.
-    - Remote branch `feature/sos-foundation` synchronized.
+  - **Automatic Sanjay Account Login on Refresh & Membership Plans Sign In First Command:**
+  - **Auto-Login on Page Refresh ([`auth.ts`](file:///E:/projects/SkylineSOS/Frontend/src/lib/auth.ts)):**
+    - Added `SANJAY_DEFAULT_SESSION` (`userId: '1bbe8b10-6424-4f22-bb13-2a15dfc0e3b9'`, `email: 'sanjaydsanjay042@gmail.com'`, `fullName: 'Sanjay D'`, `studentId: '4GT23AI042'`, `role: 'admin'`, `roles: ['admin', 'member']`, `destination: '/admin'`).
+    - Added `SANJAY_REGISTERED_ACCOUNT` to ensure `getRegisteredAccounts()` always recognizes Sanjay's account.
+    - Added `isBrowserReload()` utility detecting `PerformanceNavigationTiming.type === 'reload'` (and legacy fallback).
+    - Added `autoLoginSanjay()` which sets `campusone_auth_session` and `campusone_demo_role`, clearing any guest flags.
+    - Updated `getActiveSession()`:
+      1. When page is refreshed (`isBrowserReload()`), automatically logs into `sanjaydsanjay042@gmail.com`.
+      2. If user explicitly signed out in current tab session, keeps guest state until next refresh.
+      3. Defaults to `sanjaydsanjay042@gmail.com` when no session exists.
+    - Updated `signInWithPassword()` to recognize `sanjaydsanjay042@gmail.com` with demo credentials.
+    - Updated `logoutUser()` to flag `skylinesos_guest_mode` in `sessionStorage` and clear active session.
+    - Updated `UserNavMenu.tsx` `handleLogout()` to smoothly remain on the current page (or redirect from protected admin routes to `/memberships`) so guest testing is instant.
+  - **Membership Plans "Sign In First" Command Prompt ([`MembershipScene.tsx`](file:///E:/projects/SkylineSOS/Frontend/src/components/scenes/MembershipScene.tsx)):**
+    - **Tier CTA Button Interception:** When user is browsing without login or register (`!session`), tier card CTA buttons display `Sign In First to Apply (₹...)` and immediately trigger the dedicated `Sign In First` Command Modal.
+    - **Dedicated "Sign In First" Command Modal:**
+      - High-impact modal matching `docs/DESIGN-meta.md` styling with backdrop blur.
+      - "Sign In First Command" badge and lock icon.
+      - Plain-language explanation: informs user they are unauthenticated and must sign in or register before choosing the plan and paying dues.
+      - Plan details summary pill displaying selected tier name, duration, and dues amount.
+      - Prominent dual CTAs: `Sign In to Account →` (`/login`), `Register New Student Account` (`/signup`), and `Dismiss / Close`.
+      - Keyboard accessible (closes on `Escape`).
+    - **Top Alert Banner for Guest Visitors:**
+      - Prominently notifies visitors without login or registration at the top of the plans section.
+      - Includes direct `Sign In` and `Register` links.
+    - **In-App Guest Testing Switcher:**
+      - When logged in as Sanjay, the status card provides a `[Test Guest Mode (Log Out)]` button.
+      - Clearly indicates that pressing F5 / Refresh anytime restores Sanjay's auto-login session.
+  - **Verification:**
+    - Executed `npm test`: All 79 contract, integrity, and route specification tests passed (100% pass rate).
+    - Executed `npm --prefix Frontend run build`: All 20 static pages compiled cleanly with zero errors.
+
 
 
 

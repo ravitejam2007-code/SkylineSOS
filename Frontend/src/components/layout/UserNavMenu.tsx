@@ -48,7 +48,10 @@ export default function UserNavMenu() {
     logoutUser();
     setSession(null);
     setDropdownOpen(false);
-    window.location.href = '/';
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    if (path.startsWith('/admin') || path.startsWith('/operations') || path.startsWith('/treasurer') || path.startsWith('/portal')) {
+      window.location.href = '/memberships';
+    }
   };
 
   if (!session) {
